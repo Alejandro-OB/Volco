@@ -1,38 +1,44 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'client.dart';
+part of 'account.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class ClientAdapter extends TypeAdapter<Client> {
+class AccountAdapter extends TypeAdapter<Account> {
   @override
-  final int typeId = 1;
+  final int typeId = 3;
 
   @override
-  Client read(BinaryReader reader) {
+  Account read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return Client(
+    return Account(
+      alias: fields[1] as String,
+      description: fields[2] as String,
+      createdAt: fields[3] as DateTime?,
+      isActive: fields[4] as bool,
       id: fields[0] as String?,
-      name: fields[1] as String,
-      trips: (fields[2] as List).cast<Trip>(),
     );
   }
 
   @override
-  void write(BinaryWriter writer, Client obj) {
+  void write(BinaryWriter writer, Account obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.name)
+      ..write(obj.alias)
       ..writeByte(2)
-      ..write(obj.trips);
+      ..write(obj.description)
+      ..writeByte(3)
+      ..write(obj.createdAt)
+      ..writeByte(4)
+      ..write(obj.isActive);
   }
 
   @override
@@ -41,7 +47,7 @@ class ClientAdapter extends TypeAdapter<Client> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is ClientAdapter &&
+      other is AccountAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

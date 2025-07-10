@@ -4,16 +4,19 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/trip.dart';
 import '../models/client.dart';
+import '../models/account.dart';
 import 'trip_list_screen.dart';
 
 class TripFormScreen extends StatefulWidget {
   final Client client;
+  final Account account;
   final Trip? trip;
   final dynamic tripKey;
 
   const TripFormScreen({
     super.key,
     required this.client,
+    required this.account,
     this.trip,
     this.tripKey,
   });
@@ -45,7 +48,8 @@ class _TripFormScreenState extends State<TripFormScreen> {
   @override
   void initState() {
     super.initState();
-    _tripBox = Hive.box<Trip>('trips_${widget.client.name}');
+    final boxName = 'trips_${widget.client.id}_${widget.account.id}';
+    _tripBox = Hive.box<Trip>(boxName);
 
     if (widget.trip != null) {
       final trip = widget.trip!;
@@ -142,7 +146,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
         ),
       );
 
-      // Limpiar el formulario solo si es nuevo
       if (widget.trip == null) {
         _quantityController.clear();
         _unitValueController.clear();
@@ -158,7 +161,6 @@ class _TripFormScreenState extends State<TripFormScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     final isEditing = widget.trip != null;
@@ -169,41 +171,44 @@ class _TripFormScreenState extends State<TripFormScreen> {
         child: Column(
           children: [
             Container(
-  width: double.infinity,
-  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-  decoration: const BoxDecoration(
-    color: Color(0xFFF18824),
-    borderRadius: BorderRadius.only(
-      bottomLeft: Radius.circular(24),
-      bottomRight: Radius.circular(24),
-    ),
-  ),
-  child: Row(
-    children: [
-      IconButton(
-        icon: const Icon(Icons.arrow_back, color: Colors.white),
-        onPressed: () {
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (_) => TripListScreen(client: widget.client)),
-          );
-        },
-      ),
-      Image.asset('assets/imgs/logo_volco.png', height: 60),
-      const SizedBox(width: 12),
-      Text(
-        widget.trip != null ? 'Editar Viaje' : 'Registrar Viaje',
-        style: GoogleFonts.poppins(
-          fontSize: 20,
-          color: Colors.white,
-          fontWeight: FontWeight.w600,
-        ),
-      ),
-    ],
-  ),
-),
-
-
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF18824),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pushReplacement(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => TripListScreen(
+                            client: widget.client,
+                            account: widget.account,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  Image.asset('assets/imgs/logo_volco.png', height: 60),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.trip != null ? 'Editar Viaje' : 'Registrar Viaje',
+                    style: GoogleFonts.poppins(
+                      fontSize: 20,
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
             Padding(
               padding: const EdgeInsets.all(20),
               child: Form(
@@ -316,7 +321,12 @@ class _TripFormScreenState extends State<TripFormScreen> {
                         onPressed: () {
                           Navigator.pushReplacement(
                             context,
-                            MaterialPageRoute(builder: (_) => TripListScreen(client: widget.client)),
+                            MaterialPageRoute(
+                              builder: (_) => TripListScreen(
+                                client: widget.client,
+                                account: widget.account,
+                              ),
+                            ),
                           );
                         },
                         icon: const Icon(Icons.list),

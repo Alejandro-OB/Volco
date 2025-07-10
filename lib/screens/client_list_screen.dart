@@ -3,7 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import '../models/client.dart';
 import '../models/trip.dart';
-import 'trip_list_screen.dart';
+import 'account_list_screen.dart';
 
 class ClientListScreen extends StatefulWidget {
   const ClientListScreen({super.key});
@@ -346,9 +346,10 @@ class _ClientListScreenState extends State<ClientListScreen> {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (_) => TripListScreen(client: client)),
+                            MaterialPageRoute(builder: (_) => AccountListScreen(client: client)),
                           );
-                        },
+                        }
+
                       ),
                     );
                   },

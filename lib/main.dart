@@ -4,6 +4,7 @@ import 'models/trip.dart';
 import 'models/client.dart';
 import 'models/invoice_preferences.dart';
 import 'screens/client_list_screen.dart';
+import 'models/account.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -13,6 +14,7 @@ void main() async {
   Hive.registerAdapter(TripAdapter());
   Hive.registerAdapter(ClientAdapter());
   Hive.registerAdapter(InvoicePreferencesAdapter()); // Asegúrate que tiene typeId: 2
+  Hive.registerAdapter(AccountAdapter());
 
 
 

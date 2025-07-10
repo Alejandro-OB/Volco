@@ -12,16 +12,21 @@ import 'package:share_plus/share_plus.dart';
 
 import '../models/trip.dart';
 import '../models/client.dart';
+import '../models/account.dart';
 import '../models/invoice_preferences.dart';
 import '../utils/pdf_generator.dart';
 import 'trip_form_screen.dart';
-import 'client_list_screen.dart';
+//import 'client_list_screen.dart';
 import 'invoice_customization_screen.dart';
 import 'package:pdf/pdf.dart';
+import 'account_list_screen.dart';
+
 
 class TripListScreen extends StatefulWidget {
   final Client client;
-  const TripListScreen({super.key, required this.client});
+  final Account account;
+
+  const TripListScreen({super.key, required this.client, required this.account});
 
   @override
   State<TripListScreen> createState() => _TripListScreenState();
@@ -34,11 +39,11 @@ class _TripListScreenState extends State<TripListScreen> {
   @override
   void initState() {
     super.initState();
-    _openClientBox();
+    _openBox();
   }
 
-  Future<void> _openClientBox() async {
-    final boxName = 'trips_${widget.client.name}';
+  Future<void> _openBox() async {
+    final boxName = 'trips_${widget.client.id}_${widget.account.id}';
     tripBox = await Hive.openBox<Trip>(boxName);
     setState(() => isBoxReady = true);
   }
@@ -48,11 +53,11 @@ class _TripListScreenState extends State<TripListScreen> {
     return box.get('prefs') ?? InvoicePreferences.defaultValues();
   }
 
-  Future<void> exportTripsToJson(List<Trip> trips, String clientName) async {
+  Future<void> exportTripsToJson(List<Trip> trips, String accountAlias) async {
     try {
       final directory = await getApplicationDocumentsDirectory();
       final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
-      final fileName = 'viajes_${clientName.toUpperCase()}_$formattedDate.json';
+      final fileName = 'viajes_${accountAlias.toUpperCase()}_$formattedDate.json';
       final file = File('${directory.path}/$fileName');
 
       final jsonData = trips.map((t) => t.toJson()).toList();
@@ -70,42 +75,39 @@ class _TripListScreenState extends State<TripListScreen> {
   }
 
   Future<List<Trip>> importTripsFromJson() async {
-  try {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.custom,
-      allowedExtensions: ['json'],
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+      );
 
-    if (result != null) {
-      final file = result.files.single;
+      if (result != null) {
+        final file = result.files.single;
 
-      String jsonString;
+        String jsonString;
 
-      if (file.bytes != null) {
-        jsonString = utf8.decode(file.bytes!);
-      } else if (file.path != null) {
-        jsonString = await File(file.path!).readAsString();
-      } else {
-        throw Exception('No se pudo leer el archivo.');
+        if (file.bytes != null) {
+          jsonString = utf8.decode(file.bytes!);
+        } else if (file.path != null) {
+          jsonString = await File(file.path!).readAsString();
+        } else {
+          throw Exception('No se pudo leer el archivo.');
+        }
+
+        final data = jsonDecode(jsonString) as List;
+        return data.map((e) => Trip.fromJson(e)).toList();
       }
-
-      final data = jsonDecode(jsonString) as List;
-      return data.map((e) => Trip.fromJson(e)).toList();
+    } catch (e) {
+      debugPrint(' Error importando: $e');
     }
-  } catch (e) {
-    debugPrint(' Error importando: $e');
+
+    return [];
   }
-
-  return [];
-}
-
 
   @override
   Widget build(BuildContext context) {
     if (!isBoxReady) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -127,25 +129,32 @@ class _TripListScreenState extends State<TripListScreen> {
                 IconButton(
                   icon: const Icon(Icons.arrow_back, color: Colors.white),
                   onPressed: () async {
-                    if (tripBox.isOpen) {
-                      await tripBox.close();
-                    }
-                    Navigator.pushAndRemoveUntil(
+                    if (tripBox.isOpen) await tripBox.close();
+                    Navigator.pushReplacement(
                       context,
-                      MaterialPageRoute(builder: (_) => const ClientListScreen()),
-                      (route) => false,
+                      MaterialPageRoute(
+                        builder: (_) => AccountListScreen(client: widget.client),
+                      ),
                     );
                   },
+
                 ),
                 Image.asset('assets/imgs/logo_volco.png', height: 60),
                 const SizedBox(width: 12),
-                Text(
-                  widget.client.name,
-                  style: GoogleFonts.poppins(
-                    fontSize: 20,
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(widget.client.name,
+                        style: GoogleFonts.poppins(
+                            fontSize: 16,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w500)),
+                    Text(widget.account.alias,
+                        style: GoogleFonts.poppins(
+                            fontSize: 20,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w700)),
+                  ],
                 ),
               ],
             ),
@@ -154,10 +163,12 @@ class _TripListScreenState extends State<TripListScreen> {
             child: ValueListenableBuilder<Box<Trip>>(
               valueListenable: tripBox.listenable(),
               builder: (context, box, _) {
-                final trips = box.values.toList().cast<Trip>();
+                final trips = box.values.toList();
 
                 if (trips.isEmpty) {
-                  return Center(child: Text('Aún no hay viajes.', style: GoogleFonts.poppins()));
+                  return Center(
+                    child: Text('Aún no hay viajes.', style: GoogleFonts.poppins()),
+                  );
                 }
 
                 return ListView.builder(
@@ -205,6 +216,7 @@ class _TripListScreenState extends State<TripListScreen> {
                                             MaterialPageRoute(
                                               builder: (_) => TripFormScreen(
                                                 client: widget.client,
+                                                account: widget.account,
                                                 trip: trip,
                                                 tripKey: tripKey,
                                               ),
@@ -264,7 +276,7 @@ class _TripListScreenState extends State<TripListScreen> {
       bottomNavigationBar: ValueListenableBuilder<Box<Trip>>(
         valueListenable: tripBox.listenable(),
         builder: (context, box, _) {
-          final trips = box.values.toList().cast<Trip>();
+          final trips = box.values.toList();
           final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
 
           return Container(
@@ -330,9 +342,7 @@ class _TripListScreenState extends State<TripListScreen> {
                       context: context,
                       builder: (_) => AlertDialog(
                         title: const Text('¿Viaje duplicado?'),
-                        content: const Text(
-                          'Ya existe un viaje con el mismo identificador.\n¿Deseas sobrescribirlo con la nueva información?',
-                        ),
+                        content: const Text('Ya existe un viaje con el mismo identificador.\n¿Deseas sobrescribirlo con la nueva información?'),
                         actions: [
                           TextButton(
                             onPressed: () => Navigator.pop(context, false),
@@ -345,8 +355,6 @@ class _TripListScreenState extends State<TripListScreen> {
                         ],
                       ),
                     );
-
-
 
                     if (shouldOverwrite == true) {
                       await tripBox.put(existingKey, trip);
@@ -366,8 +374,7 @@ class _TripListScreenState extends State<TripListScreen> {
                     content: Text('Importación completada: $added añadidos, $overwritten sobrescritos, $ignored ignorados'),
                   ),
                 );
-              }
-
+              },
             ),
             SpeedDialChild(
               child: const Icon(Icons.download, color: Colors.white),
@@ -375,8 +382,8 @@ class _TripListScreenState extends State<TripListScreen> {
               label: 'Exportar viajes',
               labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
               onTap: () async {
-                final trips = tripBox.values.toList().cast<Trip>();
-                await exportTripsToJson(trips, widget.client.name);
+                final trips = tripBox.values.toList();
+                await exportTripsToJson(trips, widget.account.alias);
               },
             ),
             SpeedDialChild(
@@ -385,7 +392,7 @@ class _TripListScreenState extends State<TripListScreen> {
               label: 'Generar factura',
               labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
               onTap: () async {
-                final trips = tripBox.values.toList().cast<Trip>();
+                final trips = tripBox.values.toList();
                 final prefs = await _getPreferences();
                 final pdfData = await generateInvoicePdf(
                   trips: trips,
@@ -424,7 +431,9 @@ class _TripListScreenState extends State<TripListScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => TripFormScreen(client: widget.client)),
+                  MaterialPageRoute(
+                    builder: (_) => TripFormScreen(client: widget.client, account: widget.account),
+                  ),
                 );
               },
             ),
