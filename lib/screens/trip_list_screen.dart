@@ -327,24 +327,24 @@ class _TripListScreenState extends State<TripListScreen> {
 
                   if (existingKey != null) {
                     final shouldOverwrite = await showDialog<bool>(
-  context: context,
-  builder: (_) => AlertDialog(
-    title: const Text('¿Viaje duplicado?'),
-    content: const Text(
-      'Ya existe un viaje con el mismo identificador.\n¿Deseas sobrescribirlo con la nueva información?',
-    ),
-    actions: [
-      TextButton(
-        onPressed: () => Navigator.pop(context, false),
-        child: const Text('Ignorar'),
-      ),
-      TextButton(
-        onPressed: () => Navigator.pop(context, true),
-        child: const Text('Sobrescribir'),
-      ),
-    ],
-  ),
-);
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('¿Viaje duplicado?'),
+                        content: const Text(
+                          'Ya existe un viaje con el mismo identificador.\n¿Deseas sobrescribirlo con la nueva información?',
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, false),
+                            child: const Text('Ignorar'),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.pop(context, true),
+                            child: const Text('Sobrescribir'),
+                          ),
+                        ],
+                      ),
+                    );
 
 
 
