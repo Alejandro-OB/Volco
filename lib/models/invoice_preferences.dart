@@ -33,6 +33,12 @@ class InvoicePreferences extends HiveObject {
   @HiveField(8)
   Uint8List? signatureBytes;
 
+  @HiveField(9)
+  String dateFormatOption; // 'dd/MM/yyyy', 'MM/yyyy', etc.
+
+  @HiveField(10)
+  bool showThankYouText;
+
   InvoicePreferences({
     required this.tableColorValue,
     required this.serviceText,
@@ -43,6 +49,8 @@ class InvoicePreferences extends HiveObject {
     required this.showSignature,
     this.logoBytes,
     this.signatureBytes,
+    required this.dateFormatOption,
+    required this.showThankYouText,
   });
 
   Color get tableColor => Color(tableColorValue);
@@ -57,6 +65,7 @@ class InvoicePreferences extends HiveObject {
     showSignature: false,
     logoBytes: null,
     signatureBytes: null,
+    dateFormatOption: 'dd/MM/yyyy', // formato completo por defecto
+    showThankYouText: true,
   );
-
 }

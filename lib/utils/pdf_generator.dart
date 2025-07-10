@@ -19,10 +19,21 @@ Future<Uint8List> generateInvoicePdf({
   String? accountType,
   String? accountNumber,
   bool showSignature = false,
+  String dateFormatOption = 'dd/MM/yyyy',
+  bool showThankYouText = true,
 }) async {
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
-  final dateParts = DateFormat('dd/MM/yyyy').format(date).split('/');
+  String formattedDate;
+  try {
+    formattedDate = DateFormat('dd/MM/yyyy', 'es_CO').format(date);
+  } catch (e) {
+    // Si falla, usa formato básico como fallback
+    formattedDate = DateFormat('MM/yyyy').format(date);
+  }
+
+  final dateParts = formattedDate.split(RegExp(r'[ /-]'));
+
 
   final logoBytes = customLogoBytes ??
       (await rootBundle.load('assets/imgs/logo_volqueta.png')).buffer.asUint8List();
@@ -232,7 +243,7 @@ Future<Uint8List> generateInvoicePdf({
               pw.Padding(
                 padding: const pw.EdgeInsets.all(5),
                 child: pw.Text(
-                  DateFormat('dd/MM/yyyy').format(trip.date),
+                  DateFormat(dateFormatOption, 'es_CO').format(trip.date),
                   style: pw.TextStyle(font: interFont, fontSize: 10),
                   textAlign: pw.TextAlign.center,
                 ),
@@ -342,18 +353,21 @@ Future<Uint8List> generateInvoicePdf({
     );
   }
 
-  pdfWidgets.add(
-    pw.Center(
-      child: pw.Text(
-        'Gracias por su preferencia',
-        style: pw.TextStyle(
-          font: interFont,
-          fontStyle: pw.FontStyle.italic,
-          fontSize: 10,
+  if (showThankYouText) {
+    pdfWidgets.add(
+      pw.Center(
+        child: pw.Text(
+          'Gracias por su preferencia',
+          style: pw.TextStyle(
+            font: interFont,
+            fontStyle: pw.FontStyle.italic,
+            fontSize: 10,
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
+
 
   pdf.addPage(
     pw.Page(

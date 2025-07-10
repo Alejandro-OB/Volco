@@ -5,10 +5,12 @@ import 'models/client.dart';
 import 'models/invoice_preferences.dart';
 import 'screens/client_list_screen.dart';
 import 'models/account.dart';
+import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Hive.initFlutter();
+  await initializeDateFormatting('es_CO');
 
   // Registra todos los adapters
   Hive.registerAdapter(TripAdapter());

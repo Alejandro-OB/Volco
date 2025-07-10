@@ -37,7 +37,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   }
 
   Future<void> _loadPreferences() async {
-    final box = await Hive.openBox<InvoicePreferences>('invoicePreferences');
+    final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
+    final box = await Hive.openBox<InvoicePreferences>(boxName);
     final storedPrefs = box.get('prefs');
     _prefs = storedPrefs ?? InvoicePreferences.defaultValues();
 
@@ -49,12 +50,15 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     setState(() => _loading = false);
   }
 
+
   Future<void> _savePreferences() async {
-    final box = await Hive.openBox<InvoicePreferences>('invoicePreferences');
+    final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
+    final box = await Hive.openBox<InvoicePreferences>(boxName);
     await box.put('prefs', _prefs);
     setState(() => _hasUnsavedChanges = false);
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferencias guardadas')));
   }
+
 
   Future<void> _pickImage({required bool isLogo}) async {
     final result = await FilePicker.platform.pickFiles(
@@ -270,6 +274,37 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
             ),
 
             const SizedBox(height: 24),
+            const Text('Agradecimiento', style: TextStyle(fontWeight: FontWeight.bold)),
+            SwitchListTile(
+              title: const Text('¿Incluir texto de agradecimiento?'),
+              value: _prefs.showThankYouText,
+              onChanged: (value) => setState(() {
+                _prefs.showThankYouText = value;
+                _hasUnsavedChanges = true;
+              }),
+            ),
+
+            const SizedBox(height: 24),
+            const Text('Formato de fecha', style: TextStyle(fontWeight: FontWeight.bold)),
+            DropdownButtonFormField<String>(
+              decoration: const InputDecoration(labelText: 'Mostrar fecha como'),
+              value: _prefs.dateFormatOption,
+              onChanged: (value) {
+                if (value != null) {
+                  setState(() {
+                    _prefs.dateFormatOption = value;
+                    _hasUnsavedChanges = true;
+                  });
+                }
+              },
+              items: const [
+                DropdownMenuItem(value: 'dd/MM/yyyy', child: Text('Día/Mes/Año')),
+                DropdownMenuItem(value: 'MM/yyyy', child: Text('Mes/Año')),
+                DropdownMenuItem(value: 'MMMM yyyy', child: Text('Mes escrito y Año')),
+              ],
+            ),
+
+            const SizedBox(height: 24),
             Row(
               children: [
                 Expanded(
@@ -290,6 +325,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                 ),
               ],
             ),
+
           ],
         ),
       ),

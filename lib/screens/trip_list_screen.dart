@@ -9,6 +9,8 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
+import 'dart:io';
+
 
 import '../models/trip.dart';
 import '../models/client.dart';
@@ -49,9 +51,11 @@ class _TripListScreenState extends State<TripListScreen> {
   }
 
   Future<InvoicePreferences> _getPreferences() async {
-    final box = await Hive.openBox<InvoicePreferences>('invoicePreferences');
+    final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
+    final box = await Hive.openBox<InvoicePreferences>(boxName);
     return box.get('prefs') ?? InvoicePreferences.defaultValues();
   }
+
 
   Future<void> exportTripsToJson(List<Trip> trips, String accountAlias) async {
     try {
@@ -445,8 +449,31 @@ class _TripListScreenState extends State<TripListScreen> {
                   accountType: prefs.accountType,
                   accountNumber: prefs.accountNumber,
                   showSignature: prefs.showSignature,
+                  dateFormatOption: prefs.dateFormatOption,
+                  showThankYouText: prefs.showThankYouText,
                 );
-                await Printing.layoutPdf(onLayout: (format) async => pdfData);
+
+                final now = DateTime.now();
+                final formattedDate = DateFormat('yyyy-MM-dd_HH-mm-ss').format(now);
+                final sanitizedClientName = widget.client.name.replaceAll(RegExp(r'[^\w\s-]'), '_');
+                final fileName = 'Factura_${sanitizedClientName}_$formattedDate.pdf';
+
+                final directory = await getApplicationDocumentsDirectory();
+                final filePath = '${directory.path}/$fileName';
+                final file = File(filePath);
+                await file.writeAsBytes(pdfData);
+
+                if (Platform.isAndroid) {
+                // Compartir en Android
+                  await Share.shareXFiles(
+                    [XFile(filePath)],
+                    text: 'Factura generada para ${widget.client.name}',
+                  );
+                } else if (Platform.isLinux || Platform.isWindows) {
+                  // Abrir archivo PDF directamente en Linux o Windows
+                  await Process.run('xdg-open', [filePath]); // Linux
+                  await Process.run('start', [filePath], runInShell: true); // Windows
+                }
               },
             ),
             SpeedDialChild(
