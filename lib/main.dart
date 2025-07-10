@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:path_provider/path_provider.dart';
 import 'models/trip.dart';
 import 'models/client.dart';
 import 'models/invoice_preferences.dart';
@@ -9,24 +11,27 @@ import 'package:intl/date_symbol_data_local.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Hive.initFlutter();
+
+  // Usar una ruta más limpia (ApplicationSupportDirectory) en lugar de Documentos
+  final appSupportDir = await getApplicationSupportDirectory();
+  await Hive.initFlutter(appSupportDir.path);
+
   await initializeDateFormatting('es_CO');
 
-  // Registra todos los adapters
+  // Registrar adaptadores
   Hive.registerAdapter(TripAdapter());
   Hive.registerAdapter(ClientAdapter());
-  Hive.registerAdapter(InvoicePreferencesAdapter()); // Asegúrate que tiene typeId: 2
+  Hive.registerAdapter(InvoicePreferencesAdapter());
   Hive.registerAdapter(AccountAdapter());
 
-
-
-  // Abre los boxes
+  // Abrir boxes
   await Hive.openBox<Client>('clients');
   await Hive.openBox<Trip>('trips');
   await Hive.openBox<InvoicePreferences>('invoicePreferences');
 
   runApp(const VolcoApp());
 }
+
 
 class VolcoApp extends StatelessWidget {
   const VolcoApp({super.key});

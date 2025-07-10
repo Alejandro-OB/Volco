@@ -9,7 +9,10 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io';
+import 'dart:io' show Platform, File;
+import 'package:path_provider/path_provider.dart';
+import 'package:downloads_path_provider_28/downloads_path_provider_28.dart';
+
 
 
 import '../models/trip.dart';
@@ -59,24 +62,41 @@ class _TripListScreenState extends State<TripListScreen> {
 
   Future<void> exportTripsToJson(List<Trip> trips, String accountAlias) async {
     try {
-      final directory = await getApplicationDocumentsDirectory();
       final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final fileName = 'viajes_${accountAlias.toUpperCase()}_$formattedDate.json';
-      final file = File('${directory.path}/$fileName');
 
+      late final String filePath;
+
+      if (Platform.isAndroid) {
+        final downloadsDir = await DownloadsPathProvider.downloadsDirectory;
+        if (downloadsDir == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('No se pudo acceder a la carpeta de Descargas')),
+          );
+          return;
+        }
+        filePath = '${downloadsDir.path}/$fileName';
+      } else {
+        final documentsDir = await getApplicationDocumentsDirectory();
+        filePath = '${documentsDir.path}/$fileName';
+      }
+
+      final file = File(filePath);
       final jsonData = trips.map((t) => t.toJson()).toList();
       await file.writeAsString(jsonEncode(jsonData));
 
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(' Exportado en: ${file.path}')),
+        SnackBar(content: Text('Exportado en: $filePath')),
       );
 
       await Share.shareXFiles([XFile(file.path)], text: 'Archivo de viajes exportado');
     } catch (e) {
-      debugPrint(' Error exportando: $e');
+      debugPrint('Error exportando: $e');
     }
   }
+
 
   Future<List<Trip>> importTripsFromJson() async {
     try {
@@ -436,6 +456,7 @@ class _TripListScreenState extends State<TripListScreen> {
               onTap: () async {
                 final trips = tripBox.values.toList();
                 final prefs = await _getPreferences();
+
                 final pdfData = await generateInvoicePdf(
                   trips: trips,
                   clientName: widget.client.name,
@@ -458,23 +479,37 @@ class _TripListScreenState extends State<TripListScreen> {
                 final sanitizedClientName = widget.client.name.replaceAll(RegExp(r'[^\w\s-]'), '_');
                 final fileName = 'Factura_${sanitizedClientName}_$formattedDate.pdf';
 
-                final directory = await getApplicationDocumentsDirectory();
-                final filePath = '${directory.path}/$fileName';
+                late final String filePath;
+
+                if (Platform.isAndroid) {
+                  final downloadsDir = await DownloadsPathProvider.downloadsDirectory;
+                  if (downloadsDir == null) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('No se pudo acceder a la carpeta de Descargas')),
+                    );
+                    return;
+                  }
+                  filePath = '${downloadsDir.path}/$fileName';
+                } else {
+                  final documentsDir = await getApplicationDocumentsDirectory();
+                  filePath = '${documentsDir.path}/$fileName';
+                }
+
                 final file = File(filePath);
                 await file.writeAsBytes(pdfData);
 
-                if (Platform.isAndroid) {
-                // Compartir en Android
-                  await Share.shareXFiles(
-                    [XFile(filePath)],
-                    text: 'Factura generada para ${widget.client.name}',
-                  );
-                } else if (Platform.isLinux || Platform.isWindows) {
-                  // Abrir archivo PDF directamente en Linux o Windows
-                  await Process.run('xdg-open', [filePath]); // Linux
-                  await Process.run('start', [filePath], runInShell: true); // Windows
-                }
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Factura guardada en: $filePath')),
+                );
+
+                await Share.shareXFiles(
+                  [XFile(file.path)],
+                  text: 'Factura generada para ${widget.client.name}',
+                );
               },
+
             ),
             SpeedDialChild(
               child: const Icon(Icons.settings, color: Colors.white),
