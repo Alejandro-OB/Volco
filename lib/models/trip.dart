@@ -1,4 +1,5 @@
 import 'package:hive/hive.dart';
+import 'package:uuid/uuid.dart';
 
 part 'trip.g.dart';
 
@@ -16,12 +17,16 @@ class Trip extends HiveObject {
   @HiveField(3)
   int unitValue;
 
+  @HiveField(4) // Nuevo campo
+  String id;
+
   Trip({
     required this.date,
     required this.material,
     required this.quantity,
     required this.unitValue,
-  });
+    String? id,
+  }) : id = id ?? const Uuid().v4(); // genera uno nuevo si no se pasa
 
   int get total => quantity * unitValue;
 
@@ -30,6 +35,7 @@ class Trip extends HiveObject {
         'material': material,
         'quantity': quantity,
         'unitValue': unitValue,
+        'id': id,
       };
 
   factory Trip.fromJson(Map<String, dynamic> json) => Trip(
@@ -37,5 +43,6 @@ class Trip extends HiveObject {
         material: json['material'],
         quantity: json['quantity'],
         unitValue: json['unitValue'],
+        id: json['id'], // puede venir null si es un archivo antiguo
       );
 }

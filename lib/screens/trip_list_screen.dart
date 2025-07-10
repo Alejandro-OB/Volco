@@ -314,19 +314,60 @@ class _TripListScreenState extends State<TripListScreen> {
               label: 'Importar viajes',
               labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
               onTap: () async {
-                final importedTrips = await importTripsFromJson();                
+                final importedTrips = await importTripsFromJson();
+                int added = 0;
+                int overwritten = 0;
+                int ignored = 0;
+
                 for (final trip in importedTrips) {
-                  debugPrint('Importando viaje: ${trip.material}, ${trip.date}, ${trip.quantity}, ${trip.unitValue}');
-                  await tripBox.add(trip);
-                }
-                debugPrint('Total de viajes en caja: ${tripBox.length}');
-                if (!mounted) return;
-                if (importedTrips.isNotEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('${importedTrips.length} viajes importados')),
+                  final existingKey = tripBox.keys.firstWhere(
+                    (key) => tripBox.get(key)?.id == trip.id,
+                    orElse: () => null,
                   );
+
+                  if (existingKey != null) {
+                    final shouldOverwrite = await showDialog<bool>(
+  context: context,
+  builder: (_) => AlertDialog(
+    title: const Text('¿Viaje duplicado?'),
+    content: const Text(
+      'Ya existe un viaje con el mismo identificador.\n¿Deseas sobrescribirlo con la nueva información?',
+    ),
+    actions: [
+      TextButton(
+        onPressed: () => Navigator.pop(context, false),
+        child: const Text('Ignorar'),
+      ),
+      TextButton(
+        onPressed: () => Navigator.pop(context, true),
+        child: const Text('Sobrescribir'),
+      ),
+    ],
+  ),
+);
+
+
+
+                    if (shouldOverwrite == true) {
+                      await tripBox.put(existingKey, trip);
+                      overwritten++;
+                    } else {
+                      ignored++;
+                    }
+                  } else {
+                    await tripBox.add(trip);
+                    added++;
+                  }
                 }
-              },
+
+                if (!mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Importación completada: $added añadidos, $overwritten sobrescritos, $ignored ignorados'),
+                  ),
+                );
+              }
+
             ),
             SpeedDialChild(
               child: const Icon(Icons.download, color: Colors.white),

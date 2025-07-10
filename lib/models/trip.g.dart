@@ -21,13 +21,14 @@ class TripAdapter extends TypeAdapter<Trip> {
       material: fields[1] as String,
       quantity: fields[2] as int,
       unitValue: fields[3] as int,
+      id: fields[4] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, Trip obj) {
     writer
-      ..writeByte(4)
+      ..writeByte(5)
       ..writeByte(0)
       ..write(obj.date)
       ..writeByte(1)
@@ -35,7 +36,9 @@ class TripAdapter extends TypeAdapter<Trip> {
       ..writeByte(2)
       ..write(obj.quantity)
       ..writeByte(3)
-      ..write(obj.unitValue);
+      ..write(obj.unitValue)
+      ..writeByte(4)
+      ..write(obj.id);
   }
 
   @override
