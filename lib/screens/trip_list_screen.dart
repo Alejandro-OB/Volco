@@ -7,9 +7,12 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 
 import '../models/trip.dart';
 import '../models/client.dart';
+import '../models/invoice_preferences.dart';
 import '../utils/pdf_generator.dart';
 import 'trip_form_screen.dart';
 import 'client_list_screen.dart';
+import 'invoice_customization_screen.dart';
+import 'package:pdf/pdf.dart';
 
 class TripListScreen extends StatefulWidget {
   final Client client;
@@ -35,6 +38,11 @@ class _TripListScreenState extends State<TripListScreen> {
     setState(() => isBoxReady = true);
   }
 
+  Future<InvoicePreferences> _getPreferences() async {
+    final box = await Hive.openBox<InvoicePreferences>('invoicePreferences');
+    return box.get('prefs') ?? InvoicePreferences.defaultValues();
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!isBoxReady) {
@@ -47,7 +55,6 @@ class _TripListScreenState extends State<TripListScreen> {
       backgroundColor: Colors.white,
       body: Column(
         children: [
-          // Encabezado naranja con flecha atrás
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -87,15 +94,13 @@ class _TripListScreenState extends State<TripListScreen> {
             ),
           ),
 
-          // Lista de viajes
           Expanded(
             child: ValueListenableBuilder(
               valueListenable: tripBox.listenable(),
               builder: (context, Box<Trip> box, _) {
                 final trips = box.values.toList().cast<Trip>();
                 if (trips.isEmpty) {
-                  return Center(
-                      child: Text('Aún no hay viajes.', style: GoogleFonts.poppins()));
+                  return Center(child: Text('Aún no hay viajes.', style: GoogleFonts.poppins()));
                 }
 
                 return ListView.builder(
@@ -156,9 +161,7 @@ class _TripListScreenState extends State<TripListScreen> {
                                       child: IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.redAccent),
                                         onPressed: () async {
-                                          // Obtener el ancho de la pantalla para hacer el diálogo responsive
                                           final screenWidth = MediaQuery.of(context).size.width;
-
                                           final confirm = await showDialog<bool>(
                                             context: context,
                                             builder: (_) => Dialog(
@@ -247,7 +250,6 @@ class _TripListScreenState extends State<TripListScreen> {
         ],
       ),
 
-      // Total en la parte inferior
       bottomNavigationBar: ValueListenableBuilder<Box<Trip>>(
         valueListenable: tripBox.listenable(),
         builder: (context, box, _) {
@@ -285,7 +287,6 @@ class _TripListScreenState extends State<TripListScreen> {
         },
       ),
 
-      // Botón flotante con SpeedDial
       floatingActionButton: Padding(
         padding: const EdgeInsets.only(right: 16, bottom: 80),
         child: SpeedDial(
@@ -304,12 +305,35 @@ class _TripListScreenState extends State<TripListScreen> {
               labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
               onTap: () async {
                 final trips = tripBox.values.toList().cast<Trip>();
+                
+                final prefs = await _getPreferences();
                 final pdfData = await generateInvoicePdf(
                   trips: trips,
                   clientName: widget.client.name,
                   date: DateTime.now(),
+                  customLogoBytes: prefs.logoBytes,
+                  customSignatureBytes: prefs.signatureBytes,
+                  tableHeaderColor: Color(prefs.tableColorValue).toPdfColor(),
+                  customServiceText: prefs.serviceText,
+                  showBankInfo: prefs.showBankInfo,
+                  bankName: prefs.bankName,
+                  accountType: prefs.accountType,
+                  accountNumber: prefs.accountNumber,
+                  showSignature: prefs.showSignature,
                 );
                 await Printing.layoutPdf(onLayout: (format) async => pdfData);
+              },
+            ),
+            SpeedDialChild(
+              child: const Icon(Icons.settings, color: Colors.white),
+              backgroundColor: Colors.grey.shade700,
+              label: 'Personalizar factura',
+              labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const InvoiceCustomizationScreen()),
+                );
               },
             ),
             SpeedDialChild(
@@ -329,4 +353,8 @@ class _TripListScreenState extends State<TripListScreen> {
       ),
     );
   }
+}
+
+extension on Color {
+  PdfColor toPdfColor() => PdfColor.fromInt(value);
 }
