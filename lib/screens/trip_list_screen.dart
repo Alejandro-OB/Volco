@@ -457,7 +457,11 @@ class _TripListScreenState extends State<TripListScreen> {
               onTap: () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (_) => const InvoiceCustomizationScreen()),
+                  MaterialPageRoute(builder: (_) => InvoiceCustomizationScreen(
+                    client: widget.client,
+                    account: widget.account,
+                    ),
+                  ),
                 );
               },
             ),

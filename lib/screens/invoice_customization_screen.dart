@@ -3,9 +3,18 @@ import 'package:hive/hive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../models/invoice_preferences.dart';
+import '../models/client.dart';
+import '../models/account.dart';
 
 class InvoiceCustomizationScreen extends StatefulWidget {
-  const InvoiceCustomizationScreen({super.key});
+  final Client client;
+  final Account account;
+
+  const InvoiceCustomizationScreen({
+    super.key,
+    required this.client,
+    required this.account,
+  });
 
   @override
   State<InvoiceCustomizationScreen> createState() => _InvoiceCustomizationScreenState();
