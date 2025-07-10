@@ -104,6 +104,69 @@ class _TripListScreenState extends State<TripListScreen> {
     return [];
   }
 
+  void _deleteTrip(dynamic tripKey) async {
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.redAccent),
+                const SizedBox(height: 12),
+                Text('¿Eliminar viaje?',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                Text('Esta acción no se puede deshacer.',
+                    style: GoogleFonts.poppins(fontSize: 14)),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text('Cancelar', style: GoogleFonts.poppins()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    if (confirm == true) {
+      await tripBox.delete(tripKey);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Viaje eliminado')),
+      );
+    }
+  }
+
+
   @override
   Widget build(BuildContext context) {
     if (!isBoxReady) {
@@ -229,35 +292,10 @@ class _TripListScreenState extends State<TripListScreen> {
                                       message: 'Eliminar',
                                       child: IconButton(
                                         icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                        onPressed: () async {
-                                          final confirm = await showDialog<bool>(
-                                            context: context,
-                                            builder: (_) => AlertDialog(
-                                              title: const Text('¿Eliminar viaje?'),
-                                              content: const Text('Esta acción no se puede deshacer.'),
-                                              actions: [
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context, false),
-                                                  child: const Text('Cancelar'),
-                                                ),
-                                                TextButton(
-                                                  onPressed: () => Navigator.pop(context, true),
-                                                  child: const Text('Eliminar'),
-                                                ),
-                                              ],
-                                            ),
-                                          );
-
-                                          if (confirm == true) {
-                                            await tripBox.delete(tripKey);
-                                            if (!mounted) return;
-                                            ScaffoldMessenger.of(context).showSnackBar(
-                                              const SnackBar(content: Text('Viaje eliminado')),
-                                            );
-                                          }
-                                        },
+                                        onPressed: () => _deleteTrip(tripKey),
                                       ),
                                     ),
+
                                   ],
                                 ),
                               ],

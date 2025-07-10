@@ -122,30 +122,68 @@ class _AccountListScreenState extends State<AccountListScreen> {
   }
 
   void _deleteAccount(int index) async {
+    final screenWidth = MediaQuery.of(context).size.width;
+
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => AlertDialog(
+      builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('¿Eliminar cuenta?', style: GoogleFonts.poppins(fontWeight: FontWeight.w600)),
-        content: Text('Esto eliminará la cuenta y sus viajes.', style: GoogleFonts.poppins()),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: const Text('Eliminar', style: TextStyle(color: Colors.white)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
           ),
-        ],
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.redAccent),
+                const SizedBox(height: 12),
+                Text('¿Eliminar cuenta?',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 12),
+                Text('Esto eliminará la cuenta y sus viajes.',
+                    style: GoogleFonts.poppins(fontSize: 14)),
+                const SizedBox(height: 20),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: Text('Cancelar', style: GoogleFonts.poppins()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.redAccent,
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () => Navigator.pop(context, true),
+                        child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        ),
       ),
     );
 
     if (confirm == true) {
       await _accountBox.deleteAt(index);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Cuenta eliminada')),
+      );
     }
   }
+
 
   void _editAccount(int index, Account account) async {
     final aliasController = TextEditingController(text: account.alias);
@@ -350,40 +388,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
                               message: 'Eliminar',
                               child: IconButton(
                                 icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                onPressed: () async {
-                                  final confirm = await showDialog<bool>(
-                                    context: context,
-                                    builder: (_) => AlertDialog(
-                                      title: const Text('¿Eliminar cuenta?'),
-                                      content: const Text('Esto eliminará la cuenta y sus viajes.'),
-                                      actions: [
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context, false),
-                                          child: const Text('Cancelar'),
-                                        ),
-                                        TextButton(
-                                          onPressed: () => Navigator.pop(context, true),
-                                          child: const Text('Eliminar'),
-                                        ),
-                                      ],
-                                    ),
-                                  );
-
-                                  if (confirm == true) {
-                                    await _accountBox.deleteAt(index);
-                                    if (!mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('Cuenta eliminada')),
-                                    );
-                                  }
-                                },
+                                onPressed: () => _deleteAccount(index), // <--- llamada al método refactorizado
                               ),
                             ),
                             const Icon(Icons.arrow_forward_ios, color: Colors.grey),
                           ],
                         ),
-
-
                         onTap: () {
                           Navigator.push(
                             context,
@@ -393,6 +403,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                           );
                         },
                       ),
+
                     );
                   },
                 );
