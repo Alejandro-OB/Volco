@@ -19,20 +19,17 @@ class ClientAdapter extends TypeAdapter<Client> {
     return Client(
       id: fields[0] as String?,
       name: fields[1] as String,
-      trips: (fields[2] as List).cast<Trip>(),
     );
   }
 
   @override
   void write(BinaryWriter writer, Client obj) {
     writer
-      ..writeByte(3)
+      ..writeByte(2)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.name)
-      ..writeByte(2)
-      ..write(obj.trips);
+      ..write(obj.name);
   }
 
   @override

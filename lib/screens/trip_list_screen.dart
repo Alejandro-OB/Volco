@@ -9,11 +9,8 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
-import 'dart:io' show Platform, File;
-import 'package:path_provider/path_provider.dart';
-import 'package:downloads_path_provider_28/downloads_path_provider_28.dart';
-
-
+import 'package:open_file/open_file.dart';
+import 'dart:typed_data';
 
 import '../models/trip.dart';
 import '../models/client.dart';
@@ -21,7 +18,6 @@ import '../models/account.dart';
 import '../models/invoice_preferences.dart';
 import '../utils/pdf_generator.dart';
 import 'trip_form_screen.dart';
-//import 'client_list_screen.dart';
 import 'invoice_customization_screen.dart';
 import 'package:pdf/pdf.dart';
 import 'account_list_screen.dart';
@@ -60,42 +56,39 @@ class _TripListScreenState extends State<TripListScreen> {
   }
 
 
-  Future<void> exportTripsToJson(List<Trip> trips, String accountAlias) async {
+  Future<void> exportTripsAsJsonFile(List<Trip> trips, String accountAlias) async {
     try {
       final formattedDate = DateFormat('yyyy-MM-dd').format(DateTime.now());
       final fileName = 'viajes_${accountAlias.toUpperCase()}_$formattedDate.json';
+      final jsonData = jsonEncode(trips.map((t) => t.toJson()).toList());
 
-      late final String filePath;
+      late String filePath;
 
       if (Platform.isAndroid) {
-        final downloadsDir = await DownloadsPathProvider.downloadsDirectory;
-        if (downloadsDir == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('No se pudo acceder a la carpeta de Descargas')),
-          );
-          return;
-        }
-        filePath = '${downloadsDir.path}/$fileName';
+        final tempDir = await getTemporaryDirectory();
+        filePath = '${tempDir.path}/$fileName';
       } else {
-        final documentsDir = await getApplicationDocumentsDirectory();
-        filePath = '${documentsDir.path}/$fileName';
+        final docDir = await getApplicationDocumentsDirectory();
+        filePath = '${docDir.path}/$fileName';
       }
 
       final file = File(filePath);
-      final jsonData = trips.map((t) => t.toJson()).toList();
-      await file.writeAsString(jsonEncode(jsonData));
+      await file.writeAsString(jsonData);
 
       if (!mounted) return;
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Exportado en: $filePath')),
-      );
-
-      await Share.shareXFiles([XFile(file.path)], text: 'Archivo de viajes exportado');
+      if (Platform.isAndroid) {
+        await Share.shareXFiles([XFile(file.path)], text: 'Archivo de viajes exportado');
+      } else {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('JSON guardado en: $filePath')),
+        );
+      }
     } catch (e) {
-      debugPrint('Error exportando: $e');
+      debugPrint('Error exportando JSON: $e');
     }
   }
+
 
 
   Future<List<Trip>> importTripsFromJson() async {
@@ -127,6 +120,57 @@ class _TripListScreenState extends State<TripListScreen> {
 
     return [];
   }
+
+  Future<void> handlePdfGeneration(Uint8List pdfData, String clientName) async {
+    final now = DateTime.now();
+    final formattedDate = DateFormat('yyyy-MM-dd_HH-mm-ss').format(now);
+    final sanitizedClientName = clientName.replaceAll(RegExp(r'[^\w\s-]'), '_');
+    final fileName = 'Factura_${sanitizedClientName}_$formattedDate.pdf';
+
+    if (Platform.isAndroid) {
+      final selected = await showDialog<String>(
+        context: context,
+        builder: (_) => SimpleDialog(
+          title: const Text('¿Qué deseas hacer con la factura?'),
+          children: [
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'preview'),
+              child: const Text('Previsualizar'),
+            ),
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, 'share'),
+              child: const Text('Compartir'),
+            ),
+          ],
+        ),
+      );
+
+      if (selected == null) return;
+
+      final tempDir = await getTemporaryDirectory();
+      final file = File('${tempDir.path}/$fileName');
+      await file.writeAsBytes(pdfData);
+
+      if (selected == 'preview') {
+        await Printing.layoutPdf(onLayout: (_) => pdfData);
+      } else if (selected == 'share') {
+        await Share.shareXFiles([XFile(file.path)], text: 'Factura generada');
+      }
+    } else {
+      final docDir = await getApplicationDocumentsDirectory();
+      final file = File('${docDir.path}/$fileName');
+      await file.writeAsBytes(pdfData);
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Factura guardada en: ${file.path}')),
+      );
+
+      await OpenFile.open(file.path);
+    }
+  }
+
 
   void _deleteTrip(dynamic tripKey) async {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -445,7 +489,7 @@ class _TripListScreenState extends State<TripListScreen> {
               labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
               onTap: () async {
                 final trips = tripBox.values.toList();
-                await exportTripsToJson(trips, widget.account.alias);
+                await exportTripsAsJsonFile(trips, widget.account.alias);
               },
             ),
             SpeedDialChild(
@@ -474,40 +518,7 @@ class _TripListScreenState extends State<TripListScreen> {
                   showThankYouText: prefs.showThankYouText,
                 );
 
-                final now = DateTime.now();
-                final formattedDate = DateFormat('yyyy-MM-dd_HH-mm-ss').format(now);
-                final sanitizedClientName = widget.client.name.replaceAll(RegExp(r'[^\w\s-]'), '_');
-                final fileName = 'Factura_${sanitizedClientName}_$formattedDate.pdf';
-
-                late final String filePath;
-
-                if (Platform.isAndroid) {
-                  final downloadsDir = await DownloadsPathProvider.downloadsDirectory;
-                  if (downloadsDir == null) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No se pudo acceder a la carpeta de Descargas')),
-                    );
-                    return;
-                  }
-                  filePath = '${downloadsDir.path}/$fileName';
-                } else {
-                  final documentsDir = await getApplicationDocumentsDirectory();
-                  filePath = '${documentsDir.path}/$fileName';
-                }
-
-                final file = File(filePath);
-                await file.writeAsBytes(pdfData);
-
-                if (!mounted) return;
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Factura guardada en: $filePath')),
-                );
-
-                await Share.shareXFiles(
-                  [XFile(file.path)],
-                  text: 'Factura generada para ${widget.client.name}',
-                );
+                await handlePdfGeneration(pdfData, widget.client.name);
               },
 
             ),
