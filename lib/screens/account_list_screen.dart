@@ -195,93 +195,93 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
 
   void _editAccount(int index, Account account) async {
-  final aliasController = TextEditingController(text: account.alias);
-  final descController = TextEditingController(text: account.description);
+    final aliasController = TextEditingController(text: account.alias);
+    final descController = TextEditingController(text: account.description);
 
-  final screenWidth = MediaQuery.of(context).size.width;
+    final screenWidth = MediaQuery.of(context).size.width;
 
-  await showDialog(
-    context: context,
-    builder: (_) => Dialog(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text('Editar Cuenta', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: aliasController,
-                decoration: InputDecoration(
-                  hintText: 'Alias de la cuenta',
-                  hintStyle: GoogleFonts.poppins(),
-                  filled: true,
-                  fillColor: const Color(0xFFF6F6F6),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                decoration: InputDecoration(
-                  hintText: 'Descripción (opcional)',
-                  hintStyle: GoogleFonts.poppins(),
-                  filled: true,
-                  fillColor: const Color(0xFFF6F6F6),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Expanded(
-                    child: TextButton(
-                      onPressed: () => Navigator.pop(context),
-                      child: Text('Cancelar', style: GoogleFonts.poppins()),
+    await showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text('Editar Cuenta', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                TextField(
+                  controller: aliasController,
+                  decoration: InputDecoration(
+                    hintText: 'Alias de la cuenta',
+                    hintStyle: GoogleFonts.poppins(),
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
                     ),
                   ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFF18824),
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descController,
+                  decoration: InputDecoration(
+                    hintText: 'Descripción (opcional)',
+                    hintStyle: GoogleFonts.poppins(),
+                    filled: true,
+                    fillColor: const Color(0xFFF6F6F6),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancelar', style: GoogleFonts.poppins()),
                       ),
-                      onPressed: () async {
-                        final alias = aliasController.text.trim();
-                        final desc = descController.text.trim();
-
-                        if (alias.isNotEmpty) {
-                          account.alias = alias;
-                          account.description = desc;
-                          await account.save(); // ✅ Guarda sin cambiar el ID
-                          if (mounted) Navigator.pop(context);
-                        }
-                      },
-                      child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
                     ),
-                  ),
-                ],
-              )
-            ],
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF18824),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () async {
+                          final alias = aliasController.text.trim();
+                          final desc = descController.text.trim();
+
+                          if (alias.isNotEmpty) {
+                            account.alias = alias;
+                            account.description = desc;
+                            await account.save(); // ✅ Guarda sin cambiar el ID
+                            if (mounted) Navigator.pop(context);
+                          }
+                        },
+                        child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
+                      ),
+                    ),
+                  ],
+                )
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
 
 
