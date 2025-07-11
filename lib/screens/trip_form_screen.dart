@@ -165,11 +165,12 @@ class _TripFormScreenState extends State<TripFormScreen> {
   Widget build(BuildContext context) {
     final isEditing = widget.trip != null;
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
+    return SafeArea(
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SingleChildScrollView(
+          child: Column(
+            children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -340,6 +341,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 

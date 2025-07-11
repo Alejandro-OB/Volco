@@ -148,166 +148,212 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     return WillPopScope(
       onWillPop: _onWillPop,
       child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Personalización de factura'),
-          centerTitle: true,
-        ),
-        body: _loading
-            ? const Center(child: CircularProgressIndicator())
-            : SingleChildScrollView(
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+        backgroundColor: Colors.white,
+        body: Column(
+          children: [
+            SafeArea(
+              top: true,
+              bottom: false,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                decoration: const BoxDecoration(
+                  color: Color(0xFFF18824),
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
+                  ),
+                ),
+                child: Row(
                   children: [
-
-                    _buildSection(
-                      title: 'Imágenes',
-                      child: Column(
-                        children: [
-                          Row(
-                            children: [
-                              Expanded(
-                                child: _buildImageUploadButton('Subir logo', Icons.upload, () => _pickImage(isLogo: true)),
-                              ),
-                              const SizedBox(width: 12),
-                              Expanded(
-                                child: _buildImageUploadButton('Subir firma', Icons.upload, () => _pickImage(isLogo: false)),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 12),
-                          Row(
-                            children: [
-                              if (_prefs.logoBytes != null)
-                                _buildImagePreview('Logo', _prefs.logoBytes!, () => _deleteImage(isLogo: true)),
-                              if (_prefs.signatureBytes != null)
-                                _buildImagePreview('Firma', _prefs.signatureBytes!, () => _deleteImage(isLogo: false)),
-                            ],
-                          ),
-                        ],
-                      ),
+                    IconButton(
+                      icon: const Icon(Icons.arrow_back, color: Colors.white),
+                      onPressed: () => Navigator.pop(context),
                     ),
-
-                    _buildSection(
-                      title: 'Apariencia',
-                      child: Column(
-                        children: [
-                          ElevatedButton(
-                            onPressed: _pickColor,
-                            child: const Text('Seleccionar color de tabla'),
-                          ),
-                          const SizedBox(height: 12),
-                          _buildTextField('Texto del servicio', _serviceTextController, (v) => _prefs.serviceText = v),
-                        ],
-                      ),
-                    ),
-
-                    _buildSection(
-                      title: 'Información bancaria',
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            title: const Text('¿Incluir información bancaria?'),
-                            value: _prefs.showBankInfo,
-                            onChanged: (value) => setState(() {
-                              _prefs.showBankInfo = value;
-                              _hasUnsavedChanges = true;
-                            }),
-                          ),
-                          if (_prefs.showBankInfo) ...[
-                            const SizedBox(height: 12),
-                            _buildTextField('Banco *', _bankNameController, (v) => _prefs.bankName = v),
-                            const SizedBox(height: 12),
-                            _buildTextField('Tipo de cuenta *', _accountTypeController, (v) => _prefs.accountType = v),
-                            const SizedBox(height: 12),
-                            _buildTextField('Número de cuenta *', _accountNumberController, (v) => _prefs.accountNumber = v),
-                          ],
-                        ],
-                      ),
-                    ),
-
-                    _buildSection(
-                      title: 'Opciones adicionales',
-                      child: Column(
-                        children: [
-                          SwitchListTile(
-                            title: const Text('¿Incluir firma en el PDF?'),
-                            value: _prefs.showSignature,
-                            onChanged: (value) => setState(() {
-                              _prefs.showSignature = value;
-                              _hasUnsavedChanges = true;
-                            }),
-                          ),
-                          const SizedBox(height: 12),
-                          SwitchListTile(
-                            title: const Text('¿Incluir texto de agradecimiento?'),
-                            value: _prefs.showThankYouText,
-                            onChanged: (value) => setState(() {
-                              _prefs.showThankYouText = value;
-                              _hasUnsavedChanges = true;
-                            }),
-                          ),
-                          const SizedBox(height: 12),
-                          DropdownButtonFormField<String>(
-                            decoration: const InputDecoration(
-                              labelText: 'Formato de fecha',
-                              border: OutlineInputBorder(),
-                              contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                            ),
-                            value: _prefs.dateFormatOption,
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() {
-                                  _prefs.dateFormatOption = value;
-                                  _hasUnsavedChanges = true;
-                                });
-                              }
-                            },
-                            items: const [
-                              DropdownMenuItem(value: 'dd/MM/yyyy', child: Text('Día/Mes/Año')),
-                              DropdownMenuItem(value: 'MM/yyyy', child: Text('Mes/Año')),
-                              DropdownMenuItem(value: 'MMMM yyyy', child: Text('Mes escrito y Año')),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: ElevatedButton.icon(
-                            onPressed: _savePreferences,
-                            icon: const Icon(Icons.check),
-                            label: const Text('Guardar'),
-                            style: ElevatedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                            ),
-                          ),
+                    Image.asset('assets/imgs/logo_volco.png', height: 60),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Personalización de factura',
+                        style: TextStyle(
+                          fontSize: 20,
+                          color: Colors.white,
+                          fontWeight: FontWeight.w600,
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            onPressed: _resetDefaults,
-                            icon: const Icon(Icons.restart_alt),
-                            label: const Text('Restablecer'),
-                            style: OutlinedButton.styleFrom(
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              side: const BorderSide(color: Colors.grey),
-                            ),
-                          ),
-                        ),
-                      ],
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
               ),
+            ),
+            Expanded(
+              child: _loading
+                  ? const Center(child: CircularProgressIndicator())
+                  : SingleChildScrollView(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          _buildSection(
+                            title: 'Imágenes',
+                            child: Column(
+                              children: [
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: _buildImageUploadButton(
+                                          'Subir logo', Icons.upload, () => _pickImage(isLogo: true)),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: _buildImageUploadButton(
+                                          'Subir firma', Icons.upload, () => _pickImage(isLogo: false)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                Row(
+                                  children: [
+                                    if (_prefs.logoBytes != null)
+                                      _buildImagePreview('Logo', _prefs.logoBytes!, () => _deleteImage(isLogo: true)),
+                                    if (_prefs.signatureBytes != null)
+                                      _buildImagePreview('Firma', _prefs.signatureBytes!, () => _deleteImage(isLogo: false)),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          _buildSection(
+                            title: 'Apariencia',
+                            child: Column(
+                              children: [
+                                ElevatedButton(
+                                  onPressed: _pickColor,
+                                  child: const Text('Seleccionar color de tabla'),
+                                ),
+                                const SizedBox(height: 12),
+                                _buildTextField('Texto del servicio', _serviceTextController,
+                                    (v) => _prefs.serviceText = v),
+                              ],
+                            ),
+                          ),
+                          _buildSection(
+                            title: 'Información bancaria',
+                            child: Column(
+                              children: [
+                                SwitchListTile(
+                                  title: const Text('¿Incluir información bancaria?'),
+                                  value: _prefs.showBankInfo,
+                                  onChanged: (value) => setState(() {
+                                    _prefs.showBankInfo = value;
+                                    _hasUnsavedChanges = true;
+                                  }),
+                                ),
+                                if (_prefs.showBankInfo) ...[
+                                  const SizedBox(height: 12),
+                                  _buildTextField('Banco *', _bankNameController, (v) => _prefs.bankName = v),
+                                  const SizedBox(height: 12),
+                                  _buildTextField('Tipo de cuenta *', _accountTypeController,
+                                      (v) => _prefs.accountType = v),
+                                  const SizedBox(height: 12),
+                                  _buildTextField(
+                                      'Número de cuenta *', _accountNumberController, (v) => _prefs.accountNumber = v),
+                                ],
+                              ],
+                            ),
+                          ),
+                          _buildSection(
+                            title: 'Opciones adicionales',
+                            child: Column(
+                              children: [
+                                SwitchListTile(
+                                  title: const Text('¿Incluir firma en el PDF?'),
+                                  value: _prefs.showSignature,
+                                  onChanged: (value) => setState(() {
+                                    _prefs.showSignature = value;
+                                    _hasUnsavedChanges = true;
+                                  }),
+                                ),
+                                const SizedBox(height: 12),
+                                SwitchListTile(
+                                  title: const Text('¿Incluir texto de agradecimiento?'),
+                                  value: _prefs.showThankYouText,
+                                  onChanged: (value) => setState(() {
+                                    _prefs.showThankYouText = value;
+                                    _hasUnsavedChanges = true;
+                                  }),
+                                ),
+                                const SizedBox(height: 12),
+                                DropdownButtonFormField<String>(
+                                  decoration: const InputDecoration(
+                                    labelText: 'Formato de fecha',
+                                    border: OutlineInputBorder(),
+                                    contentPadding:
+                                        EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                  ),
+                                  value: _prefs.dateFormatOption,
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        _prefs.dateFormatOption = value;
+                                        _hasUnsavedChanges = true;
+                                      });
+                                    }
+                                  },
+                                  items: const [
+                                    DropdownMenuItem(
+                                        value: 'dd/MM/yyyy', child: Text('Día/Mes/Año')),
+                                    DropdownMenuItem(value: 'MM/yyyy', child: Text('Mes/Año')),
+                                    DropdownMenuItem(
+                                        value: 'MMMM yyyy', child: Text('Mes escrito y Año')),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 24),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: _savePreferences,
+                                  icon: const Icon(Icons.check),
+                                  label: const Text('Guardar'),
+                                  style: ElevatedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: OutlinedButton.icon(
+                                  onPressed: _resetDefaults,
+                                  icon: const Icon(Icons.restart_alt),
+                                  label: const Text('Restablecer'),
+                                  style: OutlinedButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10)),
+                                    side: const BorderSide(color: Colors.grey),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+            ),
+          ],
+        ),
       ),
     );
   }
+
+
 
   Widget _buildSection({required String title, required Widget child}) {
     return Card(

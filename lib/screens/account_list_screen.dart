@@ -295,133 +295,133 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF18824),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
+      body: SafeArea( // ✅ Agregado aquí
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF18824),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () async {
+                      final boxName = 'accounts_${widget.client.id}';
+
+                      if (Hive.isBoxOpen(boxName)) {
+                        await Hive.box<Account>(boxName).close();
+                      }
+
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ClientListScreen()),
+                          (route) => false,
+                        );
+                      }
+                    },
+                  ),
+                  Image.asset('assets/imgs/logo_volco.png', height: 60),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.client.name,
+                          style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 4),
+                      Text('Cuentas',
+                          style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () async {
-                    final boxName = 'accounts_${widget.client.id}';
 
-                    if (Hive.isBoxOpen(boxName)) {
-                      await Hive.box<Account>(boxName).close();
-                    }
+            Expanded(
+              child: ValueListenableBuilder(
+                valueListenable: _accountBox.listenable(),
+                builder: (context, Box<Account> box, _) {
+                  final accounts = box.values.toList();
 
-                    if (context.mounted) {
-                      Navigator.pushAndRemoveUntil(
-                        context,
-                        MaterialPageRoute(builder: (_) => const ClientListScreen()),
-                        (route) => false,
-                      );
-                    }
+                  if (accounts.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'No hay cuentas registradas.\nPulsa el botón "+" para agregar una.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ),
+                    );
                   }
 
-                ),
-                Image.asset('assets/imgs/logo_volco.png', height: 60),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.client.name,
-                        style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500)),
-                    const SizedBox(height: 4),
-                    Text('Cuentas',
-                        style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                  return ListView.builder(
+                    itemCount: accounts.length,
+                    itemBuilder: (context, index) {
+                      final account = accounts[index];
 
-          Expanded(
-            child: ValueListenableBuilder(
-              valueListenable: _accountBox.listenable(),
-              builder: (context, Box<Account> box, _) {
-                final accounts = box.values.toList();
-
-                if (accounts.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'No hay cuentas registradas.\nPulsa el botón "+" para agregar una.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: accounts.length,
-                  itemBuilder: (context, index) {
-                    final account = accounts[index];
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 2,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        title: Text(account.alias,
-                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
-                        subtitle: account.description.isNotEmpty
-                            ? Text(account.description, style: GoogleFonts.poppins(fontSize: 14))
-                            : null,
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Tooltip(
-                              message: 'Editar',
-                              child: IconButton(
-                                icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                                onPressed: () => _editAccount(index, account),
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 2,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          title: Text(account.alias,
+                              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
+                          subtitle: account.description.isNotEmpty
+                              ? Text(account.description, style: GoogleFonts.poppins(fontSize: 14))
+                              : null,
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Tooltip(
+                                message: 'Editar',
+                                child: IconButton(
+                                  icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                                  onPressed: () => _editAccount(index, account),
+                                ),
                               ),
-                            ),
-                            Tooltip(
-                              message: 'Eliminar',
-                              child: IconButton(
-                                icon: const Icon(Icons.delete, color: Colors.redAccent),
-                                onPressed: () => _deleteAccount(index), // <--- llamada al método refactorizado
+                              Tooltip(
+                                message: 'Eliminar',
+                                child: IconButton(
+                                  icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                  onPressed: () => _deleteAccount(index),
+                                ),
                               ),
-                            ),
-                            const Icon(Icons.arrow_forward_ios, color: Colors.grey),
-                          ],
+                              const Icon(Icons.arrow_forward_ios, color: Colors.grey),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => TripListScreen(client: widget.client, account: account),
+                              ),
+                            );
+                          },
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TripListScreen(client: widget.client, account: account),
-                            ),
-                          );
-                        },
-                      ),
-
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addAccount,
@@ -430,4 +430,5 @@ class _AccountListScreenState extends State<AccountListScreen> {
       ),
     );
   }
+
 }

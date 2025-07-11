@@ -242,8 +242,9 @@ class _TripListScreenState extends State<TripListScreen> {
     }
 
     return Scaffold(
-      backgroundColor: Colors.white,
-      body: Column(
+    backgroundColor: Colors.white,
+    body: SafeArea( // ✅ Previene que se corte el encabezado
+      child: Column(
         children: [
           Container(
             width: double.infinity,
@@ -268,7 +269,6 @@ class _TripListScreenState extends State<TripListScreen> {
                       ),
                     );
                   },
-
                 ),
                 Image.asset('assets/imgs/logo_volco.png', height: 60),
                 const SizedBox(width: 12),
@@ -290,6 +290,7 @@ class _TripListScreenState extends State<TripListScreen> {
               ],
             ),
           ),
+
           Expanded(
             child: ValueListenableBuilder<Box<Trip>>(
               valueListenable: tripBox.listenable(),
@@ -363,7 +364,6 @@ class _TripListScreenState extends State<TripListScreen> {
                                         onPressed: () => _deleteTrip(tripKey),
                                       ),
                                     ),
-
                                   ],
                                 ),
                               ],
@@ -379,6 +379,7 @@ class _TripListScreenState extends State<TripListScreen> {
           ),
         ],
       ),
+    ),
       bottomNavigationBar: ValueListenableBuilder<Box<Trip>>(
         valueListenable: tripBox.listenable(),
         builder: (context, box, _) {
