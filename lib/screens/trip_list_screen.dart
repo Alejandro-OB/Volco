@@ -21,13 +21,15 @@ import 'trip_form_screen.dart';
 import 'invoice_customization_screen.dart';
 import 'package:pdf/pdf.dart';
 import 'account_list_screen.dart';
+import '../models/provider.dart';
 
 
 class TripListScreen extends StatefulWidget {
   final Client client;
   final Account account;
+  final Provider provider;
 
-  const TripListScreen({super.key, required this.client, required this.account});
+  const TripListScreen({super.key, required this.client, required this.account, required this.provider});
 
   @override
   State<TripListScreen> createState() => _TripListScreenState();
@@ -265,7 +267,7 @@ class _TripListScreenState extends State<TripListScreen> {
                     Navigator.pushReplacement(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => AccountListScreen(client: widget.client),
+                        builder: (_) => AccountListScreen(client: widget.client, provider: widget.provider),
                       ),
                     );
                   },
@@ -351,6 +353,7 @@ class _TripListScreenState extends State<TripListScreen> {
                                                 account: widget.account,
                                                 trip: trip,
                                                 tripKey: tripKey,
+                                                provider: widget.provider,
                                               ),
                                             ),
                                           );
@@ -548,7 +551,9 @@ class _TripListScreenState extends State<TripListScreen> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => TripFormScreen(client: widget.client, account: widget.account),
+                    builder: (_) => TripFormScreen(client: widget.client,
+                    account: widget.account,
+                    provider: widget.provider,),
                   ),
                 );
               },

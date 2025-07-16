@@ -6,12 +6,14 @@ import '../models/trip.dart';
 import '../models/client.dart';
 import '../models/account.dart';
 import 'trip_list_screen.dart';
+import '../models/provider.dart';
 
 class TripFormScreen extends StatefulWidget {
   final Client client;
   final Account account;
   final Trip? trip;
   final dynamic tripKey;
+  final Provider provider;
 
   const TripFormScreen({
     super.key,
@@ -19,6 +21,7 @@ class TripFormScreen extends StatefulWidget {
     required this.account,
     this.trip,
     this.tripKey,
+    required this.provider,
   });
 
   @override
@@ -192,6 +195,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
                           builder: (_) => TripListScreen(
                             client: widget.client,
                             account: widget.account,
+                            provider: widget.provider,
                           ),
                         ),
                       );
@@ -326,6 +330,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
                               builder: (_) => TripListScreen(
                                 client: widget.client,
                                 account: widget.account,
+                                provider: widget.provider,
                               ),
                             ),
                           );

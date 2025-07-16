@@ -5,10 +5,14 @@ import '../models/client.dart';
 import 'account_list_screen.dart';
 import 'dart:io';
 import 'package:path_provider/path_provider.dart';
+import '../models/provider.dart';
+import 'provider_list_screen.dart';
 
 
 class ClientListScreen extends StatefulWidget {
-  const ClientListScreen({super.key});
+  final Provider provider;
+
+  const ClientListScreen({super.key, required this.provider});  
 
   @override
   State<ClientListScreen> createState() => _ClientListScreenState();
@@ -70,7 +74,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                           final name = controller.text.trim();
                           if (name.isNotEmpty) {
                             Navigator.pop(context);
-                            final newClient = Client(name: name);
+                            final newClient = Client(name: name, providerId: widget.provider.id);
                             await clientBox.add(newClient);
                           }
                         },
@@ -232,95 +236,118 @@ class _ClientListScreenState extends State<ClientListScreen> {
   }
 
 
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF18824),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
+      body: SafeArea(
+        child: Column(
+          children: [
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+              decoration: const BoxDecoration(
+                color: Color(0xFFF18824),
+                borderRadius: BorderRadius.only(
+                  bottomLeft: Radius.circular(24),
+                  bottomRight: Radius.circular(24),
+                ),
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Colors.white),
+                    onPressed: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProviderListScreen()),
+                        (route) => false,
+                      );
+                    },
+                  ),
+                  Image.asset('assets/imgs/logo_volco.png', height: 60),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(widget.provider.name,
+                          style: GoogleFonts.poppins(
+                              fontSize: 16,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w500)),
+                      const SizedBox(height: 4),
+                      Text('Clientes',
+                          style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700)),
+                    ],
+                  ),
+                ],
               ),
             ),
-            child: Column(
-              children: [
-                Center(child: Image.asset('assets/imgs/logo_volco.png', height: 100)),
-                const SizedBox(height: 12),
-                Text('Clientes',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    )),
-              ],
-            ),
-          ),
-          Expanded(
-            child: ValueListenableBuilder(
-              valueListenable: clientBox.listenable(),
-              builder: (context, Box<Client> box, _) {
-                final clients = box.values.toList();
+            Expanded(
+              child: ValueListenableBuilder(
+                valueListenable: clientBox.listenable(),
+                builder: (context, Box<Client> box, _) {
+                  final clients = box.values.where((c) => c.providerId == widget.provider.id).toList();
 
-                if (clients.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'No hay clientes registrados.\nPulsa el botón "+" para agregar uno.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: clients.length,
-                  itemBuilder: (context, index) {
-                    final client = clients[index];
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 2,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        title: Text(client.name,
-                            style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                              onPressed: () => _editClient(client, index),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.redAccent),
-                              onPressed: () => _deleteClient(client, index),
-                            ),
-                            Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400),
-                          ],
+                  if (clients.isEmpty) {
+                    return const Center(
+                      child: Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text(
+                          'No hay clientes registrados.\nPulsa el botón "+" para agregar uno.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
                         ),
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(builder: (_) => AccountListScreen(client: client)),
-                          );
-                        },
                       ),
                     );
-                  },
-                );
-              },
+                  }
+
+                  return ListView.builder(
+                    itemCount: clients.length,
+                    itemBuilder: (context, index) {
+                      final client = clients[index];
+
+                      return Card(
+                        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                        elevation: 2,
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                          title: Text(client.name,
+                              style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                                onPressed: () => _editClient(client, index),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.redAccent),
+                                onPressed: () => _deleteClient(client, index),
+                              ),
+                              Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400),
+                            ],
+                          ),
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (_) => AccountListScreen(client: client, provider: widget.provider)),
+                            );
+                          },
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _addClient,
@@ -329,4 +356,5 @@ class _ClientListScreenState extends State<ClientListScreen> {
       ),
     );
   }
+
 }

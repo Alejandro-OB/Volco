@@ -5,11 +5,13 @@ import '../models/account.dart';
 import '../models/client.dart';
 import 'trip_list_screen.dart';
 import 'client_list_screen.dart';
+import '../models/provider.dart';
 
 class AccountListScreen extends StatefulWidget {
   final Client client;
+  final Provider provider;
 
-  const AccountListScreen({super.key, required this.client});
+  const AccountListScreen({super.key, required this.client, required this.provider});
 
   @override
   State<AccountListScreen> createState() => _AccountListScreenState();
@@ -322,7 +324,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                       if (context.mounted) {
                         Navigator.pushAndRemoveUntil(
                           context,
-                          MaterialPageRoute(builder: (_) => const ClientListScreen()),
+                          MaterialPageRoute(builder: (_) => ClientListScreen(provider: widget.provider)),
                           (route) => false,
                         );
                       }
@@ -409,7 +411,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => TripListScreen(client: widget.client, account: account),
+                                builder: (_) => TripListScreen(client: widget.client, account: account, provider: widget.provider ),
                               ),
                             );
                           },

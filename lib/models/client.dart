@@ -11,8 +11,13 @@ class Client extends HiveObject {
   @HiveField(1)
   String name;
 
+  @HiveField(2)
+  String providerId;
+
+
   Client({
     String? id,
     required this.name,
+    required this.providerId,
   }) : id = id ?? const Uuid().v4();
 }
