@@ -7,6 +7,7 @@ import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import '../models/provider.dart';
 import 'provider_list_screen.dart';
+import '../utils/widgets/confirm_delete_dialog.dart';
 
 
 class ClientListScreen extends StatefulWidget {
@@ -166,53 +167,16 @@ class _ClientListScreenState extends State<ClientListScreen> {
   }
 
   void _deleteClient(Client client, int index) async {
-    final screenWidth = MediaQuery.of(context).size.width;
 
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('¿Eliminar cliente?', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Text('También se eliminarán todos sus viajes.', style: GoogleFonts.poppins(fontSize: 14)),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('Cancelar', style: GoogleFonts.poppins()),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => ConfirmDeleteDialog(
+        title: '¿Eliminar cliente?',
+        message: 'Esto eliminará el cliente y sus viajes.',
+        onConfirm: () {}, 
       ),
     );
+
 
     if (confirm == true) {
       try {

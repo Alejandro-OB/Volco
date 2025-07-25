@@ -6,6 +6,8 @@ import '../models/client.dart';
 import 'trip_list_screen.dart';
 import 'client_list_screen.dart';
 import '../models/provider.dart';
+import '../utils/widgets/volco_header.dart';
+import '../utils/widgets/confirm_delete_dialog.dart';
 
 class AccountListScreen extends StatefulWidget {
   final Client client;
@@ -124,56 +126,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
   }
 
   void _deleteAccount(int index) async {
-    final screenWidth = MediaQuery.of(context).size.width;
-
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.redAccent),
-                const SizedBox(height: 12),
-                Text('¿Eliminar cuenta?',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Text('Esto eliminará la cuenta y sus viajes.',
-                    style: GoogleFonts.poppins(fontSize: 14)),
-                const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('Cancelar', style: GoogleFonts.poppins()),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => ConfirmDeleteDialog(
+        title: '¿Eliminar cuenta?',
+        message: 'Esto eliminará la cuenta y sus viajes.',
+        onConfirm: () {},
       ),
     );
 
@@ -268,7 +226,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                           if (alias.isNotEmpty) {
                             account.alias = alias;
                             account.description = desc;
-                            await account.save(); // ✅ Guarda sin cambiar el ID
+                            await account.save(); 
                             if (mounted) Navigator.pop(context);
                           }
                         },
@@ -297,61 +255,24 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SafeArea( // ✅ Agregado aquí
+      body: SafeArea( 
         child: Column(
           children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-              decoration: const BoxDecoration(
-                color: Color(0xFFF18824),
-                borderRadius: BorderRadius.only(
-                  bottomLeft: Radius.circular(24),
-                  bottomRight: Radius.circular(24),
-                ),
-              ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () async {
-                      final boxName = 'accounts_${widget.client.id}';
-
-                      if (Hive.isBoxOpen(boxName)) {
-                        await Hive.box<Account>(boxName).close();
-                      }
-
-                      if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(builder: (_) => ClientListScreen(provider: widget.provider)),
-                          (route) => false,
-                        );
-                      }
-                    },
-                  ),
-                  Image.asset('assets/imgs/logo_volco.png', height: 60),
-                  const SizedBox(width: 12),
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(widget.client.name,
-                          style: GoogleFonts.poppins(
-                              fontSize: 16,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w500)),
-                      const SizedBox(height: 4),
-                      Text('Cuentas',
-                          style: GoogleFonts.poppins(
-                              fontSize: 20,
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700)),
-                    ],
-                  ),
-                ],
-              ),
+            VolcoHeader(
+              title: widget.client.name,
+              subtitle: 'Cuentas',
+              onBack: () async {
+                final boxName = 'accounts_${widget.client.id}';
+                if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const ClientListScreen()),
+                    (route) => false,
+                  );
+                }
+              },
             ),
-
             Expanded(
               child: ValueListenableBuilder(
                 valueListenable: _accountBox.listenable(),
