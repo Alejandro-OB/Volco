@@ -3,7 +3,7 @@ import 'package:uuid/uuid.dart';
 
 part 'account.g.dart';
 
-@HiveType(typeId: 3) // Asegúrate de que sea único en tu app
+@HiveType(typeId: 3)
 class Account extends HiveObject {
   @HiveField(0)
   String id;
@@ -28,4 +28,26 @@ class Account extends HiveObject {
     String? id,
   })  : id = id ?? const Uuid().v4(),
         createdAt = createdAt ?? DateTime.now();
+
+  /// ✅ Método para convertir desde Supabase (fromJson)
+  factory Account.fromJson(Map<String, dynamic> json) {
+    return Account(
+      id: json['id'] as String,
+      alias: json['alias'] as String,
+      description: json['description'] ?? '',
+      createdAt: DateTime.parse(json['created_at']),
+      isActive: json['is_active'] ?? true,
+    );
+  }
+
+  /// ✅ Método para enviar a Supabase (toJson)
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'alias': alias,
+      'description': description,
+      'created_at': createdAt.toIso8601String(),
+      'is_active': isActive,
+    };
+  }
 }

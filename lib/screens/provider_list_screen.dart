@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import '../models/provider.dart';
-import 'client_list_screen.dart'; 
-import '../models/client.dart';
-import '../models/account.dart';
+
+import '../models/provider.dart' as provider_model;
+import 'client_list_screen.dart';
+import '../widgets/confirm_delete_dialog.dart';
 
 class ProviderListScreen extends StatefulWidget {
   const ProviderListScreen({super.key});
@@ -15,225 +16,28 @@ class ProviderListScreen extends StatefulWidget {
 }
 
 class _ProviderListScreenState extends State<ProviderListScreen> {
-  final Box<Provider> providerBox = Hive.box<Provider>('providers');
+  final Box<provider_model.Provider> providerBox = Hive.box<provider_model.Provider>('providers');
   final uuid = Uuid();
-  void _showMissingNameWarning() {
-    final screenWidth = MediaQuery.of(context).size.width;
+  late final bool esInvitado;
+  late Future<List<Map<String, dynamic>>> futureProviders;
 
-    showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.error_outline, size: 48, color: Colors.redAccent),
-                const SizedBox(height: 12),
-                Text('Nombre obligatorio',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Text('Debes ingresar un nombre para el proveedor.',
-                    style: GoogleFonts.poppins(fontSize: 14)),
-                const SizedBox(height: 20),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Entendido', style: GoogleFonts.poppins(color: Colors.white)),
-                  ),
-                )
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  @override
+  void initState() {
+    super.initState();
+    esInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
+    if (!esInvitado) {
+      futureProviders = fetchProvidersFromSupabase();
+    }
   }
 
-  void _addProvider() async {
-    final nameController = TextEditingController();
-    final docController = TextEditingController();
-    final phoneController = TextEditingController();
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    await showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Nuevo Proveedor', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameController,
-                  decoration: _inputDecoration('Nombre del proveedor'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: docController,
-                  decoration: _inputDecoration('Documento'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  decoration: _inputDecoration('Celular'),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Cancelar', style: GoogleFonts.poppins()),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF18824),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          final doc = docController.text.trim();
-                          final phone = phoneController.text.trim();
-
-                          if (name.isEmpty) {
-                            _showMissingNameWarning();
-                            return;
-                          }
-
-                          final newProvider = Provider(
-                            id: uuid.v4(),
-                            name: name,
-                            document: doc,
-                            phone: phone,
-                          );
-                          await providerBox.add(newProvider);
-                          Navigator.pop(context);
-                        },
-                        child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
+  Future<List<Map<String, dynamic>>> fetchProvidersFromSupabase() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return [];
+    final response = await Supabase.instance.client.from('providers').select().eq('user_id', userId);
+    return (response as List).map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  void _editProvider(Provider provider, int index) async {
-    final nameController = TextEditingController(text: provider.name);
-    final docController = TextEditingController(text: provider.document);
-    final phoneController = TextEditingController(text: provider.phone);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    await showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text('Editar Proveedor', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: nameController,
-                  decoration: _inputDecoration('Nombre del proveedor'),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: docController,
-                  decoration: _inputDecoration('Documento'),
-                  keyboardType: TextInputType.number,
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  decoration: _inputDecoration('Celular'),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context),
-                        child: Text('Cancelar', style: GoogleFonts.poppins()),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF18824),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () async {
-                          final name = nameController.text.trim();
-                          final doc = docController.text.trim();
-                          final phone = phoneController.text.trim();
-
-                          if (name.isEmpty) {
-                            _showMissingNameWarning(); // ⛔️ Muestra el modal si el nombre está vacío
-                            return;
-                          }
-
-                          provider.name = name;
-                          provider.document = doc;
-                          provider.phone = phone;
-                          await provider.save();
-
-                          if (mounted) Navigator.pop(context);
-                        },
-
-                        child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-
-  void _deleteProvider(Provider provider, int index) async {
+  Future<void> cerrarSesion() async {
     final screenWidth = MediaQuery.of(context).size.width;
 
     final confirm = await showDialog<bool>(
@@ -241,91 +45,56 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
+          constraints: BoxConstraints(maxWidth: screenWidth * 0.9 > 400 ? 400 : screenWidth * 0.9),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.redAccent),
-                const SizedBox(height: 12),
-                Text('¿Eliminar proveedor?',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Text('Se eliminarán todos sus clientes, cuentas y viajes.',
-                    style: GoogleFonts.poppins(fontSize: 14)),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('Cancelar', style: GoogleFonts.poppins()),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ),
-                  ],
+            child: Column(mainAxisSize: MainAxisSize.min, children: [
+              const Icon(Icons.logout, size: 48, color: Colors.redAccent),
+              const SizedBox(height: 12),
+              Text('¿Cerrar sesión?',
+                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 12),
+              Text(
+                '¿Deseas cerrar sesión?.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.poppins(fontSize: 14),
+              ),
+              const SizedBox(height: 20),
+              Row(children: [
+                Expanded(
+                  child: TextButton(
+                    onPressed: () => Navigator.pop(context, false),
+                    child: Text('Cancelar', style: GoogleFonts.poppins()),
+                  ),
                 ),
-              ],
-            ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.redAccent,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    ),
+                    child: Text('Cerrar sesión', style: GoogleFonts.poppins(color: Colors.white)),
+                  ),
+                )
+              ])
+            ]),
           ),
         ),
       ),
     );
 
-    if (confirm == true) {
-      try {
-        final clientBox = Hive.box<Client>('clients');
-        final clients = clientBox.values.where((c) => c.providerId == provider.id).toList();
+    if (confirm != true) return;
 
-        for (final client in clients) {
-          final accountBoxName = 'accounts_${client.id}';
-          if (await Hive.boxExists(accountBoxName)) {
-            final accountBox = await Hive.openBox<Account>(accountBoxName);
-            for (final account in accountBox.values) {
-              final tripBoxName = 'trips_${client.id}_${account.id}';
-              final prefBoxName = 'invoicePreferences_${client.id}_${account.id}';
-              if (await Hive.boxExists(tripBoxName)) await Hive.deleteBoxFromDisk(tripBoxName);
-              if (await Hive.boxExists(prefBoxName)) await Hive.deleteBoxFromDisk(prefBoxName);
-            }
-            await accountBox.close();
-            await Hive.deleteBoxFromDisk(accountBoxName);
-          }
+    await Hive.box('config').put('modo_invitado', false);
+    await Supabase.instance.client.auth.signOut();
 
-          await client.delete(); // Elimina el cliente del box
-        }
-
-        await providerBox.deleteAt(index);
-
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Proveedor y todos sus datos eliminados')),
-          );
-        }
-      } catch (e) {
-        debugPrint('Error al eliminar proveedor y datos asociados: $e');
-        if (context.mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Error al eliminar los datos')),
-          );
-        }
-      }
+    if (context.mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
     }
   }
-
 
 
   InputDecoration _inputDecoration(String hint) {
@@ -334,10 +103,185 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
       hintStyle: GoogleFonts.poppins(),
       filled: true,
       fillColor: const Color(0xFFF6F6F6),
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide.none,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+    );
+  }
+
+  Future<void> _showProviderDialog({provider_model.Provider? provider, int? index}) async {
+    final nameController = TextEditingController(text: provider?.name ?? '');
+    final docController = TextEditingController(text: provider?.document ?? '');
+    final phoneController = TextEditingController(text: provider?.phone ?? '');
+    final isEditing = provider != null;
+
+    final screenWidth = MediaQuery.of(context).size.width;
+
+    await showDialog(
+      context: context,
+      builder: (_) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: screenWidth * 0.9 > 450 ? 450 : screenWidth * 0.9),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: SingleChildScrollView(
+              child: Column(mainAxisSize: MainAxisSize.min, children: [
+                Text(isEditing ? 'Editar Proveedor' : 'Nuevo Proveedor',
+                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                const SizedBox(height: 16),
+                TextField(controller: nameController, decoration: _inputDecoration('Nombre del proveedor')),
+                const SizedBox(height: 12),
+                TextField(controller: docController, decoration: _inputDecoration('Documento'), keyboardType: TextInputType.number),
+                const SizedBox(height: 12),
+                TextField(controller: phoneController, decoration: _inputDecoration('Celular'), keyboardType: TextInputType.phone),
+                const SizedBox(height: 20),
+                Row(children: [
+                  Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar'))),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFF18824),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      onPressed: () async {
+                        final name = nameController.text.trim();
+                        final doc = docController.text.trim();
+                        final phone = phoneController.text.trim();
+
+                        if (name.isEmpty) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('El nombre es obligatorio')),
+                          );
+                          return;
+                        }
+
+                        if (esInvitado) {
+                          final updated = provider_model.Provider(
+                              id: isEditing ? provider.id : uuid.v4(), name: name, document: doc, phone: phone);
+                          if (isEditing && index != null) {
+                            await providerBox.putAt(index, updated);
+                          } else {
+                            await providerBox.add(updated);
+                          }
+                          setState(() {}); // actualiza lista Hive
+                        } else {
+                          final user = Supabase.instance.client.auth.currentUser;
+                          if (user == null) return;
+
+                          if (isEditing) {
+                            await Supabase.instance.client.from('providers').update({
+                              'nombre': name,
+                              'documento': doc,
+                              'celular': phone,
+                            }).eq('id', provider.id);
+                          } else {
+                            await Supabase.instance.client.from('providers').insert({
+                              'id': uuid.v4(),
+                              'nombre': name,
+                              'documento': doc,
+                              'celular': phone,
+                              'user_id': user.id,
+                            });
+                          }
+                          final nuevos = await fetchProvidersFromSupabase();
+                          if (mounted) {
+                            setState(() {
+                              futureProviders = Future.value(nuevos);
+                            });
+                          }
+
+                        }
+
+                        if (mounted) {
+                          Navigator.pop(context);
+                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                            content: Text(isEditing ? 'Proveedor actualizado' : 'Proveedor creado correctamente'),
+                          ));
+                        }
+                      },
+                      child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
+                    ),
+                  ),
+                ])
+              ]),
+            ),
+          ),
+        ),
       ),
+    );
+  }
+
+  Future<void> _deleteProvider(provider_model.Provider provider, int index) async {
+    final confirm = await showConfirmDeleteDialog(
+      context: context,
+      title: '¿Eliminar proveedor?',
+      message: 'Esto eliminará todos sus clientes, cuentas y viajes. Esta acción no se puede deshacer.',
+    );
+
+    if (confirm != true) return;
+
+    if (esInvitado) {
+      await providerBox.deleteAt(index);
+      setState(() {});
+    } else {
+      await Supabase.instance.client.from('providers').delete().eq('id', provider.id);
+      final nuevos = await fetchProvidersFromSupabase();
+      if (mounted) {
+        setState(() {
+          futureProviders = Future.value(nuevos);
+        });
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proveedor eliminado correctamente')));
+    }
+  }
+
+  Widget _buildProviderList(List<provider_model.Provider> providers) {
+    if (providers.isEmpty) {
+      return const Center(
+        child: Padding(
+          padding: EdgeInsets.all(16.0),
+          child: Text(
+            'No hay proveedores registrados.\nPulsa el botón "+" para agregar uno.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
+        ),
+      );
+    }
+
+    return ListView.builder(
+      itemCount: providers.length,
+      itemBuilder: (context, index) {
+        final provider = providers[index];
+        return Card(
+          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          elevation: 2,
+          child: ListTile(
+            contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+            title: Text(provider.name, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
+            subtitle: Text('Documento: ${provider.document}\nCelular: ${provider.phone}', style: GoogleFonts.poppins(fontSize: 13)),
+            trailing: Wrap(
+              spacing: 8,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                  onPressed: () => _showProviderDialog(provider: provider, index: index),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.redAccent),
+                  onPressed: () => _deleteProvider(provider, index),
+                ),
+              ],
+            ),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ClientListScreen(provider: provider)));
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -345,101 +289,70 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
-        children: [
+      appBar: AppBar(
+        backgroundColor: const Color(0xFFF18824),
+        elevation: 0,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.logout),
+            tooltip: esInvitado ? 'Salir' : 'Cerrar sesión',
+            onPressed: () async {
+              if (esInvitado) {
+                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+              } else {
+                await cerrarSesion();
+              }
+            },
+          ),
+        ],
+
+      ),
+      body: SafeArea(
+        child: Column(children: [
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
             decoration: const BoxDecoration(
               color: Color(0xFFF18824),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
+              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
             ),
-            child: Column(
-              children: [
-                Center(child: Image.asset('assets/imgs/logo_volco.png', height: 100)),
-                const SizedBox(height: 12),
-                Text('Proveedores',
-                    style: GoogleFonts.poppins(
-                      fontSize: 20,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w600,
-                    )),
-              ],
-            ),
+            child: Column(children: [
+              Center(child: Image.asset('assets/imgs/logo_volco.png', height: 100)),
+              const SizedBox(height: 12),
+              Text('Proveedores', style: GoogleFonts.poppins(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600)),
+              const SizedBox(height: 4),
+              Text(esInvitado ? 'Modo invitado (offline)' : 'Sesión iniciada',
+                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70)),
+            ]),
           ),
           Expanded(
-            child: ValueListenableBuilder(
-              valueListenable: providerBox.listenable(),
-              builder: (context, Box<Provider> box, _) {
-                final providers = box.values.toList();
+            child: esInvitado
+                ? _buildProviderList(providerBox.values.toList())
+                : FutureBuilder<List<Map<String, dynamic>>>(
+                    future: futureProviders,
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) return const Center(child: CircularProgressIndicator());
+                      if (snapshot.hasError) return Center(child: Text('Error: ${snapshot.error}'));
 
-                if (providers.isEmpty) {
-                  return const Center(
-                    child: Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text(
-                        'No hay proveedores registrados.\nPulsa el botón "+" para agregar uno.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 16, color: Colors.grey),
-                      ),
-                    ),
-                  );
-                }
-
-                return ListView.builder(
-                  itemCount: providers.length,
-                  itemBuilder: (context, index) {
-                    final provider = providers[index];
-
-                    return Card(
-                      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                      elevation: 2,
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                        title: Text(provider.name, style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
-                        subtitle: Text(
-                          'Documento: ${provider.document}\nCelular: ${provider.phone}',
-                          style: GoogleFonts.poppins(fontSize: 13),
-                        ),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                              onPressed: () => _editProvider(provider, index),
-                            ),
-                            IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.redAccent),
-                              onPressed: () => _deleteProvider(provider, index),
-                            ),
-                            Icon(Icons.arrow_forward_ios, color: Colors.grey.shade400),
-                          ],
-                        ),
-
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => ClientListScreen(provider: provider),
-                            ),
-                          );
-                        },
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-        ],
+                      final data = snapshot.data ?? [];
+                      final providers = data
+                          .map((p) => provider_model.Provider(
+                                id: p['id'],
+                                name: p['nombre'],
+                                document: p['documento'],
+                                phone: p['celular'],
+                              ))
+                          .toList();
+                      return _buildProviderList(providers);
+                    },
+                  ),
+          )
+        ]),
       ),
       floatingActionButton: FloatingActionButton(
-        onPressed: _addProvider,
+        onPressed: () => _showProviderDialog(),
         backgroundColor: const Color(0xFFF18824),
+        tooltip: 'Añadir proveedor',
         child: const Icon(Icons.add),
       ),
     );
