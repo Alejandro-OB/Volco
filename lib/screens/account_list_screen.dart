@@ -1,3 +1,5 @@
+// account_list_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -55,98 +57,12 @@ class _AccountListScreenState extends State<AccountListScreen> {
         .select()
         .eq('client_id', widget.client.id)
         .order('created_at');
-
     final data = List<Map<String, dynamic>>.from(response);
 
     setState(() {
       supabaseAccounts = data.map((e) => Account.fromJson(e)).toList();
       isLoading = false;
     });
-  }
-
-  Future<void> _addAccountSupabase() async {
-    final aliasController = TextEditingController();
-    final descController = TextEditingController();
-
-    final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
-      await Supabase.instance.client.from('accounts').insert({
-        'alias': alias,
-        'description': descController.text.trim(),
-        'client_id': widget.client.id,
-      });
-      _fetchSupabaseAccounts();
-    }
-  }
-
-  Future<void> _editAccountSupabase(Account account) async {
-    final aliasController = TextEditingController(text: account.alias);
-    final descController = TextEditingController(text: account.description);
-
-    final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
-      await Supabase.instance.client
-          .from('accounts')
-          .update({
-            'alias': alias,
-            'description': descController.text.trim(),
-          })
-          .eq('id', account.id);
-      _fetchSupabaseAccounts();
-    }
-  }
-
-  Future<void> _deleteAccountSupabase(Account account) async {
-    final confirm = await showConfirmDeleteDialog(
-      context: context,
-      title: '¿Eliminar cuenta?',
-      message: 'Se eliminarán también sus viajes.',
-    );
-
-    if (confirm == true) {
-      await Supabase.instance.client.from('accounts').delete().eq('id', account.id);
-      _fetchSupabaseAccounts();
-    }
-  }
-
-  Future<void> _addAccount() async {
-    final aliasController = TextEditingController();
-    final descController = TextEditingController();
-
-    final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
-      final account = Account(alias: alias, description: descController.text.trim());
-      await _accountBox.add(account);
-    }
-  }
-
-  Future<void> _editAccount(int index, Account account) async {
-    final aliasController = TextEditingController(text: account.alias);
-    final descController = TextEditingController(text: account.description);
-
-    final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
-      account.alias = alias;
-      account.description = descController.text.trim();
-      await account.save();
-    }
-  }
-
-  Future<void> _deleteAccount(int index) async {
-    final confirm = await showConfirmDeleteDialog(
-      context: context,
-      title: '¿Eliminar cuenta?',
-      message: 'Se eliminarán también sus viajes.',
-    );
-
-    if (confirm == true) {
-      final account = _accountBox.getAt(index);
-      if (account != null) {
-        await Hive.deleteBoxFromDisk('trips_${widget.client.id}_${account.id}');
-        await Hive.deleteBoxFromDisk('invoicePreferences_${widget.client.id}_${account.id}');
-      }
-      await _accountBox.deleteAt(index);
-    }
   }
 
   Future<String?> _showAccountDialog(String title, TextEditingController aliasController, TextEditingController descController) {
@@ -211,6 +127,98 @@ class _AccountListScreenState extends State<AccountListScreen> {
     );
   }
 
+  Future<void> _addAccountSupabase() async {
+    final aliasController = TextEditingController();
+    final descController = TextEditingController();
+
+    final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
+    if (alias != null && alias.isNotEmpty) {
+      await Supabase.instance.client.from('accounts').insert({
+        'alias': alias,
+        'description': descController.text.trim(),
+        'client_id': widget.client.id,
+      });
+      _fetchSupabaseAccounts();
+    }
+  }
+
+  Future<void> _editAccountSupabase(Account account) async {
+    final aliasController = TextEditingController(text: account.alias);
+    final descController = TextEditingController(text: account.description);
+
+    final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
+    if (alias != null && alias.isNotEmpty) {
+      await Supabase.instance.client
+          .from('accounts')
+          .update({
+            'alias': alias,
+            'description': descController.text.trim(),
+          })
+          .eq('id', account.id);
+      _fetchSupabaseAccounts();
+    }
+  }
+
+  Future<void> _deleteAccountSupabase(Account account) async {
+    final confirm = await ConfirmDeleteDialog(
+      context: context,
+      title: '¿Eliminar cuenta?',
+      message: 'Esto eliminará la cuenta y sus viajes.',
+    );
+
+    if (confirm == true) {
+      await Supabase.instance.client.from('accounts').delete().eq('id', account.id);
+      _fetchSupabaseAccounts();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cuenta eliminada')));
+      }
+    }
+  }
+
+  Future<void> _addAccount() async {
+    final aliasController = TextEditingController();
+    final descController = TextEditingController();
+
+    final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
+    if (alias != null && alias.isNotEmpty) {
+      final account = Account(alias: alias, description: descController.text.trim());
+      await _accountBox.add(account);
+    }
+  }
+
+  Future<void> _editAccount(int index, Account account) async {
+    final aliasController = TextEditingController(text: account.alias);
+    final descController = TextEditingController(text: account.description);
+
+    final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
+    if (alias != null && alias.isNotEmpty) {
+      account.alias = alias;
+      account.description = descController.text.trim();
+      await account.save();
+    }
+  }
+
+  Future<void> _deleteAccount(int index) async {
+    final confirm = await ConfirmDeleteDialog(
+      context: context,
+      title: '¿Eliminar cuenta?',
+      message: 'Esto eliminará la cuenta y sus viajes.',
+    );
+
+
+    if (confirm == true) {
+      final account = _accountBox.getAt(index);
+      if (account != null) {
+        await Hive.deleteBoxFromDisk('trips_${widget.client.id}_${account.id}');
+        await Hive.deleteBoxFromDisk('invoicePreferences_${widget.client.id}_${account.id}');
+      }
+      await _accountBox.deleteAt(index);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Cuenta eliminada')));
+      }
+    }
+  }
+
   Widget _buildAccountList(List<Account> accounts) {
     if (accounts.isEmpty) {
       return const Center(
@@ -243,17 +251,23 @@ class _AccountListScreenState extends State<AccountListScreen> {
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                IconButton(
-                  icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                  onPressed: () => isAuthenticated
-                      ? _editAccountSupabase(account)
-                      : _editAccount(index, account),
+                Tooltip(
+                  message: 'Editar',
+                  child: IconButton(
+                    icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                    onPressed: () => isAuthenticated
+                        ? _editAccountSupabase(account)
+                        : _editAccount(index, account),
+                  ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.delete, color: Colors.redAccent),
-                  onPressed: () => isAuthenticated
-                      ? _deleteAccountSupabase(account)
-                      : _deleteAccount(index),
+                Tooltip(
+                  message: 'Eliminar',
+                  child: IconButton(
+                    icon: const Icon(Icons.delete, color: Colors.redAccent),
+                    onPressed: () => isAuthenticated
+                        ? _deleteAccountSupabase(account)
+                        : _deleteAccount(index),
+                  ),
                 ),
                 const Icon(Icons.arrow_forward_ios, color: Colors.grey),
               ],
@@ -288,8 +302,8 @@ class _AccountListScreenState extends State<AccountListScreen> {
         child: Column(
           children: [
             VolcoHeader(
-              title: 'Cuentas',
-              subtitle: widget.client.name,
+              title: widget.client.name,
+              subtitle: 'Cuentas',
               onBack: () async {
                 final boxName = 'accounts_${widget.client.id}';
                 if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();

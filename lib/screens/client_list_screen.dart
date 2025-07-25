@@ -177,7 +177,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
   }
 
   Future<void> _deleteClient(Client client, int index) async {
-    final confirm = await showConfirmDeleteDialog(
+    final confirm = await ConfirmDeleteDialog(
       context: context,
       title: '¿Eliminar cliente?',
       message: 'Se eliminarán también sus cuentas y viajes.',

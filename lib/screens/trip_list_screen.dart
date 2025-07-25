@@ -75,7 +75,7 @@ class _TripListScreenState extends State<TripListScreen> {
   }
 
   Future<void> _deleteTrip(dynamic tripKey) async {
-    final confirm = await showConfirmDeleteDialog(
+    final confirm = await ConfirmDeleteDialog(
       context: context,
       title: '¿Eliminar Viaje?',
       message: 'Esta acción no se puede deshacer.',

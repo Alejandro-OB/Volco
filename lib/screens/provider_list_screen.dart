@@ -213,7 +213,7 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
   }
 
   Future<void> _deleteProvider(provider_model.Provider provider, int index) async {
-    final confirm = await showConfirmDeleteDialog(
+    final confirm = await ConfirmDeleteDialog(
       context: context,
       title: '¿Eliminar proveedor?',
       message: 'Esto eliminará todos sus clientes, cuentas y viajes. Esta acción no se puede deshacer.',
