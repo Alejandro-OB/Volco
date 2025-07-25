@@ -186,7 +186,9 @@ class _TripFormScreenState extends State<TripFormScreen> {
                     builder: (_) => TripListScreen(
                       client: widget.client,
                       account: widget.account,
+                      provider: widget.provider,
                     ),
+
                   ),
                 );
               },

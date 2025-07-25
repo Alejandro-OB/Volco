@@ -236,7 +236,8 @@ class _TripListScreenState extends State<TripListScreen> {
               if (context.mounted) {
                 Navigator.pushAndRemoveUntil(
                   context,
-                  MaterialPageRoute(builder: (_) => AccountListScreen(client: widget.client)),
+                  MaterialPageRoute(builder: (_) => AccountListScreen(client: widget.client, provider: widget.provider)),
+
                   (route) => false,
                 );
               }

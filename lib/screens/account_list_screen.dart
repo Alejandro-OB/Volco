@@ -267,7 +267,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
                 if (context.mounted) {
                   Navigator.pushAndRemoveUntil(
                     context,
-                    MaterialPageRoute(builder: (_) => const ClientListScreen()),
+                    MaterialPageRoute(builder: (_) => ClientListScreen(provider: widget.provider)),
                     (route) => false,
                   );
                 }
