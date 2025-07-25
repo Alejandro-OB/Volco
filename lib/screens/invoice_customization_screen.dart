@@ -7,6 +7,7 @@ import 'dart:typed_data';
 import '../models/invoice_preferences.dart';
 import '../models/client.dart';
 import '../models/account.dart';
+import '../utils/widgets/volco_header.dart';
 
 class InvoiceCustomizationScreen extends StatefulWidget {
   final Client client;
@@ -151,42 +152,15 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
         backgroundColor: Colors.white,
         body: Column(
           children: [
-            SafeArea(
-              top: true,
-              bottom: false,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-                decoration: const BoxDecoration(
-                  color: Color(0xFFF18824),
-                  borderRadius: BorderRadius.only(
-                    bottomLeft: Radius.circular(24),
-                    bottomRight: Radius.circular(24),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.arrow_back, color: Colors.white),
-                      onPressed: () => Navigator.pop(context),
-                    ),
-                    Image.asset('assets/imgs/logo_volco.png', height: 60),
-                    const SizedBox(width: 12),
-                    const Expanded(
-                      child: Text(
-                        'Personalización de factura',
-                        style: TextStyle(
-                          fontSize: 20,
-                          color: Colors.white,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+            VolcoHeader(
+              title: 'Factura de',
+              subtitle: '${widget.client.name} - ${widget.account.alias}',
+              onBack: () async {
+                final canLeave = await _onWillPop();
+                if (canLeave) Navigator.pop(context);
+              },
             ),
+
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())

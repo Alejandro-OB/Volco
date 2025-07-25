@@ -21,7 +21,8 @@ import 'trip_form_screen.dart';
 import 'invoice_customization_screen.dart';
 import 'package:pdf/pdf.dart';
 import 'account_list_screen.dart';
-
+import '../utils/widgets/confirm_delete_dialog.dart';
+import '../utils/widgets/volco_header.dart';
 
 class TripListScreen extends StatefulWidget {
   final Client client;
@@ -131,19 +132,37 @@ class _TripListScreenState extends State<TripListScreen> {
       final selected = await showDialog<String>(
         context: context,
         builder: (_) => SimpleDialog(
-          title: const Text('¿Qué deseas hacer con la factura?'),
+          title: const Text(
+            '¿Qué deseas hacer con la factura generada?',
+            style: TextStyle(fontWeight: FontWeight.w600),
+          ),
           children: [
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'preview'),
-              child: const Text('Previsualizar'),
+              child: Row(
+                children: [
+                  const Icon(Icons.remove_red_eye, color: Colors.teal),
+                  const SizedBox(width: 8),
+                  Text('Ver factura (previsualizar)',
+                      style: TextStyle(fontSize: 15)),
+                ],
+              ),
             ),
             SimpleDialogOption(
               onPressed: () => Navigator.pop(context, 'share'),
-              child: const Text('Compartir'),
+              child: Row(
+                children: [
+                  const Icon(Icons.share, color: Colors.indigo),
+                  const SizedBox(width: 8),
+                  Text('Compartir factura',
+                      style: TextStyle(fontSize: 15)),
+                ],
+              ),
             ),
           ],
         ),
       );
+
 
       if (selected == null) return;
 
@@ -173,55 +192,13 @@ class _TripListScreenState extends State<TripListScreen> {
 
 
   void _deleteTrip(dynamic tripKey) async {
-    final screenWidth = MediaQuery.of(context).size.width;
 
     final confirm = await showDialog<bool>(
       context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.redAccent),
-                const SizedBox(height: 12),
-                Text('¿Eliminar viaje?',
-                    style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-                const SizedBox(height: 12),
-                Text('Esta acción no se puede deshacer.',
-                    style: GoogleFonts.poppins(fontSize: 14)),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    Expanded(
-                      child: TextButton(
-                        onPressed: () => Navigator.pop(context, false),
-                        child: Text('Cancelar', style: GoogleFonts.poppins()),
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: ElevatedButton(
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.redAccent,
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        onPressed: () => Navigator.pop(context, true),
-                        child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-        ),
+      builder: (_) => ConfirmDeleteDialog(
+        title: '¿Eliminar Viaje?',
+        message: 'Esta acción no se puede deshacer.',
+        onConfirm: () {}, 
       ),
     );
 
@@ -243,53 +220,27 @@ class _TripListScreenState extends State<TripListScreen> {
 
     return Scaffold(
     backgroundColor: Colors.white,
-    body: SafeArea( // ✅ Previene que se corte el encabezado
+    body: SafeArea( 
       child: Column(
         children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF18824),
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
-            child: Row(
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.arrow_back, color: Colors.white),
-                  onPressed: () async {
-                    if (tripBox.isOpen) await tripBox.close();
-                    Navigator.pushReplacement(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => AccountListScreen(client: widget.client),
-                      ),
-                    );
-                  },
-                ),
-                Image.asset('assets/imgs/logo_volco.png', height: 60),
-                const SizedBox(width: 12),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(widget.client.name,
-                        style: GoogleFonts.poppins(
-                            fontSize: 16,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w500)),
-                    Text(widget.account.alias,
-                        style: GoogleFonts.poppins(
-                            fontSize: 20,
-                            color: Colors.white,
-                            fontWeight: FontWeight.w700)),
-                  ],
-                ),
-              ],
-            ),
+          VolcoHeader(
+            title: widget.client.name,
+            subtitle: 'Viajes de ${widget.account.alias}',
+            onBack: () async {
+              final boxName = 'accounts_${widget.client.id}';
+              if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
+              if (tripBox.isOpen) await tripBox.close();
+
+              if (context.mounted) {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => AccountListScreen(client: widget.client)),
+                  (route) => false,
+                );
+              }
+            },
           ),
+
 
           Expanded(
             child: ValueListenableBuilder<Box<Trip>>(
