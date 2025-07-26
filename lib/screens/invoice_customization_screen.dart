@@ -9,6 +9,8 @@ import '../models/invoice_preferences.dart';
 import '../models/client.dart';
 import '../models/account.dart';
 import '../utils/widgets/volco_header.dart';
+import 'package:uuid/uuid.dart';
+
 class InvoiceCustomizationScreen extends StatefulWidget {
   final Client client;
   final Account account;
@@ -95,8 +97,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
             .update(data)
             .eq('id', existing['id']);
       } else {
-        data['id'] = Supabase.instance.client.auth.currentUser!.id +
-            DateTime.now().millisecondsSinceEpoch.toString();
+        final uuid = const Uuid();
+        data['id'] = uuid.v4(); 
         await Supabase.instance.client.from('invoice_preferences').insert(data);
       }
     } else {
@@ -151,7 +153,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     required Uint8List fileBytes,
     required String fileName,
   }) async {
-    final bucket = Supabase.instance.client.storage.from('invoice_assets');
+    final bucket = Supabase.instance.client.storage.from('invoice-assets');
     final path = '${widget.client.id}/${widget.account.id}/$fileName';
 
     await bucket.uploadBinary(
@@ -165,10 +167,10 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
 
   void _deleteImage({required bool isLogo}) async {
     if (isAuthenticated) {
-      final bucket = Supabase.instance.client.storage.from('invoice_assets');
+      final bucket = Supabase.instance.client.storage.from('invoice-assets');
       final filePath = isLogo
-          ? _prefs.logoUrl?.split('/storage/v1/object/public/invoice_assets/').last
-          : _prefs.signatureUrl?.split('/storage/v1/object/public/invoice_assets/').last;
+          ? _prefs.logoUrl?.split('/storage/v1/object/public/invoice-assets/').last
+          : _prefs.signatureUrl?.split('/storage/v1/object/public/invoice-assets/').last;
 
       if (filePath != null) {
         await bucket.remove([filePath]);
@@ -310,14 +312,18 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
         backgroundColor: Colors.white,
         body: Column(
           children: [
-            VolcoHeader(
-              title: 'Factura de',
-              subtitle: '${widget.client.name} - ${widget.account.alias}',
-              onBack: () async {
-                final canLeave = await _onWillPop();
-                if (canLeave) Navigator.pop(context);
-              },
+            SafeArea(
+              bottom: false,
+              child: VolcoHeader(
+                title: 'Factura de',
+                subtitle: '${widget.client.name} - ${widget.account.alias}',
+                onBack: () async {
+                  final canLeave = await _onWillPop();
+                  if (canLeave) Navigator.pop(context);
+                },
+              ),
             ),
+
             Expanded(
               child: _loading
                   ? const Center(child: CircularProgressIndicator())
