@@ -96,6 +96,29 @@ class _TripListScreenState extends State<TripListScreen> {
     }
   }
 
+  Future<String?> _askImportBehavior() async {
+    return await showDialog<String>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Importar viajes'),
+        content: const Text('¿Qué hacer si un viaje ya existe?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'skip'),
+            child: const Text('Ignorar duplicados'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'ask'),
+            child: const Text('Preguntar por cada uno'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'overwrite'),
+            child: const Text('Sobrescribir todos'),
+          ),
+        ],
+      ),
+    );
+  }
 
 
   late Box<Trip> tripBox;
@@ -332,35 +355,70 @@ class _TripListScreenState extends State<TripListScreen> {
           label: 'Importar viajes',
           labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
           onTap: () async {
+            final behavior = await _askImportBehavior();
+            if (behavior == null) return;
+
             final imported = await _importTrips();
             for (final trip in imported) {
               final tripWithAccount = trip.copyWith(accountId: widget.account.id);
+
               if (isAuthenticated) {
+                final existing = trips.any((t) => t.id == trip.id);
+
+                if (existing) {
+                  if (behavior == 'skip') continue;
+                  if (behavior == 'ask') {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Duplicado'),
+                        content: const Text('¿Deseas sobrescribir el viaje existente?'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ignorar')),
+                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sobrescribir')),
+                        ],
+                      ),
+                    );
+                    if (confirm != true) continue;
+                  }
+                }
+
                 await Supabase.instance.client
                     .from('trips')
                     .upsert(tripWithAccount.toJson(), onConflict: 'id');
               } else {
-                final existing = tripBox.keys.firstWhere((key) => tripBox.get(key)?.id == trip.id, orElse: () => null);
-                if (existing != null) {
-                  final confirm = await showDialog<bool>(
-                    context: context,
-                    builder: (_) => AlertDialog(
-                      title: const Text('Duplicado'),
-                      content: const Text('¿Deseas sobrescribir el viaje existente?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ignorar')),
-                        TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sobrescribir')),
-                      ],
-                    ),
-                  );
-                  if (confirm == true) await tripBox.put(existing, tripWithAccount);
+                final existingKey = tripBox.keys.firstWhere(
+                  (key) => tripBox.get(key)?.id == trip.id,
+                  orElse: () => null,
+                );
+
+                if (existingKey != null) {
+                  if (behavior == 'skip') continue;
+                  if (behavior == 'ask') {
+                    final confirm = await showDialog<bool>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Duplicado'),
+                        content: const Text('¿Deseas sobrescribir el viaje existente?'),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Ignorar')),
+                          TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sobrescribir')),
+                        ],
+                      ),
+                    );
+                    if (confirm != true) continue;
+                  }
+
+                  await tripBox.put(existingKey, tripWithAccount);
                 } else {
                   await tripBox.add(tripWithAccount);
                 }
               }
             }
+
             if (isAuthenticated) await _fetchSupabaseTrips();
           },
+
         ),
         SpeedDialChild(
           child: const Icon(Icons.download, color: Colors.white),
@@ -422,7 +480,7 @@ class _TripListScreenState extends State<TripListScreen> {
           children: [
             VolcoHeader(
               title: widget.client.name,
-              subtitle: widget.account.alias,
+              subtitle: 'Viajes de ${widget.account.alias}',
               onBack: !isAuthenticated ? () async {
                 final boxName = 'accounts_${widget.client.id}';
                 if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
