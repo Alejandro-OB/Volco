@@ -12,6 +12,7 @@ import '../models/provider.dart' as provider_model;
 import 'account_list_screen.dart';
 import '../widgets/volco_header.dart';
 import '../widgets/confirm_delete_dialog.dart';
+import 'provider_list_screen.dart';
 
 
 class ClientListScreen extends StatefulWidget {
@@ -235,7 +236,15 @@ class _ClientListScreenState extends State<ClientListScreen> {
             VolcoHeader(
               title: widget.provider.name,
               subtitle: 'Clientes',
+              onBack: () {
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const ProviderListScreen()),
+                  (route) => false,
+                );
+              },
             ),
+
             Expanded(
               child: esInvitado
                   ? ValueListenableBuilder(
