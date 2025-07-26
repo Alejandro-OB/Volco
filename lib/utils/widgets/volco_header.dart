@@ -26,6 +26,7 @@ class VolcoHeader extends StatelessWidget {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
@@ -33,23 +34,33 @@ class VolcoHeader extends StatelessWidget {
           ),
           Image.asset('assets/imgs/logo_volco.png', height: 60),
           const SizedBox(width: 12),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title,
+          Expanded( // Este Expanded previene el overflow
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
-                  )),
-              const SizedBox(height: 4),
-              Text(subtitle,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
-                  )),
-            ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
       ),

@@ -9,8 +9,8 @@ import '../models/client.dart';
 import '../models/provider.dart' as provider_model;
 import 'trip_list_screen.dart';
 import 'client_list_screen.dart';
-import '../widgets/volco_header.dart';
-import '../widgets/confirm_delete_dialog.dart';
+import '../utils/widgets/volco_header.dart';
+import '../utils/widgets/confirm_delete_dialog.dart';
 
 class AccountListScreen extends StatefulWidget {
   final Client client;

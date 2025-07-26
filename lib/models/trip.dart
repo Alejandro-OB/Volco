@@ -17,8 +17,11 @@ class Trip extends HiveObject {
   @HiveField(3)
   int unitValue;
 
-  @HiveField(4) // Nuevo campo
+  @HiveField(4)
   String id;
+
+  @HiveField(5)
+  String? accountId;
 
   Trip({
     required this.date,
@@ -26,9 +29,28 @@ class Trip extends HiveObject {
     required this.quantity,
     required this.unitValue,
     String? id,
-  }) : id = id ?? const Uuid().v4(); // genera uno nuevo si no se pasa
+    this.accountId,
+  }) : id = id ?? const Uuid().v4();
 
   int get total => quantity * unitValue;
+
+  Trip copyWith({
+    DateTime? date,
+    String? material,
+    int? quantity,
+    int? unitValue,
+    String? id,
+    String? accountId,
+  }) {
+    return Trip(
+      date: date ?? this.date,
+      material: material ?? this.material,
+      quantity: quantity ?? this.quantity,
+      unitValue: unitValue ?? this.unitValue,
+      id: id ?? this.id,
+      accountId: accountId ?? this.accountId,
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'date': date.toIso8601String(),
@@ -36,6 +58,7 @@ class Trip extends HiveObject {
         'quantity': quantity,
         'unitValue': unitValue,
         'id': id,
+        'account_id': accountId,
       };
 
   factory Trip.fromJson(Map<String, dynamic> json) => Trip(
@@ -43,6 +66,7 @@ class Trip extends HiveObject {
         material: json['material'],
         quantity: json['quantity'],
         unitValue: json['unitValue'],
-        id: json['id'], // puede venir null si es un archivo antiguo
+        id: json['id'],
+        accountId: json['account_id'],
       );
 }

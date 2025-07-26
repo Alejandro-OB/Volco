@@ -6,7 +6,7 @@ import 'package:uuid/uuid.dart';
 
 import '../models/provider.dart' as provider_model;
 import 'client_list_screen.dart';
-import '../widgets/confirm_delete_dialog.dart';
+import '../utils/widgets/confirm_delete_dialog.dart';
 
 class ProviderListScreen extends StatefulWidget {
   const ProviderListScreen({super.key});

@@ -10,8 +10,8 @@ import 'package:path_provider/path_provider.dart';
 import '../models/client.dart';
 import '../models/provider.dart' as provider_model;
 import 'account_list_screen.dart';
-import '../widgets/volco_header.dart';
-import '../widgets/confirm_delete_dialog.dart';
+import '../utils/widgets/volco_header.dart';
+import '../utils/widgets/confirm_delete_dialog.dart';
 import 'provider_list_screen.dart';
 
 
