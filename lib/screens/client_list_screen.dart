@@ -177,7 +177,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
                   )
                 : MainHeader(
                     title: 'Clientes',
-                    subtitle: 'Sesión iniciada',
+                    subtitle: esInvitado ? 'Modo offline' : 'Sesión iniciada',
                     onLogout: () => showLogoutDialog(context),
                   ),
 
