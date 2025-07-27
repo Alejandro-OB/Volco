@@ -9,11 +9,13 @@ class RegisterScreen extends StatefulWidget {
 }
 
 class _RegisterScreenState extends State<RegisterScreen> {
+  final fullNameController = TextEditingController();
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
   final confirmPasswordController = TextEditingController();
 
   bool isLoading = false;
+  String? fullNameError;
   String? passwordError;
   String? confirmPasswordError;
   String? emailError;
@@ -25,18 +27,21 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final email = emailController.text.trim();
     final password = passwordController.text;
     final confirmPassword = confirmPasswordController.text;
+    final fullName = fullNameController.text.trim();
 
     final emailValid = RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email);
 
     return emailValid &&
         password.length >= 6 &&
-        password == confirmPassword;
+        password == confirmPassword &&
+        fullName.isNotEmpty;
   }
 
   Future<void> _register() async {
     final email = emailController.text.trim();
     final password = passwordController.text;
     final confirmPassword = confirmPasswordController.text;
+    final fullName = fullNameController.text.trim();
 
     setState(() {
       emailError = !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)
@@ -48,6 +53,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       confirmPasswordError = password != confirmPassword
           ? 'Las contraseñas no coinciden'
           : null;
+      fullNameError = fullName.isEmpty ? 'El nombre no puede estar vacío' : null;
     });
 
     if (!isFormValid) return;
@@ -60,6 +66,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
       );
 
       if (result.user != null) {
+        // Guarda nombre y rol en la tabla 'users'
+        await Supabase.instance.client.from('users').insert({
+          'id': result.user!.id,
+          'email': email,
+          'full_name': fullName,
+          'role': 'user',
+        });
+
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('Registro exitoso. Inicia sesión con tu correo y contraseña.')),
         );
@@ -83,6 +97,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       final email = emailController.text.trim();
       final password = passwordController.text;
       final confirmPassword = confirmPasswordController.text;
+      final fullName = fullNameController.text.trim();
 
       emailError = !RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(email)
           ? 'Correo no válido'
@@ -93,6 +108,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
       confirmPasswordError = password != confirmPassword
           ? 'Las contraseñas no coinciden'
           : null;
+      fullNameError = fullName.isEmpty ? 'El nombre no puede estar vacío' : null;
     });
   }
 
@@ -129,6 +145,26 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 32),
+
+                      // Nombre completo
+                      TextField(
+                        controller: fullNameController,
+                        onChanged: (_) => _validateInputs(),
+                        style: const TextStyle(color: Colors.white),
+                        decoration: InputDecoration(
+                          labelText: 'Nombre completo',
+                          labelStyle: const TextStyle(color: Colors.white70),
+                          filled: true,
+                          fillColor: Colors.white10,
+                          errorText: fullNameError,
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          focusedBorder: OutlineInputBorder(
+                            borderSide: BorderSide(color: blanco),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
 
                       // Email
                       TextField(
@@ -209,7 +245,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
                       ),
-
                       const SizedBox(height: 24),
 
                       // Botón de registro

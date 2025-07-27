@@ -32,9 +32,9 @@ import 'account_list_screen.dart';
 class TripListScreen extends StatefulWidget {
   final Client client;
   final Account account;
-  final provider_model.Provider provider;
+  final provider_model.Provider? provider;
 
-  const TripListScreen({super.key, required this.client, required this.account, required this.provider});
+  const TripListScreen({super.key, required this.client, required this.account, this.provider});
 
   @override
   State<TripListScreen> createState() => _TripListScreenState();

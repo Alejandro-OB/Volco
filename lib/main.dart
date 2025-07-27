@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
+import 'package:volco/screens/client_list_screen.dart';
 
 import 'models/trip.dart';
 import 'models/client.dart';
@@ -77,6 +78,7 @@ class VolcoApp extends StatelessWidget {
         '/register': (_) => const RegisterScreen(),
         '/home': (_) => const ProviderListScreen(),
         '/reset-password': (_) => const ResetPasswordScreen(),
+        '/clients':(_) => const ClientListScreen(),
       },
     );
   }

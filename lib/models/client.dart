@@ -12,7 +12,7 @@ class Client extends HiveObject {
   String name;
 
   @HiveField(2)
-  String providerId;
+  String? providerId;
 
   @HiveField(3)
   String? userId; // solo se usa en modo autenticado (Supabase)
@@ -28,7 +28,7 @@ class Client extends HiveObject {
   factory Client.fromMap(Map<String, dynamic> map) => Client(
         id: map['id'] as String,
         name: map['nombre'] as String,
-        providerId: map['provider_id'] as String,
+        providerId: map['provider_id'] as String?,
         userId: map['user_id'] as String?,
       );
 

@@ -19,7 +19,7 @@ class ClientAdapter extends TypeAdapter<Client> {
     return Client(
       id: fields[0] as String?,
       name: fields[1] as String,
-      providerId: fields[2] as String,
+      providerId: fields[2] as String?,
       userId: fields[3] as String?,
     );
   }

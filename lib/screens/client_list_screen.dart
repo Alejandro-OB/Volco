@@ -1,23 +1,21 @@
-
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
-import 'dart:io';
-import 'package:path_provider/path_provider.dart';
 import '../models/client.dart';
 import '../models/provider.dart' as provider_model;
 import 'account_list_screen.dart';
 import '../utils/widgets/volco_header.dart';
 import '../utils/widgets/confirm_delete_dialog.dart';
 import 'provider_list_screen.dart';
-
+import '../utils/widgets/main_header.dart';
+import '../utils/helpers/logout_helper.dart';
+import '../utils/helpers/delete_helper.dart';
 
 class ClientListScreen extends StatefulWidget {
-  final provider_model.Provider provider;
-  const ClientListScreen({super.key, required this.provider});
+  final provider_model.Provider? provider;
+  const ClientListScreen({super.key, this.provider});
 
   @override
   State<ClientListScreen> createState() => _ClientListScreenState();
@@ -27,26 +25,46 @@ class _ClientListScreenState extends State<ClientListScreen> {
   final Box<Client> clientBox = Hive.box<Client>('clients');
   final uuid = Uuid();
   late bool esInvitado;
-  late Future<List<Client>> futureClients;
+  Future<List<Client>> futureClients = Future.value([]);
+  String role = 'user';
 
   @override
   void initState() {
     super.initState();
     esInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
     if (!esInvitado) {
-      futureClients = fetchClientsFromSupabase();
+      fetchUserRole().then((value) {
+        setState(() {
+          role = value;
+        });
+        futureClients = fetchClientsFromSupabase();
+      });
+    } else {
+      futureClients = Future.value([]);
     }
+  }
+
+  Future<String> fetchUserRole() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId == null) return 'user';
+    final response = await Supabase.instance.client
+        .from('users')
+        .select('role')
+        .eq('id', userId)
+        .single();
+    return response['role'] ?? 'user';
   }
 
   Future<List<Client>> fetchClientsFromSupabase() async {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return [];
-    final response = await Supabase.instance.client
-        .from('clients')
-        .select()
-        .eq('user_id', user.id)
-        .eq('provider_id', widget.provider.id);
 
+    final query = Supabase.instance.client.from('clients').select().eq('user_id', user.id);
+    if (role == 'admin' && widget.provider != null) {
+      query.eq('provider_id', widget.provider!.id);
+    }
+
+    final response = await query;
     return (response as List).map((data) {
       return Client(
         id: data['id'],
@@ -89,14 +107,21 @@ class _ClientListScreenState extends State<ClientListScreen> {
                       Navigator.pop(context);
 
                       if (esInvitado) {
-                        await clientBox.add(Client(name: name, providerId: widget.provider.id));
+                        await clientBox.add(
+                          Client(
+                            id: uuid.v4(), 
+                            name: name,
+                            providerId: widget.provider?.id ?? '',
+                          ),
+                        );
+
                       } else {
                         final user = Supabase.instance.client.auth.currentUser;
                         if (user == null) return;
                         await Supabase.instance.client.from('clients').insert({
                           'id': uuid.v4(),
                           'name': name,
-                          'provider_id': widget.provider.id,
+                          'provider_id': widget.provider?.id,
                           'user_id': user.id,
                         });
                         final nuevos = await fetchClientsFromSupabase();
@@ -105,7 +130,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
                             futureClients = Future.value(nuevos);
                           });
                         }
-
                       }
                     },
                     child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
@@ -117,102 +141,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
         ),
       ),
     );
-  }
-
-  Future<void> _editClient(Client client, int index) async {
-    final controller = TextEditingController(text: client.name);
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    await showDialog(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: screenWidth * 0.9 > 400 ? 400 : screenWidth * 0.9),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('Editar Cliente', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              TextField(controller: controller, decoration: _inputDecoration('Nuevo nombre')),
-              const SizedBox(height: 20),
-              Row(children: [
-                Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: GoogleFonts.poppins()))),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF18824),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onPressed: () async {
-                      final newName = controller.text.trim();
-                      Navigator.pop(context);
-                      if (newName.isEmpty || newName == client.name) return;
-
-                      if (esInvitado) {
-                        client.name = newName;
-                        await client.save();
-                      } else {
-                        await Supabase.instance.client.from('clients').update({
-                          'name': newName,
-                        }).eq('id', client.id);
-                        final nuevos = await fetchClientsFromSupabase();
-                        if (mounted) {
-                          setState(() {
-                            futureClients = Future.value(nuevos);
-                          });
-                        }
-                      }
-                    },
-                    child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
-                  ),
-                ),
-              ])
-            ]),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _deleteClient(Client client, int index) async {
-    final confirm = await ConfirmDeleteDialog(
-      context: context,
-      title: '¿Eliminar cliente?',
-      message: 'Se eliminarán también sus cuentas y viajes.',
-    );
-    if (confirm != true) return;
-
-    if (esInvitado) {
-      final dir = await getApplicationDocumentsDirectory();
-      final files = Directory(dir.path).listSync();
-      for (var file in files) {
-        final name = file.uri.pathSegments.last;
-        if (name.startsWith('trips_${client.id}_') && name.endsWith('.hive')) {
-          final boxName = name.replaceAll('.hive', '');
-          if (Hive.isBoxOpen(boxName)) await Hive.box(boxName).close();
-          await Hive.deleteBoxFromDisk(boxName);
-        }
-      }
-      await clientBox.deleteAt(index);
-    } else {
-      final supabase = Supabase.instance.client;
-      final accounts = await supabase.from('accounts').select().eq('client_id', client.id);
-      for (final acc in accounts) {
-        await supabase.from('trips').delete().eq('account_id', acc['id']);
-      }
-      await supabase.from('accounts').delete().eq('client_id', client.id);
-      await supabase.from('clients').delete().eq('id', client.id);
-      final nuevos = await fetchClientsFromSupabase();
-      if (mounted) {
-        setState(() {
-          futureClients = Future.value(nuevos);
-        });
-      }
-
-    }
   }
 
   InputDecoration _inputDecoration(String hint) {
@@ -227,30 +155,42 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final subtitle ='Clientes';
+
+
     return Scaffold(
       backgroundColor: Colors.white,
-
       body: SafeArea(
         child: Column(
           children: [
-            VolcoHeader(
-              title: widget.provider.name,
-              subtitle: 'Clientes',
-              onBack: () {
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => const ProviderListScreen()),
-                  (route) => false,
-                );
-              },
-            ),
+            role == 'admin'
+                ? VolcoHeader(
+                    title: widget.provider?.name ?? '',
+                    subtitle: subtitle,
+                    onBack: () {
+                      Navigator.pushAndRemoveUntil(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ProviderListScreen()),
+                        (route) => false,
+                      );
+                    },
+                  )
+                : MainHeader(
+                    title: 'Clientes',
+                    subtitle: 'Sesión iniciada',
+                    onLogout: () => showLogoutDialog(context),
+                  ),
+
+
 
             Expanded(
               child: esInvitado
                   ? ValueListenableBuilder(
                       valueListenable: clientBox.listenable(),
                       builder: (context, Box<Client> box, _) {
-                        final clients = box.values.where((c) => c.providerId == widget.provider.id).toList();
+                        final clients = box.values
+                            .where((c) => c.providerId == widget.provider?.id || role == 'user')
+                            .toList();
                         return _buildList(clients);
                       },
                     )
@@ -270,7 +210,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
           ],
         ),
       ),
-
       floatingActionButton: FloatingActionButton(
         onPressed: _addClient,
         backgroundColor: const Color(0xFFF18824),
@@ -284,8 +223,11 @@ class _ClientListScreenState extends State<ClientListScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.all(16.0),
-          child: Text('No hay clientes registrados.\nPulsa el botón "+" para agregar uno.',
-              textAlign: TextAlign.center, style: TextStyle(fontSize: 16, color: Colors.grey)),
+          child: Text(
+            'No hay clientes registrados.\nPulsa el botón "+" para agregar uno.',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 16, color: Colors.grey),
+          ),
         ),
       );
     }
@@ -303,8 +245,74 @@ class _ClientListScreenState extends State<ClientListScreen> {
             trailing: Wrap(
               spacing: 8,
               children: [
-                IconButton(icon: const Icon(Icons.edit, color: Colors.blueAccent), onPressed: () => _editClient(client, index)),
-                IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: () => _deleteClient(client, index)),
+                IconButton(
+                  icon: const Icon(Icons.edit, color: Colors.blueAccent),
+                  onPressed: () async {
+                    final controller = TextEditingController(text: client.name);
+                    final nuevoNombre = await showDialog<String>(
+                      context: context,
+                      builder: (_) => AlertDialog(
+                        title: const Text('Editar cliente'),
+                        content: TextField(
+                          controller: controller,
+                          decoration: const InputDecoration(hintText: 'Nombre del cliente'),
+                        ),
+                        actions: [
+                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
+                          TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Guardar')),
+                        ],
+                      ),
+                    );
+                    if (nuevoNombre == null || nuevoNombre.isEmpty) return;
+
+                    if (esInvitado) {
+                      final key = clientBox.keyAt(index);
+                      await clientBox.put(key, Client(name: nuevoNombre, providerId: client.providerId, id: client.id));
+                    } else {
+                      await Supabase.instance.client
+                          .from('clients')
+                          .update({'name': nuevoNombre}).eq('id', client.id);
+                      final nuevos = await fetchClientsFromSupabase();
+                      if (mounted) setState(() => futureClients = Future.value(nuevos));
+                    }
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.delete, color: Colors.redAccent),
+                  onPressed: () async {
+                    final confirmed = await ConfirmDeleteDialog(
+                    context: context,
+                    title: '¿Eliminar ${client.name}?',
+                    message: 'Esta acción no se puede deshacer.',
+                  );
+
+                  if (confirmed != true) return;
+
+                  
+                  await deleteEntity(
+                    type: 'client',
+                    entity: client,
+                    esInvitado: esInvitado,
+                  );
+
+                  if (esInvitado) {
+                    setState(() {}); 
+                  } else {
+                    final nuevos = await fetchClientsFromSupabase();
+                    if (mounted) {
+                      setState(() {
+                        futureClients = Future.value(nuevos); 
+                      });
+                    }
+                  }
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('Cliente eliminado')),
+                  );
+
+
+                  },
+                ),
               ],
             ),
             onTap: () => Navigator.push(

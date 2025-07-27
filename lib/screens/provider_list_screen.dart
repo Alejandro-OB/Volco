@@ -7,6 +7,9 @@ import 'package:uuid/uuid.dart';
 import '../models/provider.dart' as provider_model;
 import 'client_list_screen.dart';
 import '../utils/widgets/confirm_delete_dialog.dart';
+import '../utils/widgets/main_header.dart';
+import '../utils/helpers/logout_helper.dart';
+import '../utils/helpers/delete_helper.dart';
 
 class ProviderListScreen extends StatefulWidget {
   const ProviderListScreen({super.key});
@@ -37,64 +40,7 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
     return (response as List).map((e) => Map<String, dynamic>.from(e)).toList();
   }
 
-  Future<void> cerrarSesion() async {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (_) => Dialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: screenWidth * 0.9 > 400 ? 400 : screenWidth * 0.9),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              const Icon(Icons.logout, size: 48, color: Colors.redAccent),
-              const SizedBox(height: 12),
-              Text('¿Cerrar sesión?',
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 12),
-              Text(
-                '¿Deseas cerrar sesión?.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.poppins(fontSize: 14),
-              ),
-              const SizedBox(height: 20),
-              Row(children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context, false),
-                    child: Text('Cancelar', style: GoogleFonts.poppins()),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    onPressed: () => Navigator.pop(context, true),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.redAccent,
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    child: Text('Cerrar sesión', style: GoogleFonts.poppins(color: Colors.white)),
-                  ),
-                )
-              ])
-            ]),
-          ),
-        ),
-      ),
-    );
-
-    if (confirm != true) return;
-
-    await Hive.box('config').put('modo_invitado', false);
-    await Supabase.instance.client.auth.signOut();
-
-    if (context.mounted) {
-      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-    }
-  }
+  
 
 
   InputDecoration _inputDecoration(String hint) {
@@ -225,7 +171,14 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
       await providerBox.deleteAt(index);
       setState(() {});
     } else {
-      await Supabase.instance.client.from('providers').delete().eq('id', provider.id);
+      // Usa deleteEntity
+      await deleteEntity(
+        type: 'provider',
+        entity: provider,
+        esInvitado: false,
+      );
+
+      // Refresca la lista de proveedores
       final nuevos = await fetchProvidersFromSupabase();
       if (mounted) {
         setState(() {
@@ -233,9 +186,12 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
         });
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Proveedor eliminado correctamente')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Proveedor eliminado correctamente')),
+      );
     }
   }
+
 
   Widget _buildProviderList(List<provider_model.Provider> providers) {
     if (providers.isEmpty) {
@@ -289,42 +245,16 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: const Color(0xFFF18824),
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            tooltip: esInvitado ? 'Salir' : 'Cerrar sesión',
-            onPressed: () async {
-              if (esInvitado) {
-                Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
-              } else {
-                await cerrarSesion();
-              }
-            },
-          ),
-        ],
-
-      ),
       body: SafeArea(
         child: Column(children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
-            decoration: const BoxDecoration(
-              color: Color(0xFFF18824),
-              borderRadius: BorderRadius.only(bottomLeft: Radius.circular(24), bottomRight: Radius.circular(24)),
-            ),
-            child: Column(children: [
-              Center(child: Image.asset('assets/imgs/logo_volco.png', height: 100)),
-              const SizedBox(height: 12),
-              Text('Proveedores', style: GoogleFonts.poppins(fontSize: 20, color: Colors.white, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 4),
-              Text(esInvitado ? 'Modo invitado (offline)' : 'Sesión iniciada',
-                  style: GoogleFonts.poppins(fontSize: 14, color: Colors.white70)),
-            ]),
+          MainHeader(
+            title: 'Proveedores',
+            subtitle: esInvitado ? 'Modo invitado (offline)' : 'Sesión iniciada',
+            onLogout: () => showLogoutDialog(context),
           ),
+
+
+
           Expanded(
             child: esInvitado
                 ? _buildProviderList(providerBox.values.toList())

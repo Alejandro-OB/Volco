@@ -24,7 +24,21 @@ class _LoginScreenState extends State<LoginScreen> {
 
       if (result.user != null) {
         await Hive.box('config').put('modo_invitado', false);
-        Navigator.pushReplacementNamed(context, '/home');
+
+        final userId = result.user!.id;
+        final userData = await Supabase.instance.client
+            .from('users')
+            .select('role')
+            .eq('id', userId)
+            .single();
+
+        final role = userData['role'];
+
+        if (role == 'admin') {
+          Navigator.pushReplacementNamed(context, '/home'); 
+        } else {
+          Navigator.pushReplacementNamed(context, '/clients'); 
+        }
       } else {
         _showError('Correo o contraseña incorrectos');
       }
@@ -35,9 +49,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
+
   void _accederComoInvitado() async {
     await Hive.box('config').put('modo_invitado', true);
-    Navigator.pushReplacementNamed(context, '/home');
+    Navigator.pushReplacementNamed(context, '/clients');
   }
 
   void _showError(String mensaje) {

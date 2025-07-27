@@ -15,7 +15,7 @@ class TripFormScreen extends StatefulWidget {
   final Account account;
   final Trip? trip;
   final dynamic tripKey;
-  final provider_model.Provider provider;
+  final provider_model.Provider? provider;
 
   const TripFormScreen({
     super.key,
@@ -23,7 +23,7 @@ class TripFormScreen extends StatefulWidget {
     required this.account,
     this.trip,
     this.tripKey,
-    required this.provider,
+    this.provider,
   });
 
   @override

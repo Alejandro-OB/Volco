@@ -1,5 +1,3 @@
-// account_list_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -14,9 +12,9 @@ import '../utils/widgets/confirm_delete_dialog.dart';
 
 class AccountListScreen extends StatefulWidget {
   final Client client;
-  final provider_model.Provider provider;
+  final provider_model.Provider? provider;
 
-  const AccountListScreen({super.key, required this.client, required this.provider});
+  const AccountListScreen({super.key, required this.client, this.provider});
 
   @override
   State<AccountListScreen> createState() => _AccountListScreenState();
@@ -24,7 +22,6 @@ class AccountListScreen extends StatefulWidget {
 
 class _AccountListScreenState extends State<AccountListScreen> {
   late Box<Account> _accountBox;
-  bool _isBoxReady = false;
   bool isAuthenticated = false;
   bool isLoading = true;
   List<Account> supabaseAccounts = [];
@@ -46,7 +43,6 @@ class _AccountListScreenState extends State<AccountListScreen> {
     final boxName = 'accounts_${widget.client.id}';
     _accountBox = await Hive.openBox<Account>(boxName);
     setState(() {
-      _isBoxReady = true;
       isLoading = false;
     });
   }
@@ -181,7 +177,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
 
     final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
     if (alias != null && alias.isNotEmpty) {
-      final account = Account(alias: alias, description: descController.text.trim());
+      final account = Account(alias: alias, clientId: widget.client.id, description: descController.text.trim());
       await _accountBox.add(account);
     }
   }
