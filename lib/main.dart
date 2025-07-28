@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:volco/screens/client_list_screen.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'models/trip.dart';
 import 'models/client.dart';
@@ -10,14 +10,14 @@ import 'models/invoice_preferences.dart';
 import 'models/account.dart';
 import 'models/provider.dart' as volco_model;
 
+import 'screens/client_list_screen.dart';
 import 'screens/provider_list_screen.dart';
 import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/reset_password_screen.dart';
+import 'screens/splash_screen.dart'; 
 
-import 'package:supabase_flutter/supabase_flutter.dart';
-
-Future<void> main() async {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
@@ -41,13 +41,11 @@ Future<void> main() async {
   await Hive.openBox<InvoicePreferences>('invoicePreferences');
   await Hive.openBox('config');
 
-  runApp(const VolcoApp(initialRoute: '/login'));
+  runApp(const VolcoApp());
 }
 
 class VolcoApp extends StatelessWidget {
-  final String initialRoute;
-
-  const VolcoApp({super.key, required this.initialRoute});
+  const VolcoApp({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -72,13 +70,14 @@ class VolcoApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: initialRoute,
+      initialRoute: '/splash', 
       routes: {
+        '/splash': (_) => const SplashScreen(),
         '/login': (_) => const LoginScreen(),
         '/register': (_) => const RegisterScreen(),
-        '/home': (_) => const ProviderListScreen(),
         '/reset-password': (_) => const ResetPasswordScreen(),
-        '/clients':(_) => const ClientListScreen(),
+        '/home': (_) => const ProviderListScreen(),
+        '/clients': (_) => const ClientListScreen(),
       },
     );
   }

@@ -66,10 +66,20 @@ Future<void> showLogoutDialog(BuildContext context) async {
 
   if (confirm != true) return;
 
-  await Hive.box('config').put('modo_invitado', false);
-  await Supabase.instance.client.auth.signOut();
+  try {
+    await Hive.box('config').put('modo_invitado', false);
+    await Hive.box('config').delete('role'); // Si guardaste el rol
+    await Supabase.instance.client.auth.signOut();
 
-  if (context.mounted) {
-    Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    if (context.mounted) {
+      Navigator.pushNamedAndRemoveUntil(context, '/login', (route) => false);
+    }
+  } catch (e) {
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error al cerrar sesión')),
+      );
+    }
   }
 }
+
