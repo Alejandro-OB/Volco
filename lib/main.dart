@@ -1,36 +1,48 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:intl/date_symbol_data_local.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
 import 'models/trip.dart';
 import 'models/client.dart';
 import 'models/invoice_preferences.dart';
-import 'screens/client_list_screen.dart';
 import 'models/account.dart';
-import 'package:intl/date_symbol_data_local.dart';
+import 'models/provider.dart' as volco_model;
+
+import 'screens/client_list_screen.dart';
+import 'screens/provider_list_screen.dart';
+import 'screens/login_screen.dart';
+import 'screens/register_screen.dart';
+import 'screens/reset_password_screen.dart';
+import 'screens/splash_screen.dart'; 
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Usar una ruta más limpia (ApplicationSupportDirectory) en lugar de Documentos
+  await Supabase.initialize(
+    url: 'https://asoihprqragjwstyqjru.supabase.co',
+    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzb2locHJxcmFnandzdHlxanJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjUwNTQsImV4cCI6MjA2Nzc0MTA1NH0.PJRWLX0pZR36WeFyReM-6yt-hOGCe1wJ5XgItQd6qn4',
+  );
+
   final appSupportDir = await getApplicationSupportDirectory();
   await Hive.initFlutter(appSupportDir.path);
-
   await initializeDateFormatting('es_CO');
 
-  // Registrar adaptadores
   Hive.registerAdapter(TripAdapter());
   Hive.registerAdapter(ClientAdapter());
   Hive.registerAdapter(InvoicePreferencesAdapter());
   Hive.registerAdapter(AccountAdapter());
+  Hive.registerAdapter(volco_model.ProviderAdapter());
 
-  // Abrir boxes
   await Hive.openBox<Client>('clients');
   await Hive.openBox<Trip>('trips');
+  await Hive.openBox<volco_model.Provider>('providers');
   await Hive.openBox<InvoicePreferences>('invoicePreferences');
+  await Hive.openBox('config');
 
   runApp(const VolcoApp());
 }
-
 
 class VolcoApp extends StatelessWidget {
   const VolcoApp({super.key});
@@ -39,6 +51,7 @@ class VolcoApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Volco',
+      debugShowCheckedModeBanner: false,
       theme: ThemeData(
         scaffoldBackgroundColor: const Color(0xFFF5F5F5),
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFFF18824)),
@@ -57,7 +70,15 @@ class VolcoApp extends StatelessWidget {
           ),
         ),
       ),
-      home: const ClientListScreen(),
+      initialRoute: '/splash', 
+      routes: {
+        '/splash': (_) => const SplashScreen(),
+        '/login': (_) => const LoginScreen(),
+        '/register': (_) => const RegisterScreen(),
+        '/reset-password': (_) => const ResetPasswordScreen(),
+        '/home': (_) => const ProviderListScreen(),
+        '/clients': (_) => const ClientListScreen(),
+      },
     );
   }
 }

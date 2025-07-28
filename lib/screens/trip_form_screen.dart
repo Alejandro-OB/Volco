@@ -6,14 +6,16 @@ import '../models/trip.dart';
 import '../models/client.dart';
 import '../models/account.dart';
 import 'trip_list_screen.dart';
-import '../utils/widgets/volco_header.dart';
-
+import '../models/provider.dart' as provider_model;
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:uuid/uuid.dart';
 
 class TripFormScreen extends StatefulWidget {
   final Client client;
   final Account account;
   final Trip? trip;
   final dynamic tripKey;
+  final provider_model.Provider? provider;
 
   const TripFormScreen({
     super.key,
@@ -21,6 +23,7 @@ class TripFormScreen extends StatefulWidget {
     required this.account,
     this.trip,
     this.tripKey,
+    this.provider,
   });
 
   @override
@@ -35,7 +38,9 @@ class _TripFormScreenState extends State<TripFormScreen> {
   final _customMaterialController = TextEditingController();
 
   String? _selectedMaterial;
-  late final Box<Trip> _tripBox;
+  Box<Trip>? _tripBox;
+  bool isAuthenticated = false;
+  bool isBoxReady = false;
 
   final _materialOptions = [
     'Arena',
@@ -50,8 +55,8 @@ class _TripFormScreenState extends State<TripFormScreen> {
   @override
   void initState() {
     super.initState();
-    final boxName = 'trips_${widget.client.id}_${widget.account.id}';
-    _tripBox = Hive.box<Trip>(boxName);
+    isAuthenticated = Supabase.instance.client.auth.currentUser != null;
+    _openHiveBox();
 
     if (widget.trip != null) {
       final trip = widget.trip!;
@@ -68,6 +73,17 @@ class _TripFormScreenState extends State<TripFormScreen> {
     } else {
       _dateController.text = DateFormat('yyyy-MM-dd').format(DateTime.now());
     }
+  }
+
+  Future<void> _openHiveBox() async {
+    final boxName = 'trips_${widget.client.id}_${widget.account.id}';
+    if (!Hive.isBoxOpen(boxName)) {
+      await Hive.openBox<Trip>(boxName);
+    }
+    setState(() {
+      _tripBox = Hive.box<Trip>(boxName);
+      isBoxReady = true;
+    });
   }
 
   void _showMaterialPicker(BuildContext context) {
@@ -114,9 +130,10 @@ class _TripFormScreenState extends State<TripFormScreen> {
     );
   }
 
-  void _saveTrip() {
+  void _saveTrip() async {
     final isOther = _selectedMaterial == 'Otro';
     final customMaterial = _customMaterialController.text.trim();
+    final isEditing = widget.trip != null;
 
     if (_formKey.currentState!.validate() &&
         _selectedMaterial != null &&
@@ -129,11 +146,28 @@ class _TripFormScreenState extends State<TripFormScreen> {
         unitValue: int.parse(_unitValueController.text),
       );
 
-      if (widget.trip != null && widget.tripKey != null) {
-        _tripBox.put(widget.tripKey, newTrip);
+      if (isAuthenticated) {
+        final supabase = Supabase.instance.client;
+        final tripData = newTrip.toJson();
+        tripData['id'] = widget.trip?.id ?? const Uuid().v4();
+        tripData['account_id'] = widget.account.id;
+
+        if (isEditing) {
+          await supabase.from('trips').update(tripData).eq('id', widget.trip!.id);
+        } else {
+          await supabase.from('trips').insert(tripData);
+        }
       } else {
-        _tripBox.add(newTrip);
+        if (!isBoxReady) return;
+
+        if (isEditing && widget.tripKey != null) {
+          _tripBox!.put(widget.tripKey, newTrip);
+        } else {
+          _tripBox!.add(newTrip);
+        }
       }
+
+      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -148,7 +182,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
         ),
       );
 
-      if (widget.trip == null) {
+      if (!isEditing) {
         _quantityController.clear();
         _unitValueController.clear();
         _customMaterialController.clear();
@@ -170,157 +204,193 @@ class _TripFormScreenState extends State<TripFormScreen> {
     return SafeArea(
       child: Scaffold(
         backgroundColor: Colors.white,
-        body: SingleChildScrollView(
-          child: Column(
-            children: [
-            VolcoHeader(
-              title: widget.client.name,
-              subtitle: widget.trip != null ? 'Editar viaje' : 'Registrar viaje',
-              onBack: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => TripListScreen(
-                      client: widget.client,
-                      account: widget.account,
-                    ),
-                  ),
-                );
-              },
-            ),
-
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Form(
-                key: _formKey,
+        body: isAuthenticated || isBoxReady
+            ? SingleChildScrollView(
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Datos del viaje', style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 12),
-                    GestureDetector(
-                      onTap: () => _showMaterialPicker(context),
-                      child: AbsorbPointer(
-                        child: TextFormField(
-                          readOnly: true,
-                          controller: TextEditingController(text: _selectedMaterial ?? ''),
-                          decoration: _inputDecoration('Tipo de material').copyWith(
-                            suffixIcon: const Icon(Icons.expand_more),
-                            prefixIcon: const Icon(Icons.construction),
-                          ),
-                          style: GoogleFonts.poppins(color: Colors.black87),
-                          validator: (value) => _selectedMaterial == null ? 'Seleccione un material' : null,
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFFF18824),
+                        borderRadius: BorderRadius.only(
+                          bottomLeft: Radius.circular(24),
+                          bottomRight: Radius.circular(24),
                         ),
                       ),
-                    ),
-                    AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 300),
-                      child: (_selectedMaterial == 'Otro')
-                          ? Padding(
-                              padding: const EdgeInsets.only(top: 16),
-                              child: TextFormField(
-                                key: const ValueKey('otro'),
-                                controller: _customMaterialController,
-                                style: GoogleFonts.poppins(color: Colors.black87),
-                                decoration: _inputDecoration('Escriba el material').copyWith(
-                                  helperText: 'Ingrese el nombre personalizado del material',
-                                  prefixIcon: const Icon(Icons.edit),
+                      child: Row(
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.arrow_back, color: Colors.white),
+                            onPressed: () {
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => TripListScreen(
+                                    client: widget.client,
+                                    account: widget.account,
+                                    provider: widget.provider,
+                                  ),
                                 ),
-                                validator: (value) => (value == null || value.trim().isEmpty)
-                                    ? 'Ingrese el nombre del material'
-                                    : null,
-                              ),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
-                    const SizedBox(height: 20),
-                    TextFormField(
-                      controller: _dateController,
-                      readOnly: true,
-                      style: GoogleFonts.poppins(color: Colors.black87),
-                      decoration: _inputDecoration('Fecha del viaje').copyWith(
-                        suffixIcon: const Icon(Icons.calendar_today),
-                        prefixIcon: const Icon(Icons.event),
-                      ),
-                      onTap: () async {
-                        final picked = await showDatePicker(
-                          context: context,
-                          initialDate: DateTime.tryParse(_dateController.text) ?? DateTime.now(),
-                          firstDate: DateTime(2020),
-                          lastDate: DateTime(2100),
-                        );
-                        if (picked != null) {
-                          _dateController.text = DateFormat('yyyy-MM-dd').format(picked);
-                        }
-                      },
-                    ),
-                    const SizedBox(height: 32),
-                    Text('Costos del viaje',
-                        style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: _quantityController,
-                      keyboardType: TextInputType.number,
-                      style: GoogleFonts.poppins(color: Colors.black87),
-                      decoration: _inputDecoration('Cantidad').copyWith(
-                        hintText: 'Ej: 5',
-                        prefixIcon: const Icon(Icons.format_list_numbered),
-                      ),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Ingrese cantidad' : null,
-                    ),
-                    const SizedBox(height: 16),
-                    TextFormField(
-                      controller: _unitValueController,
-                      keyboardType: TextInputType.number,
-                      style: GoogleFonts.poppins(color: Colors.black87),
-                      decoration: _inputDecoration('Valor unitario').copyWith(
-                        hintText: 'Ej: 120000',
-                        prefixIcon: const Icon(Icons.attach_money),
-                      ),
-                      validator: (value) => (value == null || value.isEmpty) ? 'Ingrese valor' : null,
-                    ),
-                    const SizedBox(height: 32),
-                    Center(
-                      child: ElevatedButton.icon(
-                        onPressed: _saveTrip,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFF18824),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                        ),
-                        icon: const Icon(Icons.save),
-                        label: Text(
-                          isEditing ? 'Guardar cambios' : 'Guardar',
-                          style: GoogleFonts.poppins(fontWeight: FontWeight.w600),
-                        ),
+                              );
+                            },
+                          ),
+                          Image.asset('assets/imgs/logo_volco.png', height: 60),
+                          const SizedBox(width: 12),
+                          Text(
+                            isEditing ? 'Editar Viaje' : 'Registrar Viaje',
+                            style: GoogleFonts.poppins(
+                              fontSize: 20,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    Center(
-                      child: TextButton.icon(
-                        onPressed: () {
-                          Navigator.pushReplacement(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => TripListScreen(
-                                client: widget.client,
-                                account: widget.account,
+                    Padding(
+                      padding: const EdgeInsets.all(20),
+                      child: Form(
+                        key: _formKey,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text('Datos del viaje',
+                                style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 12),
+                            GestureDetector(
+                              onTap: () => _showMaterialPicker(context),
+                              child: AbsorbPointer(
+                                child: TextFormField(
+                                  readOnly: true,
+                                  controller:
+                                      TextEditingController(text: _selectedMaterial ?? ''),
+                                  decoration: _inputDecoration('Tipo de material').copyWith(
+                                    suffixIcon: const Icon(Icons.expand_more),
+                                    prefixIcon: const Icon(Icons.construction),
+                                  ),
+                                  style: GoogleFonts.poppins(color: Colors.black87),
+                                  validator: (value) =>
+                                      _selectedMaterial == null ? 'Seleccione un material' : null,
+                                ),
                               ),
                             ),
-                          );
-                        },
-                        icon: const Icon(Icons.list),
-                        label: Text('Ver viajes', style: GoogleFonts.poppins(fontWeight: FontWeight.w500)),
+                            if (_selectedMaterial == 'Otro')
+                              Padding(
+                                padding: const EdgeInsets.only(top: 16),
+                                child: TextFormField(
+                                  key: const ValueKey('otro'),
+                                  controller: _customMaterialController,
+                                  style: GoogleFonts.poppins(color: Colors.black87),
+                                  decoration: _inputDecoration('Escriba el material').copyWith(
+                                    helperText: 'Ingrese el nombre personalizado del material',
+                                    prefixIcon: const Icon(Icons.edit),
+                                  ),
+                                  validator: (value) => (value == null || value.trim().isEmpty)
+                                      ? 'Ingrese el nombre del material'
+                                      : null,
+                                ),
+                              ),
+                            const SizedBox(height: 20),
+                            TextFormField(
+                              controller: _dateController,
+                              readOnly: true,
+                              style: GoogleFonts.poppins(color: Colors.black87),
+                              decoration: _inputDecoration('Fecha del viaje').copyWith(
+                                suffixIcon: const Icon(Icons.calendar_today),
+                                prefixIcon: const Icon(Icons.event),
+                              ),
+                              onTap: () async {
+                                final picked = await showDatePicker(
+                                  context: context,
+                                  initialDate: DateTime.tryParse(_dateController.text) ??
+                                      DateTime.now(),
+                                  firstDate: DateTime(2020),
+                                  lastDate: DateTime(2100),
+                                );
+                                if (picked != null) {
+                                  _dateController.text =
+                                      DateFormat('yyyy-MM-dd').format(picked);
+                                }
+                              },
+                            ),
+                            const SizedBox(height: 32),
+                            Text('Costos del viaje',
+                                style: GoogleFonts.poppins(
+                                    fontSize: 16, fontWeight: FontWeight.w600)),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: _quantityController,
+                              keyboardType: TextInputType.number,
+                              style: GoogleFonts.poppins(color: Colors.black87),
+                              decoration: _inputDecoration('Cantidad').copyWith(
+                                hintText: 'Ej: 5',
+                                prefixIcon: const Icon(Icons.format_list_numbered),
+                              ),
+                              validator: (value) =>
+                                  (value == null || value.isEmpty) ? 'Ingrese cantidad' : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _unitValueController,
+                              keyboardType: TextInputType.number,
+                              style: GoogleFonts.poppins(color: Colors.black87),
+                              decoration: _inputDecoration('Valor unitario').copyWith(
+                                hintText: 'Ej: 120000',
+                                prefixIcon: const Icon(Icons.attach_money),
+                              ),
+                              validator: (value) =>
+                                  (value == null || value.isEmpty) ? 'Ingrese valor' : null,
+                            ),
+                            const SizedBox(height: 32),
+                            Center(
+                              child: ElevatedButton.icon(
+                                onPressed: _saveTrip,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFF18824),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12)),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 24, vertical: 14),
+                                ),
+                                icon: const Icon(Icons.save),
+                                label: Text(
+                                  isEditing ? 'Guardar cambios' : 'Guardar',
+                                  style:
+                                      GoogleFonts.poppins(fontWeight: FontWeight.w600),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Center(
+                              child: TextButton.icon(
+                                onPressed: () {
+                                  Navigator.pushReplacement(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (_) => TripListScreen(
+                                        client: widget.client,
+                                        account: widget.account,
+                                        provider: widget.provider,
+                                      ),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.list),
+                                label: Text('Ver viajes',
+                                    style: GoogleFonts.poppins(
+                                        fontWeight: FontWeight.w500)),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ],
                 ),
-              ),
-            ),
-          ],
-        ),
+              )
+            : const Center(child: CircularProgressIndicator()),
       ),
-    ),
     );
   }
 

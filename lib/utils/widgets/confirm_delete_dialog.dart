@@ -1,28 +1,23 @@
+// confirm_delete_dialog.dart
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class ConfirmDeleteDialog extends StatelessWidget {
-  final String title;
-  final String message;
-  final VoidCallback onConfirm;
+Future<bool?> ConfirmDeleteDialog({
+  required BuildContext context,
+  required String title,
+  required String message,
+  String confirmText = 'Eliminar',
+  Color confirmColor = Colors.redAccent,
+}) {
+  final screenWidth = MediaQuery.of(context).size.width;
 
-  const ConfirmDeleteDialog({
-    super.key,
-    required this.title,
-    required this.message,
-    required this.onConfirm,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-
-    return Dialog(
+  return showDialog<bool>(
+    context: context,
+    builder: (_) => Dialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8,
-        ),
+        constraints: BoxConstraints(maxWidth: screenWidth * 0.9 > 400 ? 400 : screenWidth * 0.9),
         child: Padding(
           padding: const EdgeInsets.all(20),
           child: Column(
@@ -30,11 +25,9 @@ class ConfirmDeleteDialog extends StatelessWidget {
             children: [
               const Icon(Icons.warning_amber_rounded, size: 48, color: Colors.redAccent),
               const SizedBox(height: 12),
-              Text(title,
-                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+              Text(title, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 12),
-              Text(message,
-                  style: GoogleFonts.poppins(fontSize: 14)),
+              Text(message, textAlign: TextAlign.center, style: GoogleFonts.poppins(fontSize: 14)),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -48,23 +41,20 @@ class ConfirmDeleteDialog extends StatelessWidget {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.redAccent,
+                        backgroundColor: confirmColor,
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      onPressed: () {
-                        Navigator.pop(context, true);
-                        onConfirm();
-                      },
-                      child: Text('Eliminar', style: GoogleFonts.poppins(color: Colors.white)),
+                      onPressed: () => Navigator.pop(context, true),
+                      child: Text(confirmText, style: GoogleFonts.poppins(color: Colors.white)),
                     ),
                   ),
                 ],
-              )
+              ),
             ],
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
 }

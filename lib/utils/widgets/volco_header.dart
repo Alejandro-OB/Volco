@@ -4,13 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 class VolcoHeader extends StatelessWidget {
   final String title;
   final String subtitle;
-  final VoidCallback onBack;
+  final VoidCallback? onBack;
 
   const VolcoHeader({
     super.key,
     required this.title,
     required this.subtitle,
-    required this.onBack,
+    this.onBack,
   });
 
   @override
@@ -26,37 +26,38 @@ class VolcoHeader extends StatelessWidget {
         ),
       ),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.white),
-            onPressed: onBack,
+            onPressed: onBack ?? () => Navigator.pop(context),
           ),
           Image.asset('assets/imgs/logo_volco.png', height: 60),
           const SizedBox(width: 12),
-          Expanded( // 👈 Solución clave
+          Expanded( // Este Expanded previene el overflow
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 16,
                     color: Colors.white,
                     fontWeight: FontWeight.w500,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.poppins(
                     fontSize: 20,
                     color: Colors.white,
                     fontWeight: FontWeight.w700,
                   ),
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
                 ),
               ],
             ),

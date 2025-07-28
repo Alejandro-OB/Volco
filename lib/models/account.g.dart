@@ -18,6 +18,7 @@ class AccountAdapter extends TypeAdapter<Account> {
     };
     return Account(
       alias: fields[1] as String,
+      clientId: fields[5] as String,
       description: fields[2] as String,
       createdAt: fields[3] as DateTime?,
       isActive: fields[4] as bool,
@@ -28,7 +29,7 @@ class AccountAdapter extends TypeAdapter<Account> {
   @override
   void write(BinaryWriter writer, Account obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(6)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -38,7 +39,9 @@ class AccountAdapter extends TypeAdapter<Account> {
       ..writeByte(3)
       ..write(obj.createdAt)
       ..writeByte(4)
-      ..write(obj.isActive);
+      ..write(obj.isActive)
+      ..writeByte(5)
+      ..write(obj.clientId);
   }
 
   @override
