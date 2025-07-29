@@ -21,6 +21,8 @@ Future<Uint8List> generateInvoicePdf({
   bool showSignature = false,
   String dateFormatOption = 'dd/MM/yyyy',
   bool showThankYouText = true,
+  String? startDate,  
+  String? endDate,
 }) async {
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
@@ -124,6 +126,47 @@ Future<Uint8List> generateInvoicePdf({
     ],
   );
 
+  // Cuadro de rango de fechas de la cuenta de cobro
+  final rangeDateBox = pw.Table(
+    border: pw.TableBorder.all(width: 1),
+    columnWidths: {
+      0: pw.FlexColumnWidth(4),
+    },
+    children: [
+      pw.TableRow(
+        children: [
+          pw.Padding(
+            padding: const pw.EdgeInsets.all(6),
+            child: pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.start,
+              children: [
+                pw.Text(
+                  'CUENTA DE COBRO DESDE: ',
+                  style: pw.TextStyle(font: interFont, fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Text(
+                  startDate ?? '-',
+                  style: pw.TextStyle(font: interFont, fontSize: 10),
+                ),
+                pw.SizedBox(width: 20),
+                pw.Text(
+                  'HASTA: ',
+                  style: pw.TextStyle(font: interFont, fontSize: 10, fontWeight: pw.FontWeight.bold),
+                ),
+                pw.Text(
+                  endDate ?? '-',
+                  style: pw.TextStyle(font: interFont, fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    ],
+  );
+
+
+
   // Cuadro de información bancaria
   final bankInfoBox = pw.Table(
     border: pw.TableBorder.all(width: 1),
@@ -182,6 +225,8 @@ Future<Uint8List> generateInvoicePdf({
       pw.SizedBox(height: 8),
       nameAndDateTable,
       serviceBox,
+      rangeDateBox,
+      
     ]
     else
       // Diseño original
@@ -199,6 +244,7 @@ Future<Uint8List> generateInvoicePdf({
               children: [
                 nameAndDateTable,
                 serviceBox,
+                rangeDateBox,
               ],
             ),
           ),

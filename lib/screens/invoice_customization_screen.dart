@@ -34,6 +34,9 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   final _accountTypeController = TextEditingController();
   final _accountNumberController = TextEditingController();
   final _serviceTextController = TextEditingController();
+  final _startDateController = TextEditingController();
+  final _endDateController = TextEditingController();
+
 
   bool isAuthenticated = false;
 
@@ -69,6 +72,10 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     _accountTypeController.text = _prefs.accountType;
     _accountNumberController.text = _prefs.accountNumber;
     _serviceTextController.text = _prefs.serviceText;
+    _startDateController.text = _prefs.startDate ?? '';
+    _endDateController.text = _prefs.endDate ?? '';
+
+
 
     setState(() => _loading = false);
   }
@@ -78,6 +85,16 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     _prefs.accountType = _accountTypeController.text;
     _prefs.accountNumber = _accountNumberController.text;
     _prefs.serviceText = _serviceTextController.text;
+    final start = DateTime.tryParse(_formatForParse(_startDateController.text));
+    final end = DateTime.tryParse(_formatForParse(_endDateController.text));
+
+    if (start != null && end != null && start.isAfter(end)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('La fecha de inicio no puede ser posterior a la fecha de fin')),
+      );
+      return;
+    }
+
 
     if (isAuthenticated) {
       final data = _prefs.toMap();
@@ -286,6 +303,50 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       },
     );
   }
+  Widget _buildDatePickerField({
+    required String label,
+    required TextEditingController controller,
+    required Function(String) onDateSelected,
+  }) {
+    return TextField(
+      controller: controller,
+      readOnly: true,
+      decoration: InputDecoration(
+        labelText: label,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        suffixIcon: const Icon(Icons.calendar_today),
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      ),
+      onTap: () async {
+        final initialDate = DateTime.tryParse(_formatForParse(controller.text)) ?? DateTime.now();
+        final picked = await showDatePicker(
+          context: context,
+          initialDate: initialDate,
+          firstDate: DateTime(2000),
+          lastDate: DateTime(2100),
+        );
+
+        if (picked != null) {
+          final formatted = '${picked.day.toString().padLeft(2, '0')}/${picked.month.toString().padLeft(2, '0')}/${picked.year}';
+          controller.text = formatted;
+          onDateSelected(formatted);
+        }
+      },
+    );
+  }
+
+  String _formatForParse(String input) {
+    try {
+      final parts = input.split('/');
+      if (parts.length == 3) {
+        return '${parts[2]}-${parts[1].padLeft(2, '0')}-${parts[0].padLeft(2, '0')}';
+      }
+    } catch (_) {}
+    return '';
+  }
+
 
   Widget _buildImagePreview(String label, Uint8List? bytes, String? url, VoidCallback onDelete) {
     final imageWidget = isAuthenticated
@@ -402,6 +463,37 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                               ],
                             ),
                           ),
+                          _buildSection(
+                            title: 'Rango de fechas de la cuenta de cobro',
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: _buildDatePickerField(
+                                    label: 'Fecha de inicio',
+                                    controller: _startDateController,
+                                    onDateSelected: (value) {
+                                      _prefs.startDate = value;
+                                      _hasUnsavedChanges = true;
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: _buildDatePickerField(
+                                    label: 'Fecha de fin',
+                                    controller: _endDateController,
+                                    onDateSelected: (value) {
+                                      _prefs.endDate = value;
+                                      _hasUnsavedChanges = true;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+
+
+
                           _buildSection(
                             title: 'Opciones adicionales',
                             child: Column(

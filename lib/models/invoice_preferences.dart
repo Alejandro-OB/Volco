@@ -39,12 +39,17 @@ class InvoicePreferences extends HiveObject {
   @HiveField(10)
   bool showThankYouText;
 
-  // 🔵 Nuevos campos para Supabase
   @HiveField(11)
   String? logoUrl;
 
   @HiveField(12)
   String? signatureUrl;
+
+  @HiveField(13)
+  String? startDate;
+
+  @HiveField(14)
+  String? endDate;
 
   InvoicePreferences({
     required this.tableColorValue,
@@ -60,6 +65,8 @@ class InvoicePreferences extends HiveObject {
     required this.showThankYouText,
     this.logoUrl,
     this.signatureUrl,
+    this.startDate,
+    this.endDate,
   });
 
   Color get tableColor => Color(tableColorValue);
@@ -78,6 +85,8 @@ class InvoicePreferences extends HiveObject {
         showThankYouText: true,
         logoUrl: null,
         signatureUrl: null,
+        startDate: null,
+        endDate: null,
       );
 
   /// 🔁 Método para cargar desde Supabase
@@ -96,6 +105,8 @@ class InvoicePreferences extends HiveObject {
       showThankYouText: map['show_thank_you_text'] ?? true,
       logoUrl: map['logo_url'],
       signatureUrl: map['signature_url'],
+      startDate: map['startDate'],
+      endDate: map['endDate'],
     );
   }
 
@@ -113,6 +124,8 @@ class InvoicePreferences extends HiveObject {
       'show_thank_you_text': showThankYouText,
       'logo_url': logoUrl,
       'signature_url': signatureUrl,
+      'startDate': startDate,
+      'endDate': endDate,
     };
   }
 }

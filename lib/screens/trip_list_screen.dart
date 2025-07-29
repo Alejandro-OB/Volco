@@ -436,26 +436,52 @@ class _TripListScreenState extends State<TripListScreen> {
           label: 'Generar factura',
           labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
           onTap: () async {
-            final list = isAuthenticated ? trips : tripBox.values.toList();
-            final prefs = await _loadInvoicePreferences();
-            final pdf = await generateInvoicePdf(
-              trips: list,
-              clientName: widget.client.name,
-              date: DateTime.now(),
-              customLogoBytes: prefs.logoBytes,
-              customSignatureBytes: prefs.signatureBytes,
-              tableHeaderColor: Color(prefs.tableColorValue).toPdfColor(),
-              customServiceText: prefs.serviceText,
-              showBankInfo: prefs.showBankInfo,
-              bankName: prefs.bankName,
-              accountType: prefs.accountType,
-              accountNumber: prefs.accountNumber,
-              showSignature: prefs.showSignature,
-              dateFormatOption: prefs.dateFormatOption,
-              showThankYouText: prefs.showThankYouText,
+            showDialog(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => AlertDialog(
+                content: Row(
+                  children: [
+                    const CircularProgressIndicator(),
+                    const SizedBox(width: 20),
+                    Expanded(child: Text('Generando factura, por favor espere...')),
+                  ],
+                ),
+              ),
             );
-            await _handlePdf(pdf, widget.client.name);
+
+            try {
+              final list = isAuthenticated ? trips : tripBox.values.toList();
+              final prefs = await _loadInvoicePreferences();
+              final pdf = await generateInvoicePdf(
+                trips: list,
+                clientName: widget.client.name,
+                date: DateTime.now(),
+                customLogoBytes: prefs.logoBytes,
+                customSignatureBytes: prefs.signatureBytes,
+                tableHeaderColor: Color(prefs.tableColorValue).toPdfColor(),
+                customServiceText: prefs.serviceText,
+                showBankInfo: prefs.showBankInfo,
+                bankName: prefs.bankName,
+                accountType: prefs.accountType,
+                accountNumber: prefs.accountNumber,
+                showSignature: prefs.showSignature,
+                dateFormatOption: prefs.dateFormatOption,
+                showThankYouText: prefs.showThankYouText,
+                startDate: prefs.startDate,
+                endDate: prefs.endDate,
+              );
+
+              Navigator.of(context).pop(); // Cierra el diálogo de carga
+              await _handlePdf(pdf, widget.client.name);
+            } catch (e) {
+              Navigator.of(context).pop(); // Asegura cerrar el diálogo si hay error
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Ocurrió un error al generar la factura')),
+              );
+            }
           },
+
         ),
         SpeedDialChild(
           child: const Icon(Icons.settings, color: Colors.white),
