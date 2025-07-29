@@ -22,20 +22,9 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   void initState() {
     super.initState();
-
-    _controller = AnimationController(
-      vsync: this,
-      duration: const Duration(milliseconds: 500),
-    );
-
-    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
-    );
-
-    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeOutBack),
-    );
-
+    _controller = AnimationController(vsync: this, duration: const Duration(milliseconds: 500));
+    _fadeAnimation = Tween<double>(begin: 0, end: 1).animate(CurvedAnimation(parent: _controller, curve: Curves.easeIn));
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
     _controller.forward();
     _checkUpdateAndNavigate();
   }
@@ -43,18 +32,14 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   bool _isRemoteVersionNewer(String remote, String local) {
     final remoteParts = remote.split('+');
     final localParts = local.split('+');
-
     final remoteSemver = remoteParts[0].split('.').map(int.parse).toList();
     final localSemver = localParts[0].split('.').map(int.parse).toList();
-
     final remoteBuild = int.tryParse(remoteParts.length > 1 ? remoteParts[1] : '0') ?? 0;
     final localBuild = int.tryParse(localParts.length > 1 ? localParts[1] : '0') ?? 0;
-
     for (int i = 0; i < 3; i++) {
       if (remoteSemver[i] > localSemver[i]) return true;
       if (remoteSemver[i] < localSemver[i]) return false;
     }
-
     return remoteBuild > localBuild;
   }
 
@@ -70,7 +55,6 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
       final remoteVersion = response.data['version'];
       final apkUrl = response.data['url'];
-
       const currentVersion = appVersion;
 
       debugPrint('[Splash] Versión local: $currentVersion / remota: $remoteVersion');
@@ -160,15 +144,41 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
         }
 
         final apkFile = File('${downloadDir.path}/volco_update.apk');
+        final ValueNotifier<double> progressNotifier = ValueNotifier(0);
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Descargando actualización...')),
-          );
-        }
-
-        debugPrint('[Splash] Iniciando descarga desde: $apkUrl');
-        debugPrint('[Splash] Guardando en: ${apkFile.path}');
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) {
+            return ValueListenableBuilder<double>(
+              valueListenable: progressNotifier,
+              builder: (context, value, _) {
+                return Dialog(
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.download_rounded, color: Color(0xFFF18824), size: 48),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Descargando actualización...',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          '${value.toStringAsFixed(0)}%',
+                          style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              },
+            );
+          },
+        );
 
         try {
           await Dio().download(
@@ -176,18 +186,21 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
             apkFile.path,
             onReceiveProgress: (received, total) {
               if (total != -1) {
-                final percent = (received / total * 100).toStringAsFixed(0);
-                debugPrint('[Splash] Descargado: $percent%');
+                final percent = received / total * 100;
+                progressNotifier.value = percent;
+                debugPrint('[Splash] Descargado: ${percent.toStringAsFixed(0)}%');
               }
             },
           );
 
+          if (mounted) Navigator.of(context).pop(); // cerrar el dialog
           debugPrint('[Splash] Descarga completada. Abriendo archivo...');
           final result = await OpenFilex.open(apkFile.path);
           debugPrint('[Splash] Resultado al abrir archivo: ${result.type}');
         } catch (e) {
-          debugPrint('[Splash] Error durante la descarga o apertura del APK: $e');
+          debugPrint('[Splash] Error al descargar o abrir el archivo: $e');
           if (mounted) {
+            Navigator.of(context).pop(); // cerrar el dialog
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(content: Text('Error al descargar o abrir el archivo.')),
             );
@@ -203,25 +216,19 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     _checkSession();
   }
 
+
   Future<void> _checkSession() async {
     try {
-      debugPrint('[Splash] Ejecutando _checkSession...');
       final isInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
       final session = Supabase.instance.client.auth.currentSession;
       final user = session?.user;
-
       String targetRoute = '/login';
 
       if (isInvitado) {
         targetRoute = '/clients';
       } else if (user != null) {
         try {
-          final userData = await Supabase.instance.client
-              .from('users')
-              .select('role')
-              .eq('id', user.id)
-              .single();
-
+          final userData = await Supabase.instance.client.from('users').select('role').eq('id', user.id).single();
           final role = userData['role'];
           targetRoute = (role == 'admin') ? '/home' : '/clients';
         } catch (_) {
@@ -231,21 +238,16 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
 
       if (!mounted) return;
       await Future.delayed(const Duration(milliseconds: 400));
-      debugPrint('[Splash] Redirigiendo a $targetRoute');
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        Navigator.pushReplacementNamed(context, targetRoute);
-      });
+      Navigator.pushReplacementNamed(context, targetRoute);
     } catch (e) {
-      debugPrint('Error en _checkSession: $e');
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/login');
-      }
+      debugPrint('[Splash] Error en _checkSession: $e');
+      if (mounted) Navigator.pushReplacementNamed(context, '/login');
     }
   }
 
   Future<bool> _requestPermissions() async {
-    final storageStatus = await Permission.manageExternalStorage.status;
-    if (!storageStatus.isGranted) {
+    final status = await Permission.manageExternalStorage.status;
+    if (!status.isGranted) {
       final result = await Permission.manageExternalStorage.request();
       if (!result.isGranted) return false;
     }
@@ -270,10 +272,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
               opacity: _fadeAnimation,
               child: ScaleTransition(
                 scale: _scaleAnimation,
-                child: Image.asset(
-                  'assets/imgs/logo_volco.png',
-                  height: 120,
-                ),
+                child: Image.asset('assets/imgs/logo_volco.png', height: 120),
               ),
             ),
             const SizedBox(height: 24),
