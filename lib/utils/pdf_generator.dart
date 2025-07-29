@@ -23,6 +23,8 @@ Future<Uint8List> generateInvoicePdf({
   bool showThankYouText = true,
   String? startDate,  
   String? endDate,
+  String? rangeTitle,
+  bool showRangeDate = false,
 }) async {
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
@@ -141,7 +143,7 @@ Future<Uint8List> generateInvoicePdf({
               mainAxisAlignment: pw.MainAxisAlignment.start,
               children: [
                 pw.Text(
-                  'CUENTA DE COBRO DESDE: ',
+                  rangeTitle ?? 'SERVICIOS PRESTADOS DESDE: ',
                   style: pw.TextStyle(font: interFont, fontSize: 10, fontWeight: pw.FontWeight.bold),
                 ),
                 pw.Text(
@@ -225,7 +227,7 @@ Future<Uint8List> generateInvoicePdf({
       pw.SizedBox(height: 8),
       nameAndDateTable,
       serviceBox,
-      rangeDateBox,
+      if (showRangeDate) rangeDateBox,
       
     ]
     else
@@ -244,7 +246,8 @@ Future<Uint8List> generateInvoicePdf({
               children: [
                 nameAndDateTable,
                 serviceBox,
-                rangeDateBox,
+                if (showRangeDate) rangeDateBox,
+
               ],
             ),
           ),

@@ -36,6 +36,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   final _serviceTextController = TextEditingController();
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
+  final _rangeTitleController = TextEditingController();
+
 
 
   bool isAuthenticated = false;
@@ -48,36 +50,37 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   }
 
     Future<void> _loadPreferences() async {
-    if (isAuthenticated) {
-      final response = await Supabase.instance.client
-          .from('invoice_preferences')
-          .select()
-          .eq('client_id', widget.client.id)
-          .eq('account_id', widget.account.id)
-          .maybeSingle();
+      if (isAuthenticated) {
+        final response = await Supabase.instance.client
+            .from('invoice_preferences')
+            .select()
+            .eq('client_id', widget.client.id)
+            .eq('account_id', widget.account.id)
+            .maybeSingle();
 
-      if (response != null) {
-        _prefs = InvoicePreferences.fromMap(response);
+        if (response != null) {
+          _prefs = InvoicePreferences.fromMap(response);
+        } else {
+          _prefs = InvoicePreferences.defaultValues();
+        }
       } else {
-        _prefs = InvoicePreferences.defaultValues();
+        final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
+        final box = await Hive.openBox<InvoicePreferences>(boxName);
+        final storedPrefs = box.get('prefs');
+        _prefs = storedPrefs ?? InvoicePreferences.defaultValues();
       }
-    } else {
-      final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
-      final box = await Hive.openBox<InvoicePreferences>(boxName);
-      final storedPrefs = box.get('prefs');
-      _prefs = storedPrefs ?? InvoicePreferences.defaultValues();
-    }
 
-    _bankNameController.text = _prefs.bankName;
-    _accountTypeController.text = _prefs.accountType;
-    _accountNumberController.text = _prefs.accountNumber;
-    _serviceTextController.text = _prefs.serviceText;
-    _startDateController.text = _prefs.startDate ?? '';
-    _endDateController.text = _prefs.endDate ?? '';
+      _bankNameController.text = _prefs.bankName;
+      _accountTypeController.text = _prefs.accountType;
+      _accountNumberController.text = _prefs.accountNumber;
+      _serviceTextController.text = _prefs.serviceText;
+      _startDateController.text = _prefs.startDate ?? '';
+      _endDateController.text = _prefs.endDate ?? '';
+      _rangeTitleController.text = _prefs.rangeTitle ?? '';
 
 
 
-    setState(() => _loading = false);
+      setState(() => _loading = false);
   }
 
   Future<void> _savePreferences() async {
@@ -87,6 +90,9 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     _prefs.serviceText = _serviceTextController.text;
     final start = DateTime.tryParse(_formatForParse(_startDateController.text));
     final end = DateTime.tryParse(_formatForParse(_endDateController.text));
+    _prefs.rangeTitle = _rangeTitleController.text;
+
+
 
     if (start != null && end != null && start.isAfter(end)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -465,32 +471,52 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                           ),
                           _buildSection(
                             title: 'Rango de fechas de la cuenta de cobro',
-                            child: Row(
+                            child: Column(
                               children: [
-                                Expanded(
-                                  child: _buildDatePickerField(
-                                    label: 'Fecha de inicio',
-                                    controller: _startDateController,
-                                    onDateSelected: (value) {
-                                      _prefs.startDate = value;
+                                SwitchListTile(
+                                  title: const Text('¿Incluir rango de fechas?'),
+                                  value: _prefs.showRangeDate,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _prefs.showRangeDate = value;
                                       _hasUnsavedChanges = true;
-                                    },
-                                  ),
+                                    });
+                                  },
                                 ),
-                                const SizedBox(width: 12),
-                                Expanded(
-                                  child: _buildDatePickerField(
-                                    label: 'Fecha de fin',
-                                    controller: _endDateController,
-                                    onDateSelected: (value) {
-                                      _prefs.endDate = value;
-                                      _hasUnsavedChanges = true;
-                                    },
+                                if (_prefs.showRangeDate) ...[
+                                  const SizedBox(height: 12),
+                                  _buildTextField('Título del periodo (opcional)', _rangeTitleController, (v) => _prefs.rangeTitle = v),
+                                  const SizedBox(height: 12),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: _buildDatePickerField(
+                                          label: 'Fecha de inicio',
+                                          controller: _startDateController,
+                                          onDateSelected: (value) {
+                                            _prefs.startDate = value;
+                                            _hasUnsavedChanges = true;
+                                          },
+                                        ),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: _buildDatePickerField(
+                                          label: 'Fecha de fin',
+                                          controller: _endDateController,
+                                          onDateSelected: (value) {
+                                            _prefs.endDate = value;
+                                            _hasUnsavedChanges = true;
+                                          },
+                                        ),
+                                      ),
+                                    ],
                                   ),
-                                ),
+                                ]
                               ],
                             ),
                           ),
+
 
 
 

@@ -51,6 +51,13 @@ class InvoicePreferences extends HiveObject {
   @HiveField(14)
   String? endDate;
 
+  @HiveField(15)
+  String? rangeTitle;
+
+  @HiveField(16)
+  bool showRangeDate;
+
+
   InvoicePreferences({
     required this.tableColorValue,
     required this.serviceText,
@@ -67,6 +74,8 @@ class InvoicePreferences extends HiveObject {
     this.signatureUrl,
     this.startDate,
     this.endDate,
+    this.rangeTitle,
+    required  this.showRangeDate,
   });
 
   Color get tableColor => Color(tableColorValue);
@@ -87,9 +96,11 @@ class InvoicePreferences extends HiveObject {
         signatureUrl: null,
         startDate: null,
         endDate: null,
+        rangeTitle: null,
+        showRangeDate: false,
       );
 
-  /// 🔁 Método para cargar desde Supabase
+  
   factory InvoicePreferences.fromMap(Map<String, dynamic> map) {
     return InvoicePreferences(
       tableColorValue: map['table_color_value'] ?? Colors.black.value,
@@ -99,18 +110,19 @@ class InvoicePreferences extends HiveObject {
       accountType: map['account_type'] ?? '',
       accountNumber: map['account_number'] ?? '',
       showSignature: map['show_signature'] ?? false,
-      logoBytes: null, // No se usan en modo Supabase
+      logoBytes: null, 
       signatureBytes: null,
       dateFormatOption: map['date_format_option'] ?? 'dd/MM/yyyy',
       showThankYouText: map['show_thank_you_text'] ?? true,
       logoUrl: map['logo_url'],
       signatureUrl: map['signature_url'],
-      startDate: map['startDate'],
-      endDate: map['endDate'],
+      startDate: map['start_date'],
+      endDate: map['end_date'],
+      rangeTitle: map['range_title'],
+      showRangeDate: map['show_range_date'] ?? false,
     );
   }
 
-  /// 🔁 Método para guardar en Supabase
   Map<String, dynamic> toMap() {
     return {
       'table_color_value': tableColorValue,
@@ -124,8 +136,10 @@ class InvoicePreferences extends HiveObject {
       'show_thank_you_text': showThankYouText,
       'logo_url': logoUrl,
       'signature_url': signatureUrl,
-      'startDate': startDate,
-      'endDate': endDate,
+      'start_date': startDate,
+      'end_date': endDate,
+      'range_title': rangeTitle,
+      'show_range_date': showRangeDate,
     };
   }
 }

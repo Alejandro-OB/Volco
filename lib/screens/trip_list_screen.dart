@@ -470,12 +470,15 @@ class _TripListScreenState extends State<TripListScreen> {
                 showThankYouText: prefs.showThankYouText,
                 startDate: prefs.startDate,
                 endDate: prefs.endDate,
+                rangeTitle: prefs.rangeTitle,
+                showRangeDate: prefs.showRangeDate,
+                
               );
 
-              Navigator.of(context).pop(); // Cierra el diálogo de carga
+              Navigator.of(context).pop(); 
               await _handlePdf(pdf, widget.client.name);
             } catch (e) {
-              Navigator.of(context).pop(); // Asegura cerrar el diálogo si hay error
+              Navigator.of(context).pop(); 
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(content: Text('Ocurrió un error al generar la factura')),
               );
