@@ -1,6 +1,11 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:dio/dio.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:volco/generated/version.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -32,43 +37,219 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
     );
 
     _controller.forward();
+    _checkUpdateAndNavigate();
+  }
 
-    // Inicia la verificación sin esperar tanto
+  bool _isRemoteVersionNewer(String remote, String local) {
+    final remoteParts = remote.split('+');
+    final localParts = local.split('+');
+
+    final remoteSemver = remoteParts[0].split('.').map(int.parse).toList();
+    final localSemver = localParts[0].split('.').map(int.parse).toList();
+
+    final remoteBuild = int.tryParse(remoteParts.length > 1 ? remoteParts[1] : '0') ?? 0;
+    final localBuild = int.tryParse(localParts.length > 1 ? localParts[1] : '0') ?? 0;
+
+    for (int i = 0; i < 3; i++) {
+      if (remoteSemver[i] > localSemver[i]) return true;
+      if (remoteSemver[i] < localSemver[i]) return false;
+    }
+
+    return remoteBuild > localBuild;
+  }
+
+  Future<void> _checkUpdateAndNavigate() async {
+    try {
+      debugPrint('[Splash] Verificando versión remota...');
+      final response = await Dio()
+          .get(
+            'https://alejandro-ob.github.io/volco-page/version.json',
+            options: Options(responseType: ResponseType.json),
+          )
+          .timeout(const Duration(seconds: 5));
+
+      final remoteVersion = response.data['version'];
+      final apkUrl = response.data['url'];
+
+      const currentVersion = appVersion;
+
+      debugPrint('[Splash] Versión local: $currentVersion / remota: $remoteVersion');
+
+      if (_isRemoteVersionNewer(remoteVersion, currentVersion)) {
+        debugPrint('[Splash] Actualización requerida. Mostrando diálogo.');
+
+        final confirmed = await showDialog<bool>(
+          context: context,
+          barrierDismissible: false,
+          builder: (_) => Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.system_update, color: Color(0xFFF18824), size: 48),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Nueva versión disponible',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    'Versión actual: ${currentVersion.split('+').first}\nNueva versión: ${remoteVersion.split('+').first}',
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14, color: Colors.black87),
+                  ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'Debes actualizar para continuar usando la aplicación.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(fontSize: 14, color: Colors.black54),
+                  ),
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () {
+                            Navigator.pop(context, false);
+                            exit(0);
+                          },
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.black87,
+                            side: const BorderSide(color: Colors.black26),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Cancelar'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () => Navigator.pop(context, true),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFFF18824),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                          child: const Text('Actualizar'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+
+        if (confirmed != true) return;
+
+        final granted = await _requestPermissions();
+        if (!granted) return;
+
+        final downloadDir = Directory('/storage/emulated/0/Download');
+        if (!downloadDir.existsSync()) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('No se encontró la carpeta de descargas.')),
+            );
+          }
+          return;
+        }
+
+        final apkFile = File('${downloadDir.path}/volco_update.apk');
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Descargando actualización...')),
+          );
+        }
+
+        debugPrint('[Splash] Iniciando descarga desde: $apkUrl');
+        debugPrint('[Splash] Guardando en: ${apkFile.path}');
+
+        try {
+          await Dio().download(
+            apkUrl,
+            apkFile.path,
+            onReceiveProgress: (received, total) {
+              if (total != -1) {
+                final percent = (received / total * 100).toStringAsFixed(0);
+                debugPrint('[Splash] Descargado: $percent%');
+              }
+            },
+          );
+
+          debugPrint('[Splash] Descarga completada. Abriendo archivo...');
+          final result = await OpenFilex.open(apkFile.path);
+          debugPrint('[Splash] Resultado al abrir archivo: ${result.type}');
+        } catch (e) {
+          debugPrint('[Splash] Error durante la descarga o apertura del APK: $e');
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(content: Text('Error al descargar o abrir el archivo.')),
+            );
+          }
+        }
+        return;
+      }
+    } catch (e) {
+      debugPrint('Error comprobando actualización: $e');
+    }
+
+    debugPrint('[Splash] Continuando a _checkSession...');
     _checkSession();
   }
 
   Future<void> _checkSession() async {
-    final isInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
-    final session = Supabase.instance.client.auth.currentSession;
-    final user = session?.user;
+    try {
+      debugPrint('[Splash] Ejecutando _checkSession...');
+      final isInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
+      final session = Supabase.instance.client.auth.currentSession;
+      final user = session?.user;
 
-    String targetRoute = '/login';
+      String targetRoute = '/login';
 
-    if (isInvitado) {
-      targetRoute = '/clients';
-    } else if (user != null) {
-      try {
-        final userData = await Supabase.instance.client
-            .from('users')
-            .select('role')
-            .eq('id', user.id)
-            .single();
-
-        final role = userData['role'];
-        targetRoute = (role == 'admin') ? '/home' : '/clients';
-      } catch (_) {
+      if (isInvitado) {
         targetRoute = '/clients';
+      } else if (user != null) {
+        try {
+          final userData = await Supabase.instance.client
+              .from('users')
+              .select('role')
+              .eq('id', user.id)
+              .single();
+
+          final role = userData['role'];
+          targetRoute = (role == 'admin') ? '/home' : '/clients';
+        } catch (_) {
+          targetRoute = '/clients';
+        }
+      }
+
+      if (!mounted) return;
+      await Future.delayed(const Duration(milliseconds: 400));
+      debugPrint('[Splash] Redirigiendo a $targetRoute');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        Navigator.pushReplacementNamed(context, targetRoute);
+      });
+    } catch (e) {
+      debugPrint('Error en _checkSession: $e');
+      if (mounted) {
+        Navigator.pushReplacementNamed(context, '/login');
       }
     }
+  }
 
-    if (!mounted) return;
-
-    // Espera solo lo mínimo necesario para animación (~500ms)
-    await Future.delayed(const Duration(milliseconds: 400));
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      Navigator.pushReplacementNamed(context, targetRoute);
-    });
+  Future<bool> _requestPermissions() async {
+    final storageStatus = await Permission.manageExternalStorage.status;
+    if (!storageStatus.isGranted) {
+      final result = await Permission.manageExternalStorage.request();
+      if (!result.isGranted) return false;
+    }
+    return true;
   }
 
   @override
