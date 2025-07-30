@@ -90,8 +90,12 @@ Future<void> deleteEntity({
         await supabase.from('clients').delete().eq('id', clientId);
       }
 
-      // 3. Finalmente, eliminar el proveedor
+      // 3. Finalmente, eliminar preferencias globales del proveedor
+      await supabase.from('invoice_preferences').delete().eq('provider_id', entity.id);
+
+      // 4. Finalmente, eliminar el proveedor
       await supabase.from('providers').delete().eq('id', entity.id);
+
     }
   }
 

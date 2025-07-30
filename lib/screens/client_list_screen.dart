@@ -59,12 +59,18 @@ class _ClientListScreenState extends State<ClientListScreen> {
     final user = Supabase.instance.client.auth.currentUser;
     if (user == null) return [];
 
-    final query = Supabase.instance.client.from('clients').select().eq('user_id', user.id);
+    var query = Supabase.instance.client.from('clients').select().eq('user_id', user.id);
+
+    // Agrega filtro por proveedor si aplica
     if (role == 'admin' && widget.provider != null) {
-      query.eq('provider_id', widget.provider!.id);
+      query = query.eq('provider_id', widget.provider!.id);
+    } else {
+      debugPrint(' No se aplica filtro por provider');
     }
 
     final response = await query;
+
+    
     return (response as List).map((data) {
       return Client(
         id: data['id'],
@@ -73,6 +79,8 @@ class _ClientListScreenState extends State<ClientListScreen> {
       );
     }).toList();
   }
+
+
 
   Future<void> _addClient() async {
     final controller = TextEditingController();
@@ -118,6 +126,11 @@ class _ClientListScreenState extends State<ClientListScreen> {
                       } else {
                         final user = Supabase.instance.client.auth.currentUser;
                         if (user == null) return;
+                        if (role == 'admin' && (widget.provider == null || widget.provider!.id.isEmpty)) {
+                          debugPrint('❌ No se puede crear cliente sin provider_id siendo admin');
+                          return;
+                        }
+
                         await Supabase.instance.client.from('clients').insert({
                           'id': uuid.v4(),
                           'name': name,
