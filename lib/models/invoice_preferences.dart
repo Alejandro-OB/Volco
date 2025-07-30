@@ -60,6 +60,12 @@ class InvoicePreferences extends HiveObject {
   @HiveField(17)
   String thankYouText;
 
+  @HiveField(18)
+  String providerName;
+
+  @HiveField(19)
+  String providerDocument;
+
 
 
   InvoicePreferences({
@@ -81,6 +87,8 @@ class InvoicePreferences extends HiveObject {
     this.rangeTitle,
     required  this.showRangeDate,
     required this.thankYouText,
+    this.providerName = '',
+    this.providerDocument = '',
   });
 
   Color get tableColor => Color(tableColorValue);
@@ -104,6 +112,8 @@ class InvoicePreferences extends HiveObject {
         rangeTitle: 'SERVICIOS PRESTADOS DESDE',
         showRangeDate: false,
         thankYouText: '¡Gracias por confiar en nuestros servicios!',
+        providerName: '',
+        providerDocument: '',
       );
 
   
@@ -127,6 +137,8 @@ class InvoicePreferences extends HiveObject {
       rangeTitle: map['range_title'],
       showRangeDate: map['show_range_date'] ?? false,
       thankYouText: map['thank_you_text'] ?? '¡Gracias por confiar en nuestros servicios!',
+      providerName: map['provider_name'] ?? '',
+      providerDocument: map['provider_document'] ?? '',
     );
   }
 
@@ -148,6 +160,8 @@ class InvoicePreferences extends HiveObject {
       'range_title': rangeTitle,
       'show_range_date': showRangeDate,
       'thank_you_text': thankYouText,
+      'provider_name': providerName,
+      'provider_document': providerDocument,
     };
   }
 }

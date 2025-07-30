@@ -473,7 +473,8 @@ class _TripListScreenState extends State<TripListScreen> {
                 rangeTitle: prefs.rangeTitle,
                 showRangeDate: prefs.showRangeDate,
                 thankYouText: prefs.thankYouText,
-                
+                providerName: prefs.providerName,
+                providerDocument: prefs.providerDocument,
               );
 
               Navigator.of(context).pop(); 

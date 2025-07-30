@@ -38,6 +38,9 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   final _endDateController = TextEditingController();
   final _rangeTitleController = TextEditingController();
   final _thankYouTextController = TextEditingController();
+  final _providerNameController = TextEditingController();
+  final _providerIdController = TextEditingController();
+
 
 
 
@@ -80,10 +83,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _endDateController.text = _prefs.endDate ?? '';
       _rangeTitleController.text = _prefs.rangeTitle ?? '';
       _thankYouTextController.text = _prefs.thankYouText;
-
-
-
-
+      _providerNameController.text = _prefs.providerName;
+      _providerIdController.text = _prefs.providerDocument;
       setState(() => _loading = false);
   }
 
@@ -543,6 +544,19 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                     _hasUnsavedChanges = true;
                                   }),
                                 ),
+                                if (_prefs.showSignature) ...[
+                                  const SizedBox(height: 12),
+                                  _buildTextField('Nombre del proveedor', _providerNameController, (v) {
+                                    _prefs.providerName = v;
+                                    _hasUnsavedChanges = true;
+                                  }),
+                                  const SizedBox(height: 12),
+                                  _buildTextField('Cédula del proveedor', _providerIdController, (v) {
+                                    _prefs.providerDocument = v;
+                                    _hasUnsavedChanges = true;
+                                  }),
+                                ],
+
                                 const SizedBox(height: 12),
                                 SwitchListTile(
                                   title: const Text('¿Incluir texto de agradecimiento?'),

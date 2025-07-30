@@ -26,6 +26,9 @@ Future<Uint8List> generateInvoicePdf({
   String? rangeTitle,
   bool showRangeDate = false,
   String? thankYouText,
+  String? providerName,
+  String? providerDocument,
+
 }) async {
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
@@ -397,11 +400,20 @@ Future<Uint8List> generateInvoicePdf({
             ),
             pw.SizedBox(height: 4),
             pw.Text('Firma autorizada', style: pw.TextStyle(font: interFont, fontSize: 9)),
+            if (providerName != null && providerName.isNotEmpty) ...[
+              pw.SizedBox(height: 4),
+              pw.Text(providerName, style: pw.TextStyle(font: interFont, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+            ],
+            if (providerDocument != null && providerDocument.isNotEmpty) ...[
+              pw.SizedBox(height: 2),
+              pw.Text('C.C. $providerDocument', style: pw.TextStyle(font: interFont, fontSize: 9)),
+            ],
           ],
         ),
       ),
     );
   }
+
 
   if (showThankYouText && (thankYouText?.trim().isNotEmpty ?? false)) {
     pdfWidgets.add(
