@@ -69,12 +69,10 @@ class _TripListScreenState extends State<TripListScreen> {
           .maybeSingle();
 
       if (cuentaPrefsResponse != null) {
-        debugPrint('✅ Preferencias encontradas por cuenta: $cuentaPrefsResponse');
         final cuentaPrefs = InvoicePreferences.fromMap(cuentaPrefsResponse);
 
         // Si hay que aplicar las preferencias globales del proveedor
         if (cuentaPrefs.applyToAllAccounts && userRole == 'admin' && widget.provider != null) {
-          debugPrint('🔁 Se deben aplicar preferencias globales del proveedor (admin + applyToAllAccounts == true)');
 
           final proveedorPrefsResponse = await Supabase.instance.client
               .from('invoice_preferences')
@@ -84,21 +82,19 @@ class _TripListScreenState extends State<TripListScreen> {
               .maybeSingle();
 
           if (proveedorPrefsResponse != null) {
-            debugPrint('✅ Preferencias globales del proveedor encontradas: $proveedorPrefsResponse');
             final proveedorPrefs = InvoicePreferences.fromMap(proveedorPrefsResponse);
             await _downloadImages(proveedorPrefs);
             return proveedorPrefs;
           } else {
-            debugPrint('⚠️ No se encontraron preferencias globales para el proveedor.');
+            debugPrint('No se encontraron preferencias globales para el proveedor.');
           }
         }
 
         // Retornar las preferencias por cuenta si no aplica global
-        debugPrint('📄 Usando preferencias por cuenta.');
         await _downloadImages(cuentaPrefs);
         return cuentaPrefs;
       } else {
-        debugPrint('❌ No se encontraron preferencias por cuenta.');
+        debugPrint('No se encontraron preferencias por cuenta.');
       }
 
       // 3. Buscar directamente preferencias globales si no hay por cuenta
@@ -123,14 +119,12 @@ class _TripListScreenState extends State<TripListScreen> {
       }
 
       // 4. Por defecto
-      debugPrint('🧾 Usando preferencias por defecto.');
       return InvoicePreferences.defaultValues();
     } else {
       // Modo invitado
       final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
       final box = await Hive.openBox<InvoicePreferences>(boxName);
       final storedPrefs = box.get('prefs');
-      debugPrint('📦 Preferencias desde Hive ($boxName): ${storedPrefs != null ? 'cargadas' : 'no encontradas, usando por defecto'}');
       return storedPrefs ?? InvoicePreferences.defaultValues();
     }
   }
@@ -274,6 +268,74 @@ class _TripListScreenState extends State<TripListScreen> {
     } catch (_) {}
     return [];
   }
+
+  String _calculateTotal() {
+    double total = 0;
+
+    if (isAuthenticated) {
+      for (final trip in trips) {
+        total += trip.total;
+      }
+    } else if (tripBox.isOpen) {
+      for (final trip in tripBox.values) {
+        total += trip.total;
+      }
+    }
+
+    return total.toStringAsFixed(2);
+  }
+
+  Widget _buildTotalAcumulado() {
+    final total = _calculateTotal();
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+      margin: const EdgeInsets.only(top: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black12,
+            blurRadius: 6,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.attach_money, color: Colors.black87, size: 28),
+              const SizedBox(width: 8),
+              Text(
+                'Total acumulado:',
+                style: GoogleFonts.poppins(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+          Text(
+            '\$$total',
+            style: GoogleFonts.poppins(
+              fontSize: 20,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFFF18824),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+
+
+
+
+
 
   Future<void> _handlePdf(Uint8List pdfData, String name) async {
     final now = DateTime.now();
@@ -597,36 +659,63 @@ class _TripListScreenState extends State<TripListScreen> {
             VolcoHeader(
               title: widget.client.name,
               subtitle: 'Viajes de ${widget.account.alias}',
-              onBack: !isAuthenticated ? () async {
-                final boxName = 'accounts_${widget.client.id}';
-                if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
-                if (tripBox.isOpen) await tripBox.close();
-                if (context.mounted) {
-                  Navigator.pushAndRemoveUntil(
-                    context,
-                    MaterialPageRoute(builder: (_) => AccountListScreen(client: widget.client, provider: widget.provider)),
-                    (route) => false,
-                  );
-                }
-              } : null,
+              onBack: !isAuthenticated
+                  ? () async {
+                      final boxName = 'accounts_${widget.client.id}';
+                      if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
+                      if (tripBox.isOpen) await tripBox.close();
+                      if (context.mounted) {
+                        Navigator.pushAndRemoveUntil(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => AccountListScreen(client: widget.client, provider: widget.provider),
+                          ),
+                          (route) => false,
+                        );
+                      }
+                    }
+                  : null,
             ),
             Expanded(
               child: isAuthenticated
                   ? _buildTripList(trips, supabase: true)
                   : !isBoxReady
-                      ? Center(child: CircularProgressIndicator())
+                      ? const Center(child: CircularProgressIndicator())
                       : ValueListenableBuilder<Box<Trip>>(
                           valueListenable: tripBox.listenable(),
                           builder: (_, box, __) => _buildTripList(box.values.toList()),
                         ),
             ),
-
           ],
         ),
       ),
-      floatingActionButton: _buildSpeedDial(),
-    );
-  }
+
+      floatingActionButton: Padding(
+        padding: const EdgeInsets.only(bottom: 80.0), 
+        child: _buildSpeedDial(),
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+
+      bottomNavigationBar: Container(
+        color: Colors.white,
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        child: isAuthenticated
+            ? _buildTotalAcumulado()
+            : !isBoxReady
+                ? const SizedBox() // o un loader si prefieres
+                : ValueListenableBuilder<Box<Trip>>(
+                    valueListenable: tripBox.listenable(),
+                    builder: (_, __, ___) => _buildTotalAcumulado(),
+                  ),
+      ),
+
+
+  );
+}
+
+
+
+
 }
 
 extension on Color {

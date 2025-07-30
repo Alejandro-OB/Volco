@@ -83,7 +83,11 @@ class _ClientListScreenState extends State<ClientListScreen> {
 
 
   Future<void> _addClient() async {
-    final controller = TextEditingController();
+    await showClientDialog();
+  }
+
+  Future<void> showClientDialog({Client? client, int? index}) async {
+    final controller = TextEditingController(text: client?.name ?? '');
     final screenWidth = MediaQuery.of(context).size.width;
 
     await showDialog(
@@ -95,12 +99,16 @@ class _ClientListScreenState extends State<ClientListScreen> {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text('Nuevo Cliente', style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+              Text(client == null ? 'Nuevo Cliente' : 'Editar Cliente',
+                  style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
               const SizedBox(height: 16),
               TextField(controller: controller, decoration: _inputDecoration('Nombre del cliente')),
               const SizedBox(height: 20),
               Row(children: [
-                Expanded(child: TextButton(onPressed: () => Navigator.pop(context), child: Text('Cancelar', style: GoogleFonts.poppins()))),
+                Expanded(
+                    child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancelar', style: GoogleFonts.poppins()))),
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
@@ -112,39 +120,70 @@ class _ClientListScreenState extends State<ClientListScreen> {
                     onPressed: () async {
                       final name = controller.text.trim();
                       if (name.isEmpty) return;
-                      Navigator.pop(context);
 
-                      if (esInvitado) {
-                        await clientBox.add(
-                          Client(
-                            id: uuid.v4(), 
-                            name: name,
-                            providerId: widget.provider?.id ?? '',
-                          ),
+                      Navigator.pop(context); 
+
+                      try {
+                        if (esInvitado) {
+                          if (client == null) {
+                            await clientBox.add(Client(id: uuid.v4(), name: name, providerId: widget.provider?.id ?? ''));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Cliente creado correctamente (modo invitado)')),
+                            );
+                          } else {
+                            await clientBox.put(clientBox.keyAt(index!), Client(id: client.id, name: name, providerId: client.providerId));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Cliente editado correctamente (modo invitado)')),
+                            );
+                          }
+                          setState(() {}); // actualiza la vista local
+                        } else {
+                          final user = Supabase.instance.client.auth.currentUser;
+                          if (user == null) return;
+
+                          if (client == null) {
+                            if (role == 'admin' && (widget.provider == null || widget.provider!.id.isEmpty)) {
+                              debugPrint('No se puede crear cliente sin provider_id siendo admin');
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(content: Text('Error: Falta provider_id para crear cliente')),
+                              );
+                              return;
+                            }
+
+                            await Supabase.instance.client.from('clients').insert({
+                              'id': uuid.v4(),
+                              'name': name,
+                              'provider_id': widget.provider?.id,
+                              'user_id': user.id,
+                            });
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Cliente creado correctamente')),
+                            );
+                          } else {
+                            await Supabase.instance.client
+                                .from('clients')
+                                .update({'name': name}).eq('id', client.id);
+
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Cliente editado correctamente')),
+                            );
+                          }
+
+                          final nuevos = await fetchClientsFromSupabase();
+                          if (mounted) {
+                            setState(() {
+                              futureClients = Future.value(nuevos);
+                            });
+                          }
+                        }
+                      } catch (e) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(content: Text('Ocurrió un error: $e')),
                         );
-
-                      } else {
-                        final user = Supabase.instance.client.auth.currentUser;
-                        if (user == null) return;
-                        if (role == 'admin' && (widget.provider == null || widget.provider!.id.isEmpty)) {
-                          debugPrint('❌ No se puede crear cliente sin provider_id siendo admin');
-                          return;
-                        }
-
-                        await Supabase.instance.client.from('clients').insert({
-                          'id': uuid.v4(),
-                          'name': name,
-                          'provider_id': widget.provider?.id,
-                          'user_id': user.id,
-                        });
-                        final nuevos = await fetchClientsFromSupabase();
-                        if (mounted) {
-                          setState(() {
-                            futureClients = Future.value(nuevos);
-                          });
-                        }
                       }
                     },
+
                     child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
                   ),
                 ),
@@ -155,6 +194,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
       ),
     );
   }
+
 
   InputDecoration _inputDecoration(String hint) {
     return InputDecoration(
@@ -260,35 +300,7 @@ class _ClientListScreenState extends State<ClientListScreen> {
               children: [
                 IconButton(
                   icon: const Icon(Icons.edit, color: Colors.blueAccent),
-                  onPressed: () async {
-                    final controller = TextEditingController(text: client.name);
-                    final nuevoNombre = await showDialog<String>(
-                      context: context,
-                      builder: (_) => AlertDialog(
-                        title: const Text('Editar cliente'),
-                        content: TextField(
-                          controller: controller,
-                          decoration: const InputDecoration(hintText: 'Nombre del cliente'),
-                        ),
-                        actions: [
-                          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancelar')),
-                          TextButton(onPressed: () => Navigator.pop(context, controller.text.trim()), child: const Text('Guardar')),
-                        ],
-                      ),
-                    );
-                    if (nuevoNombre == null || nuevoNombre.isEmpty) return;
-
-                    if (esInvitado) {
-                      final key = clientBox.keyAt(index);
-                      await clientBox.put(key, Client(name: nuevoNombre, providerId: client.providerId, id: client.id));
-                    } else {
-                      await Supabase.instance.client
-                          .from('clients')
-                          .update({'name': nuevoNombre}).eq('id', client.id);
-                      final nuevos = await fetchClientsFromSupabase();
-                      if (mounted) setState(() => futureClients = Future.value(nuevos));
-                    }
-                  },
+                  onPressed: () => showClientDialog(client: client, index: index),
                 ),
                 IconButton(
                   icon: const Icon(Icons.delete, color: Colors.redAccent),
