@@ -29,6 +29,7 @@ import 'invoice_customization_screen.dart';
 import 'account_list_screen.dart';
 
 
+
 class TripListScreen extends StatefulWidget {
   final Client client;
   final Account account;
@@ -41,6 +42,8 @@ class TripListScreen extends StatefulWidget {
 }
 
 class _TripListScreenState extends State<TripListScreen> {
+  
+  String? userRole;
   Future<Uint8List> _downloadImageBytes(String url) async {
     final request = await HttpClient().getUrl(Uri.parse(url));
     final response = await request.close();
@@ -54,47 +57,120 @@ class _TripListScreenState extends State<TripListScreen> {
 
   Future<InvoicePreferences> _loadInvoicePreferences() async {
     final isAuthenticated = Supabase.instance.client.auth.currentUser != null;
+    debugPrint('📥 Cargando preferencias de factura... Usuario autenticado: $isAuthenticated');
 
     if (isAuthenticated) {
-      final response = await Supabase.instance.client
+      // 1. Buscar preferencias por cuenta
+      final cuentaPrefsResponse = await Supabase.instance.client
           .from('invoice_preferences')
           .select()
           .eq('client_id', widget.client.id)
           .eq('account_id', widget.account.id)
           .maybeSingle();
 
-      if (response != null) {
-        final prefs = InvoicePreferences.fromMap(response);
+      if (cuentaPrefsResponse != null) {
+        debugPrint('✅ Preferencias encontradas por cuenta: $cuentaPrefsResponse');
+        final cuentaPrefs = InvoicePreferences.fromMap(cuentaPrefsResponse);
 
-        // Descargar logo desde URL si existe
-        if (prefs.logoUrl != null) {
-          try {
-            prefs.logoBytes = await _downloadImageBytes(prefs.logoUrl!);
-          } catch (_) {
-            debugPrint('Error descargando logo');
+        // Si hay que aplicar las preferencias globales del proveedor
+        if (cuentaPrefs.applyToAllAccounts && userRole == 'admin' && widget.provider != null) {
+          debugPrint('🔁 Se deben aplicar preferencias globales del proveedor (admin + applyToAllAccounts == true)');
+
+          final proveedorPrefsResponse = await Supabase.instance.client
+              .from('invoice_preferences')
+              .select()
+              .eq('provider_id', widget.provider!.id)
+              .eq('apply_to_all_accounts', true)
+              .maybeSingle();
+
+          if (proveedorPrefsResponse != null) {
+            debugPrint('✅ Preferencias globales del proveedor encontradas: $proveedorPrefsResponse');
+            final proveedorPrefs = InvoicePreferences.fromMap(proveedorPrefsResponse);
+            await _downloadImages(proveedorPrefs);
+            return proveedorPrefs;
+          } else {
+            debugPrint('⚠️ No se encontraron preferencias globales para el proveedor.');
           }
         }
 
-        // Descargar firma desde URL si existe
-        if (prefs.signatureUrl != null) {
-          try {
-            prefs.signatureBytes = await _downloadImageBytes(prefs.signatureUrl!);
-          } catch (_) {
-            debugPrint('Error descargando firma');
-          }
-        }
-
-        return prefs;
+        // Retornar las preferencias por cuenta si no aplica global
+        debugPrint('📄 Usando preferencias por cuenta.');
+        await _downloadImages(cuentaPrefs);
+        return cuentaPrefs;
       } else {
-        return InvoicePreferences.defaultValues();
+        debugPrint('❌ No se encontraron preferencias por cuenta.');
       }
+
+      // 3. Buscar directamente preferencias globales si no hay por cuenta
+      if (userRole == 'admin' && widget.provider != null) {
+        debugPrint('🔍 Buscando preferencias globales directamente (por proveedor).');
+
+        final proveedorPrefsResponse = await Supabase.instance.client
+            .from('invoice_preferences')
+            .select()
+            .eq('provider_id', widget.provider!.id)
+            .eq('apply_to_all_accounts', true)
+            .maybeSingle();
+
+        if (proveedorPrefsResponse != null) {
+          debugPrint('✅ Preferencias globales del proveedor encontradas (sin cuenta): $proveedorPrefsResponse');
+          final proveedorPrefs = InvoicePreferences.fromMap(proveedorPrefsResponse);
+          await _downloadImages(proveedorPrefs);
+          return proveedorPrefs;
+        } else {
+          debugPrint('⚠️ No se encontraron preferencias globales del proveedor (sin cuenta).');
+        }
+      }
+
+      // 4. Por defecto
+      debugPrint('🧾 Usando preferencias por defecto.');
+      return InvoicePreferences.defaultValues();
     } else {
+      // Modo invitado
       final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
       final box = await Hive.openBox<InvoicePreferences>(boxName);
       final storedPrefs = box.get('prefs');
+      debugPrint('📦 Preferencias desde Hive ($boxName): ${storedPrefs != null ? 'cargadas' : 'no encontradas, usando por defecto'}');
       return storedPrefs ?? InvoicePreferences.defaultValues();
     }
   }
+
+
+  Future<void> _downloadImages(InvoicePreferences prefs) async {
+    if (prefs.logoUrl != null) {
+      try {
+        prefs.logoBytes = await _downloadImageBytes(prefs.logoUrl!);
+      } catch (_) {
+        debugPrint('Error descargando logo');
+      }
+    }
+
+    if (prefs.signatureUrl != null) {
+      try {
+        prefs.signatureBytes = await _downloadImageBytes(prefs.signatureUrl!);
+      } catch (_) {
+        debugPrint('Error descargando firma');
+      }
+    }
+  }
+
+  Future<void> _loadUserRole() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      final userData = await Supabase.instance.client
+          .from('users')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (userData != null) {
+        setState(() {
+          userRole = userData['role'];
+        });
+      }
+    }
+  }
+
 
   Future<String?> _askImportBehavior() async {
     return await showDialog<String>(
@@ -132,6 +208,7 @@ class _TripListScreenState extends State<TripListScreen> {
     isAuthenticated = Supabase.instance.client.auth.currentUser != null;
     if (isAuthenticated) {
       _fetchSupabaseTrips();
+      _loadUserRole();
     } else {
       _openHiveBox();
     }
@@ -488,15 +565,23 @@ class _TripListScreenState extends State<TripListScreen> {
           },
 
         ),
-        SpeedDialChild(
-          child: const Icon(Icons.settings, color: Colors.white),
-          backgroundColor: Colors.grey,
-          label: 'Personalizar factura',
-          labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-          onTap: () {
-            Navigator.push(context, MaterialPageRoute(builder: (_) => InvoiceCustomizationScreen(client: widget.client, account: widget.account)));
-          },
-        ),
+        if (userRole == 'admin')
+          SpeedDialChild(
+            child: const Icon(Icons.settings, color: Colors.white),
+            backgroundColor: Colors.grey,
+            label: 'Personalizar factura',
+            labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(
+                builder: (_) => InvoiceCustomizationScreen(
+                  client: widget.client,
+                  account: widget.account,
+                  provider: widget.provider,
+                ),
+              ));
+            },
+          ),
+
         SpeedDialChild(child: const Icon(Icons.add, color: Colors.white), backgroundColor: Color(0xFFF18824), label: 'Registrar viaje', onTap: () => _navigateToForm()),
       ],
     );

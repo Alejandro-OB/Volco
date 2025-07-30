@@ -66,6 +66,13 @@ class InvoicePreferences extends HiveObject {
   @HiveField(19)
   String providerDocument;
 
+  @HiveField(20)
+  String? providerId;
+
+  @HiveField(21)
+  bool applyToAllAccounts;
+
+
 
 
   InvoicePreferences({
@@ -89,6 +96,8 @@ class InvoicePreferences extends HiveObject {
     required this.thankYouText,
     this.providerName = '',
     this.providerDocument = '',
+    this.providerId,
+    required this.applyToAllAccounts,
   });
 
   Color get tableColor => Color(tableColorValue);
@@ -114,6 +123,8 @@ class InvoicePreferences extends HiveObject {
         thankYouText: '¡Gracias por confiar en nuestros servicios!',
         providerName: '',
         providerDocument: '',
+        providerId: null,
+        applyToAllAccounts: false,
       );
 
   
@@ -139,6 +150,8 @@ class InvoicePreferences extends HiveObject {
       thankYouText: map['thank_you_text'] ?? '¡Gracias por confiar en nuestros servicios!',
       providerName: map['provider_name'] ?? '',
       providerDocument: map['provider_document'] ?? '',
+      providerId: map['provider_id'],
+      applyToAllAccounts: map['apply_to_all_accounts'] ?? false,
     );
   }
 
@@ -162,6 +175,8 @@ class InvoicePreferences extends HiveObject {
       'thank_you_text': thankYouText,
       'provider_name': providerName,
       'provider_document': providerDocument,
+      'provider_id': providerId,
+      'apply_to_all_accounts': applyToAllAccounts,
     };
   }
 }

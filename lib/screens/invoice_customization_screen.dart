@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hive/hive.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import 'dart:typed_data';
@@ -10,15 +9,18 @@ import '../models/client.dart';
 import '../models/account.dart';
 import '../utils/widgets/volco_header.dart';
 import 'package:uuid/uuid.dart';
+import '../models/provider.dart' as provider_model;
 
 class InvoiceCustomizationScreen extends StatefulWidget {
   final Client client;
   final Account account;
+  final provider_model.Provider? provider; 
 
   const InvoiceCustomizationScreen({
     super.key,
     required this.client,
     required this.account,
+    this.provider,
   });
 
   @override
@@ -39,7 +41,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   final _rangeTitleController = TextEditingController();
   final _thankYouTextController = TextEditingController();
   final _providerNameController = TextEditingController();
-  final _providerIdController = TextEditingController();
+  final _providerDocumentController = TextEditingController();
 
 
 
@@ -53,27 +55,38 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     isAuthenticated = Supabase.instance.client.auth.currentUser != null;
     _loadPreferences();
   }
-
+    
     Future<void> _loadPreferences() async {
+      debugPrint('[Prefs] Cargando para client_id: ${widget.client.id}, account_id: ${widget.account.id}, provider_id: ${widget.provider?.id}');
       if (isAuthenticated) {
-        final response = await Supabase.instance.client
+        final hasGlobalPrefs = await Supabase.instance.client
             .from('invoice_preferences')
             .select()
-            .eq('client_id', widget.client.id)
-            .eq('account_id', widget.account.id)
+            .eq('provider_id', widget.provider!.id)
+            .eq('apply_to_all_accounts', true)
             .maybeSingle();
 
-        if (response != null) {
-          _prefs = InvoicePreferences.fromMap(response);
+        if (hasGlobalPrefs != null && hasGlobalPrefs['apply_to_all_accounts'] == true) {
+          debugPrint('[Prefs] Usando preferencias globales del proveedor');
+          _prefs = InvoicePreferences.fromMap(hasGlobalPrefs);
         } else {
-          _prefs = InvoicePreferences.defaultValues();
+          final response = await Supabase.instance.client
+              .from('invoice_preferences')
+              .select()
+              .eq('client_id', widget.client.id)
+              .eq('account_id', widget.account.id)
+              .maybeSingle();
+
+          if (response != null) {
+            debugPrint('[Prefs] Usando preferencias específicas por cuenta');
+            _prefs = InvoicePreferences.fromMap(response);
+          } else {
+            debugPrint('[Prefs] Usando preferencias por defecto');
+            _prefs = InvoicePreferences.defaultValues();
+          }
         }
-      } else {
-        final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
-        final box = await Hive.openBox<InvoicePreferences>(boxName);
-        final storedPrefs = box.get('prefs');
-        _prefs = storedPrefs ?? InvoicePreferences.defaultValues();
       }
+
 
       _bankNameController.text = _prefs.bankName;
       _accountTypeController.text = _prefs.accountType;
@@ -84,7 +97,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _rangeTitleController.text = _prefs.rangeTitle ?? '';
       _thankYouTextController.text = _prefs.thankYouText;
       _providerNameController.text = _prefs.providerName;
-      _providerIdController.text = _prefs.providerDocument;
+      _providerDocumentController.text = _prefs.providerDocument;
       setState(() => _loading = false);
   }
 
@@ -111,31 +124,55 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
 
     if (isAuthenticated) {
       final data = _prefs.toMap();
-      data['client_id'] = widget.client.id;
-      data['account_id'] = widget.account.id;
 
-      final existing = await Supabase.instance.client
-          .from('invoice_preferences')
-          .select('id')
-          .eq('client_id', widget.client.id)
-          .eq('account_id', widget.account.id)
-          .maybeSingle();
+      if (_prefs.applyToAllAccounts) {
+        // 🔸 Guardar para proveedor
+        data['provider_id'] = widget.provider?.id;
 
-      if (existing != null) {
-        await Supabase.instance.client
+        final existing = await Supabase.instance.client
             .from('invoice_preferences')
-            .update(data)
-            .eq('id', existing['id']);
+            .select('id')
+            .eq('provider_id', widget.provider!.id)
+            .eq('apply_to_all_accounts', true)
+            .maybeSingle();
+
+        if (existing != null) {
+          await Supabase.instance.client
+              .from('invoice_preferences')
+              .update(data)
+              .eq('id', existing['id']);
+        } else {
+          final uuid = const Uuid();
+          data['id'] = uuid.v4();
+          await Supabase.instance.client.from('invoice_preferences').insert(data);
+        }
+
       } else {
-        final uuid = const Uuid();
-        data['id'] = uuid.v4(); 
-        await Supabase.instance.client.from('invoice_preferences').insert(data);
+        // 🔹 Guardar para cuenta específica
+        data['client_id'] = widget.client.id;
+        data['account_id'] = widget.account.id;
+
+        final existing = await Supabase.instance.client
+            .from('invoice_preferences')
+            .select('id')
+            .eq('client_id', widget.client.id)
+            .eq('account_id', widget.account.id)
+            .maybeSingle();
+
+        if (existing != null) {
+          await Supabase.instance.client
+              .from('invoice_preferences')
+              .update(data)
+              .eq('id', existing['id']);
+        } else {
+          final uuid = const Uuid();
+          data['id'] = uuid.v4();
+          await Supabase.instance.client.from('invoice_preferences').insert(data);
+        }
       }
-    } else {
-      final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
-      final box = await Hive.openBox<InvoicePreferences>(boxName);
-      await box.put('prefs', _prefs);
     }
+
+
 
     setState(() => _hasUnsavedChanges = false);
     ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Preferencias guardadas')));
@@ -551,7 +588,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                     _hasUnsavedChanges = true;
                                   }),
                                   const SizedBox(height: 12),
-                                  _buildTextField('Cédula del proveedor', _providerIdController, (v) {
+                                  _buildTextField('Cédula del proveedor', _providerDocumentController, (v) {
                                     _prefs.providerDocument = v;
                                     _hasUnsavedChanges = true;
                                   }),
@@ -597,6 +634,17 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                     DropdownMenuItem(value: 'MMMM yyyy', child: Text('Mes escrito y Año')),
                                   ],
                                 ),
+                                SwitchListTile(
+                                  title: const Text('Aplicar a todas las cuentas del proveedor'),
+                                  value: _prefs.applyToAllAccounts,
+                                  onChanged: (value) {
+                                    setState(() {
+                                      _prefs.applyToAllAccounts = value;
+                                      _hasUnsavedChanges = true;
+                                    });
+                                  },
+                                ),
+
                               ],
                             ),
                           ),
