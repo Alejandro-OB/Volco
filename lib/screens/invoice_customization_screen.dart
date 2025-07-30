@@ -15,6 +15,7 @@ class InvoiceCustomizationScreen extends StatefulWidget {
   final Client client;
   final Account account;
   final provider_model.Provider? provider; 
+  
 
   const InvoiceCustomizationScreen({
     super.key,
@@ -28,9 +29,11 @@ class InvoiceCustomizationScreen extends StatefulWidget {
 }
 
 class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen> {
-  late InvoicePreferences _prefs;
+  InvoicePreferences _prefs = InvoicePreferences.defaultValues();
   bool _loading = true;
   bool _hasUnsavedChanges = false;
+  String? userRole;
+
 
   final _bankNameController = TextEditingController();
   final _accountTypeController = TextEditingController();
@@ -53,23 +56,31 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   void initState() {
     super.initState();
     isAuthenticated = Supabase.instance.client.auth.currentUser != null;
+    if (isAuthenticated) {
+      _loadUserRole();
+    }
+
     _loadPreferences();
   }
     
     Future<void> _loadPreferences() async {
       debugPrint('[Prefs] Cargando para client_id: ${widget.client.id}, account_id: ${widget.account.id}, provider_id: ${widget.provider?.id}');
       if (isAuthenticated) {
-        final hasGlobalPrefs = await Supabase.instance.client
-            .from('invoice_preferences')
-            .select()
-            .eq('provider_id', widget.provider!.id)
-            .eq('apply_to_all_accounts', true)
-            .maybeSingle();
+        if (widget.provider != null && userRole == 'admin') {
+          final hasGlobalPrefs = await Supabase.instance.client
+              .from('invoice_preferences')
+              .select()
+              .eq('provider_id', widget.provider!.id)
+              .eq('apply_to_all_accounts', true)
+              .maybeSingle();
 
-        if (hasGlobalPrefs != null && hasGlobalPrefs['apply_to_all_accounts'] == true) {
-          debugPrint('[Prefs] Usando preferencias globales del proveedor');
-          _prefs = InvoicePreferences.fromMap(hasGlobalPrefs);
-        } else {
+          if (hasGlobalPrefs != null && hasGlobalPrefs['apply_to_all_accounts'] == true) {
+            debugPrint('[Prefs] Usando preferencias globales del proveedor');
+            _prefs = InvoicePreferences.fromMap(hasGlobalPrefs);
+          }
+        }
+
+        if (_prefs == null) {
           final response = await Supabase.instance.client
               .from('invoice_preferences')
               .select()
@@ -88,6 +99,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       }
 
 
+
       _bankNameController.text = _prefs.bankName;
       _accountTypeController.text = _prefs.accountType;
       _accountNumberController.text = _prefs.accountNumber;
@@ -99,6 +111,23 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _providerNameController.text = _prefs.providerName;
       _providerDocumentController.text = _prefs.providerDocument;
       setState(() => _loading = false);
+  }
+
+  Future<void> _loadUserRole() async {
+    final userId = Supabase.instance.client.auth.currentUser?.id;
+    if (userId != null) {
+      final response = await Supabase.instance.client
+          .from('users')
+          .select('role')
+          .eq('id', userId)
+          .maybeSingle();
+
+      if (response != null && mounted) {
+        setState(() {
+          userRole = response['role'];
+        });
+      }
+    }
   }
 
   Future<void> _savePreferences() async {
@@ -634,16 +663,17 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                     DropdownMenuItem(value: 'MMMM yyyy', child: Text('Mes escrito y Año')),
                                   ],
                                 ),
-                                SwitchListTile(
-                                  title: const Text('Aplicar a todas las cuentas del proveedor'),
-                                  value: _prefs.applyToAllAccounts,
-                                  onChanged: (value) {
-                                    setState(() {
-                                      _prefs.applyToAllAccounts = value;
-                                      _hasUnsavedChanges = true;
-                                    });
-                                  },
-                                ),
+                                if (userRole == 'admin' && widget.provider != null)
+                                  SwitchListTile(
+                                    title: const Text('Aplicar a todas las cuentas del proveedor'),
+                                    value: _prefs.applyToAllAccounts,
+                                    onChanged: (value) {
+                                      setState(() {
+                                        _prefs.applyToAllAccounts = value;
+                                        _hasUnsavedChanges = true;
+                                      });
+                                    },
+                                  ),
 
                               ],
                             ),

@@ -12,6 +12,7 @@ import 'provider_list_screen.dart';
 import '../utils/widgets/main_header.dart';
 import '../utils/helpers/logout_helper.dart';
 import '../utils/helpers/delete_helper.dart';
+import '../utils/helpers/network_helper.dart';
 
 class ClientListScreen extends StatefulWidget {
   final provider_model.Provider? provider;
@@ -136,10 +137,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
                               const SnackBar(content: Text('Cliente editado correctamente (modo invitado)')),
                             );
                           }
-                          setState(() {}); // actualiza la vista local
+                          setState(() {}); 
                         } else {
                           final user = Supabase.instance.client.auth.currentUser;
                           if (user == null) return;
+
+                          if (!await verificarConexion(context, esInvitado)) return;
+
 
                           if (client == null) {
                             if (role == 'admin' && (widget.provider == null || widget.provider!.id.isEmpty)) {
@@ -312,6 +316,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                   );
 
                   if (confirmed != true) return;
+                  
+
+                  if (!await verificarConexion(context, esInvitado)) return;
 
                   
                   await deleteEntity(

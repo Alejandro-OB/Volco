@@ -27,6 +27,7 @@ import '../utils/widgets/confirm_delete_dialog.dart';
 import 'trip_form_screen.dart';
 import 'invoice_customization_screen.dart';
 import 'account_list_screen.dart';
+import '../utils/helpers/network_helper.dart';
 
 
 
@@ -232,7 +233,7 @@ class _TripListScreenState extends State<TripListScreen> {
       title: 'Eliminar viaje',
       message: 'Esta acción no se puede deshacer.',
     );
-
+    if (!await verificarConexion(context, isAuthenticated)) return;
     if (confirm == true) {
       if (isAuthenticated) {
         await Supabase.instance.client.from('trips').delete().eq('id', tripKey);
@@ -627,7 +628,6 @@ class _TripListScreenState extends State<TripListScreen> {
           },
 
         ),
-        if (userRole == 'admin')
           SpeedDialChild(
             child: const Icon(Icons.settings, color: Colors.white),
             backgroundColor: Colors.grey,
@@ -643,7 +643,6 @@ class _TripListScreenState extends State<TripListScreen> {
               ));
             },
           ),
-
         SpeedDialChild(child: const Icon(Icons.add, color: Colors.white), backgroundColor: Color(0xFFF18824), label: 'Registrar viaje', onTap: () => _navigateToForm()),
       ],
     );

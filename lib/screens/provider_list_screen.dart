@@ -10,6 +10,7 @@ import '../utils/widgets/confirm_delete_dialog.dart';
 import '../utils/widgets/main_header.dart';
 import '../utils/helpers/logout_helper.dart';
 import '../utils/helpers/delete_helper.dart';
+import '../utils/helpers/network_helper.dart';
 
 class ProviderListScreen extends StatefulWidget {
   const ProviderListScreen({super.key});
@@ -102,6 +103,9 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
                           return;
                         }
 
+                        if (!await verificarConexion(context, esInvitado)) return;
+
+
                         if (esInvitado) {
                           final updated = provider_model.Provider(
                               id: isEditing ? provider.id : uuid.v4(), name: name, document: doc, phone: phone);
@@ -115,35 +119,46 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
                           final user = Supabase.instance.client.auth.currentUser;
                           if (user == null) return;
 
-                          if (isEditing) {
-                            await Supabase.instance.client.from('providers').update({
-                              'nombre': name,
-                              'documento': doc,
-                              'celular': phone,
-                            }).eq('id', provider.id);
-                          } else {
-                            await Supabase.instance.client.from('providers').insert({
-                              'id': uuid.v4(),
-                              'nombre': name,
-                              'documento': doc,
-                              'celular': phone,
-                              'user_id': user.id,
-                            });
-                          }
-                          final nuevos = await fetchProvidersFromSupabase();
-                          if (mounted) {
-                            setState(() {
-                              futureProviders = Future.value(nuevos);
-                            });
+                          try {
+                            if (isEditing) {
+                              await Supabase.instance.client.from('providers').update({
+                                'nombre': name,
+                                'documento': doc,
+                                'celular': phone,
+                              }).eq('id', provider.id);
+                            } else {
+                              await Supabase.instance.client.from('providers').insert({
+                                'id': uuid.v4(),
+                                'nombre': name,
+                                'documento': doc,
+                                'celular': phone,
+                                'user_id': user.id,
+                              });
+                            }
+
+                            final nuevos = await fetchProvidersFromSupabase();
+                            if (mounted) {
+                              setState(() {
+                                futureProviders = Future.value(nuevos);
+                              });
+                            }
+
+                            if (mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text(isEditing ? 'Proveedor actualizado' : 'Proveedor creado correctamente'),
+                              ));
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+                                content: Text('Error al ${isEditing ? 'editar' : 'crear'} proveedor: $e'),
+                              ));
+                            }
                           }
 
-                        }
 
-                        if (mounted) {
-                          Navigator.pop(context);
-                          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-                            content: Text(isEditing ? 'Proveedor actualizado' : 'Proveedor creado correctamente'),
-                          ));
                         }
                       },
                       child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
@@ -167,28 +182,43 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
 
     if (confirm != true) return;
 
+    
+
     if (esInvitado) {
       await providerBox.deleteAt(index);
       setState(() {});
     } else {
       // Usa deleteEntity
-      await deleteEntity(
-        type: 'provider',
-        entity: provider,
-        esInvitado: false,
-      );
+      if (!await verificarConexion(context, esInvitado)) return;
 
-      // Refresca la lista de proveedores
-      final nuevos = await fetchProvidersFromSupabase();
-      if (mounted) {
-        setState(() {
-          futureProviders = Future.value(nuevos);
-        });
+
+      try {
+        await deleteEntity(
+          type: 'provider',
+          entity: provider,
+          esInvitado: false,
+        );
+
+        final nuevos = await fetchProvidersFromSupabase();
+        if (mounted) {
+          setState(() {
+            futureProviders = Future.value(nuevos);
+          });
+        }
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Proveedor eliminado correctamente')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error al eliminar proveedor: $e')),
+          );
+        }
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Proveedor eliminado correctamente')),
-      );
     }
   }
 
@@ -252,9 +282,6 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
             subtitle: esInvitado ? 'Modo invitado (offline)' : 'Sesión iniciada',
             onLogout: () => showLogoutDialog(context),
           ),
-
-
-
           Expanded(
             child: esInvitado
                 ? _buildProviderList(providerBox.values.toList())
