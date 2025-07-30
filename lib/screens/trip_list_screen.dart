@@ -310,7 +310,7 @@ class _TripListScreenState extends State<TripListScreen> {
               const Icon(Icons.attach_money, color: Colors.black87, size: 28),
               const SizedBox(width: 8),
               Text(
-                'Total acumulado:',
+                'Total:',
                 style: GoogleFonts.poppins(
                   fontSize: 16,
                   fontWeight: FontWeight.w500,
@@ -319,14 +319,19 @@ class _TripListScreenState extends State<TripListScreen> {
               ),
             ],
           ),
-          Text(
-            '\$$total',
-            style: GoogleFonts.poppins(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              color: const Color(0xFFF18824),
+          Expanded(
+            child: Text(
+              '\$$total',
+              textAlign: TextAlign.end,
+              overflow: TextOverflow.ellipsis,
+              style: GoogleFonts.poppins(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: const Color(0xFFF18824),
+              ),
             ),
           ),
+
         ],
       ),
     );
@@ -650,67 +655,96 @@ class _TripListScreenState extends State<TripListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            VolcoHeader(
-              title: widget.client.name,
-              subtitle: 'Viajes de ${widget.account.alias}',
-              onBack: !isAuthenticated
-                  ? () async {
-                      final boxName = 'accounts_${widget.client.id}';
-                      if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
-                      if (tripBox.isOpen) await tripBox.close();
-                      if (context.mounted) {
-                        Navigator.pushAndRemoveUntil(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => AccountListScreen(client: widget.client, provider: widget.provider),
+    return WillPopScope(
+      onWillPop: () async {
+        // Cerrar cajas Hive si están abiertas
+        final boxName = 'accounts_${widget.client.id}';
+        if (Hive.isBoxOpen(boxName)) {
+          await Hive.box<Account>(boxName).close();
+        }
+        if (!isAuthenticated && tripBox.isOpen) {
+          await tripBox.close();
+        }
+
+
+        // Redirigir a pantalla de cuentas (AccountListScreen) eliminando pila
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (_) => AccountListScreen(
+              client: widget.client,
+              provider: widget.provider,
+            ),
+          ),
+          (route) => false,
+        );
+        return false;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              VolcoHeader(
+                title: widget.client.name,
+                subtitle: 'Viajes de ${widget.account.alias}',
+                onBack: () async {
+                  final boxName = 'accounts_${widget.client.id}';
+                  if (Hive.isBoxOpen(boxName)) {
+                    await Hive.box<Account>(boxName).close();
+                  }
+                  if (!isAuthenticated && tripBox.isOpen) {
+                    await tripBox.close();
+                  }
+
+
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => AccountListScreen(
+                        client: widget.client,
+                        provider: widget.provider,
+                      ),
+                    ),
+                    (route) => false,
+                  );
+                },
+              ),
+              Expanded(
+                child: isAuthenticated
+                    ? _buildTripList(trips, supabase: true)
+                    : !isBoxReady
+                        ? const Center(child: CircularProgressIndicator())
+                        : ValueListenableBuilder<Box<Trip>>(
+                            valueListenable: tripBox.listenable(),
+                            builder: (_, box, __) => _buildTripList(box.values.toList()),
                           ),
-                          (route) => false,
-                        );
-                      }
-                    }
-                  : null,
-            ),
-            Expanded(
-              child: isAuthenticated
-                  ? _buildTripList(trips, supabase: true)
-                  : !isBoxReady
-                      ? const Center(child: CircularProgressIndicator())
-                      : ValueListenableBuilder<Box<Trip>>(
-                          valueListenable: tripBox.listenable(),
-                          builder: (_, box, __) => _buildTripList(box.values.toList()),
-                        ),
-            ),
-          ],
+              ),
+            ],
+          ),
+        ),
+        floatingActionButton: Padding(
+          padding: const EdgeInsets.only(bottom: 80.0),
+          child: _buildSpeedDial(),
+        ),
+        floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
+        bottomNavigationBar: Container(
+          color: Colors.white,
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          child: isAuthenticated
+              ? _buildTotalAcumulado()
+              : !isBoxReady
+                  ? const SizedBox()
+                  : ValueListenableBuilder<Box<Trip>>(
+                      valueListenable: tripBox.listenable(),
+                      builder: (_, __, ___) => _buildTotalAcumulado(),
+                    ),
         ),
       ),
+    );
+  }
 
-      floatingActionButton: Padding(
-        padding: const EdgeInsets.only(bottom: 80.0), 
-        child: _buildSpeedDial(),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endDocked,
-
-      bottomNavigationBar: Container(
-        color: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        child: isAuthenticated
-            ? _buildTotalAcumulado()
-            : !isBoxReady
-                ? const SizedBox() // o un loader si prefieres
-                : ValueListenableBuilder<Box<Trip>>(
-                    valueListenable: tripBox.listenable(),
-                    builder: (_, __, ___) => _buildTotalAcumulado(),
-                  ),
-      ),
-
-
-  );
-}
 
 
 

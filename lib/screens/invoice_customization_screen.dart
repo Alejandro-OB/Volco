@@ -65,41 +65,46 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     
     Future<void> _loadPreferences() async {
       debugPrint('[Prefs] Cargando para client_id: ${widget.client.id}, account_id: ${widget.account.id}, provider_id: ${widget.provider?.id}');
+
+      InvoicePreferences? prefs;
+
       if (isAuthenticated) {
+        // Preferencias globales si el usuario es admin y el proveedor tiene activa esa opción
         if (widget.provider != null && userRole == 'admin') {
-          final hasGlobalPrefs = await Supabase.instance.client
+          final globalPrefs = await Supabase.instance.client
               .from('invoice_preferences')
               .select()
               .eq('provider_id', widget.provider!.id)
               .eq('apply_to_all_accounts', true)
               .maybeSingle();
 
-          if (hasGlobalPrefs != null && hasGlobalPrefs['apply_to_all_accounts'] == true) {
+          if (globalPrefs != null && globalPrefs['apply_to_all_accounts'] == true) {
             debugPrint('[Prefs] Usando preferencias globales del proveedor');
-            _prefs = InvoicePreferences.fromMap(hasGlobalPrefs);
+            prefs = InvoicePreferences.fromMap(globalPrefs);
           }
         }
 
-        if (_prefs == null) {
-          final response = await Supabase.instance.client
+        // Si no hay globales, buscamos preferencias por cuenta
+        if (prefs == null) {
+          final accountPrefs = await Supabase.instance.client
               .from('invoice_preferences')
               .select()
               .eq('client_id', widget.client.id)
               .eq('account_id', widget.account.id)
               .maybeSingle();
 
-          if (response != null) {
+          if (accountPrefs != null) {
             debugPrint('[Prefs] Usando preferencias específicas por cuenta');
-            _prefs = InvoicePreferences.fromMap(response);
-          } else {
-            debugPrint('[Prefs] Usando preferencias por defecto');
-            _prefs = InvoicePreferences.defaultValues();
+            prefs = InvoicePreferences.fromMap(accountPrefs);
           }
         }
       }
 
+      // Si no hay ninguna, usar por defecto
+      _prefs = prefs ?? InvoicePreferences.defaultValues();
+      debugPrint('[Prefs] Final: ${_prefs.toString()}');
 
-
+      // Cargar a los controladores
       _bankNameController.text = _prefs.bankName;
       _accountTypeController.text = _prefs.accountType;
       _accountNumberController.text = _prefs.accountNumber;
@@ -110,8 +115,10 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _thankYouTextController.text = _prefs.thankYouText;
       _providerNameController.text = _prefs.providerName;
       _providerDocumentController.text = _prefs.providerDocument;
+
       setState(() => _loading = false);
-  }
+    }
+
 
   Future<void> _loadUserRole() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
