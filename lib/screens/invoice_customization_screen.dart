@@ -37,6 +37,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   final _startDateController = TextEditingController();
   final _endDateController = TextEditingController();
   final _rangeTitleController = TextEditingController();
+  final _thankYouTextController = TextEditingController();
+
 
 
 
@@ -77,6 +79,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _startDateController.text = _prefs.startDate ?? '';
       _endDateController.text = _prefs.endDate ?? '';
       _rangeTitleController.text = _prefs.rangeTitle ?? '';
+      _thankYouTextController.text = _prefs.thankYouText;
+
 
 
 
@@ -91,6 +95,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
     final start = DateTime.tryParse(_formatForParse(_startDateController.text));
     final end = DateTime.tryParse(_formatForParse(_endDateController.text));
     _prefs.rangeTitle = _rangeTitleController.text;
+    _prefs.thankYouText = _thankYouTextController.text;
+
 
 
 
@@ -252,9 +258,14 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _accountTypeController.text = _prefs.accountType;
       _accountNumberController.text = _prefs.accountNumber;
       _serviceTextController.text = _prefs.serviceText;
+      _thankYouTextController.text = _prefs.thankYouText;
+      _startDateController.text = _prefs.startDate ?? '';
+      _endDateController.text = _prefs.endDate ?? '';
+      _rangeTitleController.text = _prefs.rangeTitle ?? '';
       _hasUnsavedChanges = true;
     });
   }
+
 
   Future<bool> _onWillPop() async {
     if (_hasUnsavedChanges) {
@@ -541,7 +552,16 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                     _hasUnsavedChanges = true;
                                   }),
                                 ),
+                                if (_prefs.showThankYouText) ...[
+                                  const SizedBox(height: 12),
+                                  _buildTextField(
+                                    'Texto de agradecimiento',
+                                    _thankYouTextController,
+                                    (v) => _prefs.thankYouText = v,
+                                  ),
+                                ],
                                 const SizedBox(height: 12),
+
                                 DropdownButtonFormField<String>(
                                   decoration: const InputDecoration(
                                     labelText: 'Formato de fecha',

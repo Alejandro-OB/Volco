@@ -34,13 +34,14 @@ class InvoicePreferencesAdapter extends TypeAdapter<InvoicePreferences> {
       endDate: fields[14] as String?,
       rangeTitle: fields[15] as String?,
       showRangeDate: fields[16] as bool,
+      thankYouText: fields[17] as String,
     );
   }
 
   @override
   void write(BinaryWriter writer, InvoicePreferences obj) {
     writer
-      ..writeByte(17)
+      ..writeByte(18)
       ..writeByte(0)
       ..write(obj.tableColorValue)
       ..writeByte(1)
@@ -74,7 +75,9 @@ class InvoicePreferencesAdapter extends TypeAdapter<InvoicePreferences> {
       ..writeByte(15)
       ..write(obj.rangeTitle)
       ..writeByte(16)
-      ..write(obj.showRangeDate);
+      ..write(obj.showRangeDate)
+      ..writeByte(17)
+      ..write(obj.thankYouText);
   }
 
   @override

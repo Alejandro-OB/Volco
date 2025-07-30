@@ -25,6 +25,7 @@ Future<Uint8List> generateInvoicePdf({
   String? endDate,
   String? rangeTitle,
   bool showRangeDate = false,
+  String? thankYouText,
 }) async {
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
@@ -402,11 +403,11 @@ Future<Uint8List> generateInvoicePdf({
     );
   }
 
-  if (showThankYouText) {
+  if (showThankYouText && (thankYouText?.trim().isNotEmpty ?? false)) {
     pdfWidgets.add(
       pw.Center(
         child: pw.Text(
-          'Gracias por su preferencia',
+          thankYouText!,
           style: pw.TextStyle(
             font: interFont,
             fontStyle: pw.FontStyle.italic,
@@ -416,6 +417,7 @@ Future<Uint8List> generateInvoicePdf({
       ),
     );
   }
+
 
 
   pdf.addPage(

@@ -472,6 +472,7 @@ class _TripListScreenState extends State<TripListScreen> {
                 endDate: prefs.endDate,
                 rangeTitle: prefs.rangeTitle,
                 showRangeDate: prefs.showRangeDate,
+                thankYouText: prefs.thankYouText,
                 
               );
 
