@@ -232,7 +232,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           final role = userData['role'];
           targetRoute = (role == 'admin') ? '/home' : '/clients';
         } catch (_) {
-          targetRoute = '/clients';
+          targetRoute = '/login';
         }
       }
 
