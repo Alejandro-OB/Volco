@@ -30,6 +30,7 @@ Future<Uint8List> generateInvoicePdf({
   String? providerDocument,
 
 }) async {
+  debugPrint('[PDF] Generando con fechas: $startDate - $endDate (mostrar: $showRangeDate)');
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
   String formattedDate;

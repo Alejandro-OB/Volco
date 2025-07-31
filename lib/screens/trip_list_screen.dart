@@ -502,6 +502,18 @@ class _TripListScreenState extends State<TripListScreen> {
               final list = isAuthenticated ? trips : tripBox.values.toList();
               list.sort((a, b) => a.date.compareTo(b.date));
               final prefs = await _loadInvoicePreferences();
+
+              if (prefs.showRangeDate) {
+                if ((prefs.startDate == null || prefs.startDate!.isEmpty) && widget.account.startDate != null) {
+                  final startStr = widget.account.startDate!.toString().split(' ').first;
+                  prefs.startDate = _formatDisplayDate(startStr);
+                }
+                if ((prefs.endDate == null || prefs.endDate!.isEmpty) && widget.account.endDate != null) {
+                  final endStr = widget.account.endDate!.toString().split(' ').first;
+                  prefs.endDate = _formatDisplayDate(endStr);
+                }
+
+              }
               final pdf = await generateInvoicePdf(
                 trips: list,
                 clientName: widget.client.name,
@@ -557,6 +569,16 @@ class _TripListScreenState extends State<TripListScreen> {
       ],
     );
   }
+  String _formatDisplayDate(String input) {
+    try {
+      final parts = input.split('-'); // yyyy-mm-dd
+      if (parts.length == 3) {
+        return '${parts[2]}/${parts[1]}/${parts[0]}'; // dd/mm/yyyy
+      }
+    } catch (_) {}
+    return input;
+  }
+
 
   @override
   Widget build(BuildContext context) {

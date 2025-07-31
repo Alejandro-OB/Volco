@@ -67,7 +67,6 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   }
     
     Future<void> _loadPreferences() async {
-      debugPrint('[Prefs] Cargando para client_id: ${widget.client.id}, account_id: ${widget.account.id}, provider_id: ${widget.provider?.id}');
 
       InvoicePreferences? prefs;
 
@@ -112,15 +111,16 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
       _accountTypeController.text = _prefs.accountType;
       _accountNumberController.text = _prefs.accountNumber;
       _serviceTextController.text = _prefs.serviceText;
-      _startDateController.text = _prefs.startDate ?? '';
-      _endDateController.text = _prefs.endDate ?? '';
       _rangeTitleController.text = _prefs.rangeTitle ?? '';
       _thankYouTextController.text = _prefs.thankYouText;
       _providerNameController.text = _prefs.providerName;
       _providerDocumentController.text = _prefs.providerDocument;
+      _startDateController.text = _prefs.startDate ?? '';
+      _endDateController.text = _prefs.endDate ?? '';
 
       setState(() => _loading = false);
     }
+
 
 
   Future<void> _loadUserRole() async {

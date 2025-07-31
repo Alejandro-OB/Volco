@@ -143,7 +143,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           return;
         }
 
-        final apkFile = File('${downloadDir.path}/volco_update.apk');
+        final apkFile = File('${downloadDir.path}/volco_v${appVersion.split('+').first}.apk');
         final ValueNotifier<double> progressNotifier = ValueNotifier(0);
 
         showDialog(

@@ -119,7 +119,7 @@ class InvoicePreferences extends HiveObject {
         startDate: null,
         endDate: null,
         rangeTitle: 'SERVICIOS PRESTADOS DESDE',
-        showRangeDate: false,
+        showRangeDate: true,
         thankYouText: '¡Gracias por confiar en nuestros servicios!',
         providerName: '',
         providerDocument: '',

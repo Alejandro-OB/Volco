@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:volco/generated/version.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -184,7 +185,10 @@ class _LoginScreenState extends State<LoginScreen> {
                       style: TextStyle(color: Colors.white70),
                     ),
                   ),
-
+                  Text(
+                    'Versión ${appVersion.split('+').first}',
+                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
                 ],
                 
               ),
