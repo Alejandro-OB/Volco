@@ -29,6 +29,7 @@ Future<List<Trip>> fetchSupabaseTrips(Account account) async {
 }
 
 Future<void> exportTrips(List<Trip> trips, Account account) async {
+  trips.sort((a, b) => a.date.compareTo(b.date)); 
   final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
   final name = 'viajes_${account.alias}_$date.json';
   final jsonData = jsonEncode(trips.map((t) => {
@@ -43,13 +44,24 @@ Future<void> exportTrips(List<Trip> trips, Account account) async {
 
 Future<List<Trip>> importTrips() async {
   try {
-    final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
+    final result = await FilePicker.platform.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: ['json'],
+    );
     if (result != null) {
       final file = result.files.single;
-      final jsonStr = file.bytes != null ? utf8.decode(file.bytes!) : await File(file.path!).readAsString();
+      final jsonStr = file.bytes != null
+          ? utf8.decode(file.bytes!)
+          : await File(file.path!).readAsString();
+
       final data = jsonDecode(jsonStr) as List;
-      return data.map((e) => Trip.fromJson(e)).toList();
+      final trips = data.map((e) => Trip.fromJson(e)).toList();
+
+      trips.sort((a, b) => a.date.compareTo(b.date)); 
+
+      return trips;
     }
   } catch (_) {}
   return [];
 }
+

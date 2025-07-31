@@ -335,6 +335,7 @@ class _TripListScreenState extends State<TripListScreen> {
 
   Widget _buildTripList(List<Trip> tripList, {bool supabase = false}) {
     if (tripList.isEmpty) return Center(child: Text('Aún no hay viajes.', style: GoogleFonts.poppins()));
+    tripList.sort((a, b) => a.date.compareTo(b.date));
     return ListView.builder(
       padding: const EdgeInsets.all(16),
       itemCount: tripList.length,
@@ -471,6 +472,7 @@ class _TripListScreenState extends State<TripListScreen> {
           label: 'Exportar viajes',
           labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
           onTap: () async {
+            
             final list = isAuthenticated ? trips : tripBox.values.toList();
             await exportTrips(list, widget.account);
 
@@ -498,6 +500,7 @@ class _TripListScreenState extends State<TripListScreen> {
 
             try {
               final list = isAuthenticated ? trips : tripBox.values.toList();
+              list.sort((a, b) => a.date.compareTo(b.date));
               final prefs = await _loadInvoicePreferences();
               final pdf = await generateInvoicePdf(
                 trips: list,
