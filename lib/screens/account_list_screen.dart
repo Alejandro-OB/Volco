@@ -10,6 +10,8 @@ import 'client_list_screen.dart';
 import '../utils/widgets/volco_header.dart';
 import '../utils/widgets/confirm_delete_dialog.dart';
 import '../utils/helpers/network_helper.dart';
+import 'package:intl/intl.dart';
+
 
 class AccountListScreen extends StatefulWidget {
   final Client client;
@@ -62,9 +64,19 @@ class _AccountListScreenState extends State<AccountListScreen> {
     });
   }
 
-  Future<String?> _showAccountDialog(String title, TextEditingController aliasController, TextEditingController descController) {
+  Future<Map<String, dynamic>?> _showAccountDialog(
+    String title,
+    TextEditingController nameController,
+    TextEditingController descController, {
+    DateTime? initialStartDate,
+    DateTime? initialEndDate,
+  }) async {
+    DateTime? startDate = initialStartDate;
+    DateTime? endDate = initialEndDate;
+
     final screenWidth = MediaQuery.of(context).size.width;
-    return showDialog<String>(
+
+    return showDialog<Map<String, dynamic>>(
       context: context,
       builder: (_) => Dialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -72,97 +84,186 @@ class _AccountListScreenState extends State<AccountListScreen> {
           constraints: BoxConstraints(maxWidth: screenWidth * 0.8 > 400 ? 400 : screenWidth * 0.8),
           child: Padding(
             padding: const EdgeInsets.all(20),
-            child: Column(mainAxisSize: MainAxisSize.min, children: [
-              Text(title, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: aliasController,
-                decoration: InputDecoration(
-                  hintText: 'Alias de la cuenta',
-                  hintStyle: GoogleFonts.poppins(),
-                  filled: true,
-                  fillColor: const Color(0xFFF6F6F6),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descController,
-                decoration: InputDecoration(
-                  hintText: 'Descripción (opcional)',
-                  hintStyle: GoogleFonts.poppins(),
-                  filled: true,
-                  fillColor: const Color(0xFFF6F6F6),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Row(children: [
-                Expanded(
-                  child: TextButton(
-                    onPressed: () => Navigator.pop(context),
-                    child: Text('Cancelar', style: GoogleFonts.poppins()),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFFF18824),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            child: StatefulBuilder(builder: (context, setState) {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(title, style: GoogleFonts.poppins(fontSize: 18, fontWeight: FontWeight.w600)),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: nameController,
+                    decoration: InputDecoration(
+                      hintText: 'Nombre de la cuenta',
+                      hintStyle: GoogleFonts.poppins(),
+                      filled: true,
+                      fillColor: const Color(0xFFF6F6F6),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
                     ),
-                    onPressed: () => Navigator.pop(context, aliasController.text.trim()),
-                    child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
                   ),
-                ),
-              ])
-            ]),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descController,
+                    decoration: InputDecoration(
+                      hintText: 'Descripción (opcional)',
+                      hintStyle: GoogleFonts.poppins(),
+                      filled: true,
+                      fillColor: const Color(0xFFF6F6F6),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_today, size: 18, color: Color(0xFF333333)),
+                          label: Text(
+                            startDate == null
+                                ? 'Seleccionar inicio'
+                                : 'Desde: ${DateFormat('dd/MM/yyyy').format(startDate!)}',
+                            style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF333333)),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: Color(0xFFE0E0E0)),
+                          ),
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: startDate ?? DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (date != null) setState(() => startDate = date);
+                          },
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          icon: const Icon(Icons.calendar_month, size: 18, color: Color(0xFF333333)),
+                          label: Text(
+                            endDate == null
+                                ? 'Seleccionar fin'
+                                : 'Hasta: ${DateFormat('dd/MM/yyyy').format(endDate!)}',
+                            style: GoogleFonts.poppins(fontSize: 13, color: const Color(0xFF333333)),
+                          ),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 8),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            side: const BorderSide(color: Color(0xFFE0E0E0)),
+                          ),
+                          onPressed: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: endDate ?? DateTime.now(),
+                              firstDate: DateTime(2000),
+                              lastDate: DateTime(2100),
+                            );
+                            if (date != null) setState(() => endDate = date);
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 20),
+                  Row(children: [
+                    Expanded(
+                      child: TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: Text('Cancelar', style: GoogleFonts.poppins()),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF18824),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        onPressed: () {
+                          if (startDate == null || endDate == null) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Debes seleccionar el periodo de la cuenta')),
+                            );
+                            return;
+                          }
+                          if (endDate!.isBefore(startDate!)) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('La fecha final no puede ser anterior a la fecha de inicio')),
+                            );
+                            return;
+                          }
+                          Navigator.pop(context, {
+                            'name': nameController.text.trim(),
+                            'description': descController.text.trim(),
+                            'start_date': startDate,
+                            'end_date': endDate,
+                          });
+                        },
+                        child: Text('Guardar', style: GoogleFonts.poppins(color: Colors.white)),
+                      ),
+                    ),
+                  ]),
+                ],
+              );
+            }),
           ),
         ),
       ),
     );
   }
 
+
   Future<void> _addAccountSupabase() async {
-
-
-    final aliasController = TextEditingController();
+    final nameController = TextEditingController();
     final descController = TextEditingController();
 
-    final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
+    final result = await _showAccountDialog('Nueva Cuenta', nameController, descController);
+    if (result != null) {
       if (!await verificarConexion(context, !isAuthenticated)) return;
       await Supabase.instance.client.from('accounts').insert({
-        'alias': alias,
-        'description': descController.text.trim(),
+        'name': result['name'],
+        'description': result['description'],
         'client_id': widget.client.id,
+        'start_date': result['start_date']?.toIso8601String(),
+        'end_date': result['end_date']?.toIso8601String(),
       });
       _fetchSupabaseAccounts();
     }
   }
 
+
   Future<void> _editAccountSupabase(Account account) async {
-
-    
-
-    final aliasController = TextEditingController(text: account.alias);
+    final nameController = TextEditingController(text: account.name);
     final descController = TextEditingController(text: account.description);
 
-    final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
+    final result = await _showAccountDialog(
+      'Editar Cuenta',
+      nameController,
+      descController,
+      initialStartDate: account.startDate,
+      initialEndDate: account.endDate,
+    );
 
-    if (alias != null && alias.isNotEmpty) {
+    if (result != null) {
       if (!await verificarConexion(context, !isAuthenticated)) return;
       await Supabase.instance.client
           .from('accounts')
           .update({
-            'alias': alias,
-            'description': descController.text.trim(),
+            'name': result['name'],
+            'description': result['description'],
+            'start_date': result['start_date']?.toIso8601String(),
+            'end_date': result['end_date']?.toIso8601String(),
           })
           .eq('id', account.id);
       _fetchSupabaseAccounts();
     }
   }
+
 
   Future<void> _deleteAccountSupabase(Account account) async {
     final confirm = await ConfirmDeleteDialog(
@@ -182,27 +283,44 @@ class _AccountListScreenState extends State<AccountListScreen> {
   }
 
   Future<void> _addAccount() async {
-    final aliasController = TextEditingController();
+    final nameController = TextEditingController();
     final descController = TextEditingController();
 
-    final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
-      final account = Account(alias: alias, clientId: widget.client.id, description: descController.text.trim());
+    final result = await _showAccountDialog('Nueva Cuenta', nameController, descController);
+    if (result != null) {
+      final account = Account(
+        name: result['name'],
+        clientId: widget.client.id,
+        description: result['description'],
+        startDate: result['start_date'],
+        endDate: result['end_date'],
+      );
       await _accountBox.add(account);
     }
   }
 
+
   Future<void> _editAccount(int index, Account account) async {
-    final aliasController = TextEditingController(text: account.alias);
+    final nameController = TextEditingController(text: account.name);
     final descController = TextEditingController(text: account.description);
 
-    final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
-    if (alias != null && alias.isNotEmpty) {
-      account.alias = alias;
-      account.description = descController.text.trim();
+    final result = await _showAccountDialog(
+      'Editar Cuenta',
+      nameController,
+      descController,
+      initialStartDate: account.startDate,
+      initialEndDate: account.endDate,
+    );
+
+    if (result != null) {
+      account.name = result['name'];
+      account.description = result['description'];
+      account.startDate = result['start_date'];
+      account.endDate = result['end_date'];
       await account.save();
     }
   }
+
 
   Future<void> _deleteAccount(int index) async {
     final confirm = await ConfirmDeleteDialog(
@@ -249,7 +367,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
           elevation: 2,
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-            title: Text(account.alias,
+            title: Text(account.name,
                 style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
             subtitle: account.description.isNotEmpty
                 ? Text(account.description, style: GoogleFonts.poppins(fontSize: 14))

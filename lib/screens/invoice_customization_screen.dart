@@ -560,7 +560,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
               bottom: false,
               child: VolcoHeader(
                 title: 'Factura de',
-                subtitle: '${widget.client.name} - ${widget.account.alias}',
+                subtitle: '${widget.client.name} - ${widget.account.name}',
                 onBack: () async {
                   final canLeave = await _onWillPop();
                   if (canLeave) Navigator.pop(context);

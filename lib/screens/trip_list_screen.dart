@@ -593,7 +593,7 @@ class _TripListScreenState extends State<TripListScreen> {
             children: [
               VolcoHeader(
                 title: widget.client.name,
-                subtitle: 'Viajes de ${widget.account.alias}',
+                subtitle: 'Viajes de ${widget.account.name}',
                 onBack: () async {
                   if (!await verificarConexion(context, !isAuthenticated)) return;
                   final boxName = 'accounts_${widget.client.id}';

@@ -17,11 +17,13 @@ class AccountAdapter extends TypeAdapter<Account> {
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
     return Account(
-      alias: fields[1] as String,
+      name: fields[1] as String,
       clientId: fields[5] as String,
       description: fields[2] as String,
       createdAt: fields[3] as DateTime?,
       isActive: fields[4] as bool,
+      startDate: fields[6] as DateTime?,
+      endDate: fields[7] as DateTime?,
       id: fields[0] as String?,
     );
   }
@@ -29,11 +31,11 @@ class AccountAdapter extends TypeAdapter<Account> {
   @override
   void write(BinaryWriter writer, Account obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
-      ..write(obj.alias)
+      ..write(obj.name)
       ..writeByte(2)
       ..write(obj.description)
       ..writeByte(3)
@@ -41,7 +43,11 @@ class AccountAdapter extends TypeAdapter<Account> {
       ..writeByte(4)
       ..write(obj.isActive)
       ..writeByte(5)
-      ..write(obj.clientId);
+      ..write(obj.clientId)
+      ..writeByte(6)
+      ..write(obj.startDate)
+      ..writeByte(7)
+      ..write(obj.endDate);
   }
 
   @override

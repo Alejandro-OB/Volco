@@ -31,7 +31,7 @@ Future<List<Trip>> fetchSupabaseTrips(Account account) async {
 Future<void> exportTrips(List<Trip> trips, Account account) async {
   trips.sort((a, b) => a.date.compareTo(b.date)); 
   final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-  final name = 'viajes_${account.alias}_$date.json';
+  final name = 'viajes_${account.name}_$date.json';
   final jsonData = jsonEncode(trips.map((t) => {
     ...t.toJson(),
     'account_id': account.id,
