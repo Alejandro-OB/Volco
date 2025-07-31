@@ -197,6 +197,40 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
           debugPrint('[Splash] Descarga completada. Abriendo archivo...');
           final result = await OpenFilex.open(apkFile.path);
           debugPrint('[Splash] Resultado al abrir archivo: ${result.type}');
+          await Future.delayed(const Duration(minutes: 2));
+
+          // Obtener la versión actual después del posible reinicio
+          const currentVersion = appVersion; // Esto sigue siendo la versión actual instalada
+          final localSemver = currentVersion.split('+').first;
+          final remoteSemver = remoteVersion.split('+').first;
+
+          if (localSemver != remoteSemver) {
+            if (!mounted) return;
+            final retry = await showDialog<bool>(
+              context: context,
+              barrierDismissible: false,
+              builder: (_) => AlertDialog(
+                title: const Text('Actualización incompleta'),
+                content: const Text('Parece que no se completó la instalación de la nueva versión. ¿Quieres intentar de nuevo?'),
+                actions: [
+                  TextButton(
+                    onPressed: () => exit(0),
+                    child: const Text('Salir'),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(context, true),
+                    child: const Text('Reintentar'),
+                  ),
+                ],
+              ),
+            );
+
+            if (retry == true) {
+              _checkUpdateAndNavigate(); // vuelve a intentar todo el proceso
+            } else {
+              exit(0);
+            }
+          }
         } catch (e) {
           debugPrint('[Splash] Error al descargar o abrir el archivo: $e');
           if (mounted) {
