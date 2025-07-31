@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../helpers/network_helper.dart'; 
 
 Future<void> showLogoutDialog(BuildContext context) async {
   final screenWidth = MediaQuery.of(context).size.width;
+  final esInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
 
   final confirm = await showDialog<bool>(
     context: context,
@@ -66,9 +68,12 @@ Future<void> showLogoutDialog(BuildContext context) async {
 
   if (confirm != true) return;
 
+  // Verificar conexión antes de cerrar sesión si no es modo invitado
+  if (!esInvitado && !await verificarConexion(context, esInvitado)) return;
+
   try {
     await Hive.box('config').put('modo_invitado', false);
-    await Hive.box('config').delete('role'); // Si guardaste el rol
+    await Hive.box('config').delete('role');
     await Supabase.instance.client.auth.signOut();
 
     if (context.mounted) {
@@ -77,9 +82,8 @@ Future<void> showLogoutDialog(BuildContext context) async {
   } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error al cerrar sesión')),
+        const SnackBar(content: Text('Error al cerrar sesión')),
       );
     }
   }
 }
-

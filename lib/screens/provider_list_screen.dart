@@ -188,7 +188,7 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
       await providerBox.deleteAt(index);
       setState(() {});
     } else {
-      // Usa deleteEntity
+
       if (!await verificarConexion(context, esInvitado)) return;
 
 
@@ -262,7 +262,8 @@ class _ProviderListScreenState extends State<ProviderListScreen> {
                 ),
               ],
             ),
-            onTap: () {
+            onTap: () async {
+              if (!await verificarConexion(context, esInvitado)) return;
               Navigator.push(context, MaterialPageRoute(builder: (_) => ClientListScreen(provider: provider)));
             },
           ),

@@ -9,6 +9,7 @@ import 'trip_list_screen.dart';
 import 'client_list_screen.dart';
 import '../utils/widgets/volco_header.dart';
 import '../utils/widgets/confirm_delete_dialog.dart';
+import '../utils/helpers/network_helper.dart';
 
 class AccountListScreen extends StatefulWidget {
   final Client client;
@@ -124,11 +125,14 @@ class _AccountListScreenState extends State<AccountListScreen> {
   }
 
   Future<void> _addAccountSupabase() async {
+
+
     final aliasController = TextEditingController();
     final descController = TextEditingController();
 
     final alias = await _showAccountDialog('Nueva Cuenta', aliasController, descController);
     if (alias != null && alias.isNotEmpty) {
+      if (!await verificarConexion(context, !isAuthenticated)) return;
       await Supabase.instance.client.from('accounts').insert({
         'alias': alias,
         'description': descController.text.trim(),
@@ -139,11 +143,16 @@ class _AccountListScreenState extends State<AccountListScreen> {
   }
 
   Future<void> _editAccountSupabase(Account account) async {
+
+    
+
     final aliasController = TextEditingController(text: account.alias);
     final descController = TextEditingController(text: account.description);
 
     final alias = await _showAccountDialog('Editar Cuenta', aliasController, descController);
+
     if (alias != null && alias.isNotEmpty) {
+      if (!await verificarConexion(context, !isAuthenticated)) return;
       await Supabase.instance.client
           .from('accounts')
           .update({
@@ -161,6 +170,7 @@ class _AccountListScreenState extends State<AccountListScreen> {
       title: '¿Eliminar cuenta?',
       message: 'Esto eliminará la cuenta y sus viajes.',
     );
+    if (!await verificarConexion(context, !isAuthenticated)) return;
 
     if (confirm == true) {
       await Supabase.instance.client.from('accounts').delete().eq('id', account.id);
@@ -268,7 +278,8 @@ class _AccountListScreenState extends State<AccountListScreen> {
                 const Icon(Icons.arrow_forward_ios, color: Colors.grey),
               ],
             ),
-            onTap: () {
+            onTap: () async {
+              if (!await verificarConexion(context, !isAuthenticated)) return;
               Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -292,44 +303,65 @@ class _AccountListScreenState extends State<AccountListScreen> {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
-    return Scaffold(
-      backgroundColor: Colors.white,
-      body: SafeArea(
-        child: Column(
-          children: [
-            VolcoHeader(
-              title: widget.client.name,
-              subtitle: 'Cuentas',
-              onBack: () async {
-                final boxName = 'accounts_${widget.client.id}';
-                if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
-                if (!context.mounted) return;
-                Navigator.pushAndRemoveUntil(
-                  context,
-                  MaterialPageRoute(builder: (_) => ClientListScreen(provider: widget.provider)),
-                  (route) => false,
-                );
-              },
-            ),
-            Expanded(
-              child: isAuthenticated
-                  ? _buildAccountList(supabaseAccounts)
-                  : ValueListenableBuilder(
-                      valueListenable: _accountBox.listenable(),
-                      builder: (context, Box<Account> box, _) {
-                        final accounts = box.values.toList();
-                        return _buildAccountList(accounts);
-                      },
+    return WillPopScope(
+      onWillPop: () async {
+        final canExit = await verificarConexion(context, !isAuthenticated);
+        if (canExit) {
+          final boxName = 'accounts_${widget.client.id}';
+          if (Hive.isBoxOpen(boxName)) await Hive.box<Account>(boxName).close();
+        }
+        return canExit;
+      },
+      child: Scaffold(
+        backgroundColor: Colors.white,
+        body: SafeArea(
+          child: Column(
+            children: [
+              VolcoHeader(
+                title: widget.client.name,
+                subtitle: 'Cuentas',
+                onBack: () async {
+                  if (!await verificarConexion(context, !isAuthenticated)) return;
+
+                  final boxName = 'accounts_${widget.client.id}';
+                  if (Hive.isBoxOpen(boxName)) {
+                    await Hive.box<Account>(boxName).close();
+                  }
+
+                  if (!context.mounted) return;
+
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ClientListScreen(provider: isAuthenticated ? widget.provider : null),
                     ),
-            )
-          ],
+                    (route) => false,
+                  );
+                },
+
+
+              ),
+              Expanded(
+                child: isAuthenticated
+                    ? _buildAccountList(supabaseAccounts)
+                    : ValueListenableBuilder(
+                        valueListenable: _accountBox.listenable(),
+                        builder: (context, Box<Account> box, _) {
+                          final accounts = box.values.toList();
+                          return _buildAccountList(accounts);
+                        },
+                      ),
+              ),
+            ],
+          ),
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: isAuthenticated ? _addAccountSupabase : _addAccount,
-        backgroundColor: const Color(0xFFF18824),
-        child: const Icon(Icons.add),
+        floatingActionButton: FloatingActionButton(
+          onPressed: isAuthenticated ? _addAccountSupabase : _addAccount,
+          backgroundColor: const Color(0xFFF18824),
+          child: const Icon(Icons.add),
+        ),
       ),
     );
   }
+
 }

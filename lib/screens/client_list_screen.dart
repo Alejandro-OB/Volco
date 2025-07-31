@@ -33,17 +33,23 @@ class _ClientListScreenState extends State<ClientListScreen> {
   void initState() {
     super.initState();
     esInvitado = Hive.box('config').get('modo_invitado', defaultValue: false);
+
     if (!esInvitado) {
-      fetchUserRole().then((value) {
-        setState(() {
-          role = value;
+      verificarConexion(context, esInvitado).then((conectado) {
+        if (!conectado) return;
+
+        fetchUserRole().then((value) {
+          setState(() {
+            role = value;
+          });
+          futureClients = fetchClientsFromSupabase();
         });
-        futureClients = fetchClientsFromSupabase();
       });
     } else {
       futureClients = Future.value([]);
     }
   }
+
 
   Future<String> fetchUserRole() async {
     final userId = Supabase.instance.client.auth.currentUser?.id;
@@ -224,7 +230,9 @@ class _ClientListScreenState extends State<ClientListScreen> {
                 ? VolcoHeader(
                     title: widget.provider?.name ?? '',
                     subtitle: subtitle,
-                    onBack: () {
+                    onBack: () async {
+                      if (!await verificarConexion(context, esInvitado)) return;
+
                       Navigator.pushAndRemoveUntil(
                         context,
                         MaterialPageRoute(builder: (_) => const ProviderListScreen()),
@@ -347,10 +355,13 @@ class _ClientListScreenState extends State<ClientListScreen> {
                 ),
               ],
             ),
-            onTap: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => AccountListScreen(client: client, provider: widget.provider)),
-            ),
+            onTap: () async {
+              if (!await verificarConexion(context, esInvitado)) return;
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AccountListScreen(client: client, provider: widget.provider)),
+              );
+            }
           ),
         );
       },

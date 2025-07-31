@@ -9,6 +9,7 @@ import 'trip_list_screen.dart';
 import '../models/provider.dart' as provider_model;
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:uuid/uuid.dart';
+import '../utils/helpers/network_helper.dart';
 
 class TripFormScreen extends StatefulWidget {
   final Client client;
@@ -134,7 +135,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
     final isOther = _selectedMaterial == 'Otro';
     final customMaterial = _customMaterialController.text.trim();
     final isEditing = widget.trip != null;
-
+    if (!await verificarConexion(context, !isAuthenticated)) return;
     if (_formKey.currentState!.validate() &&
         _selectedMaterial != null &&
         _dateController.text.isNotEmpty &&
@@ -145,7 +146,7 @@ class _TripFormScreenState extends State<TripFormScreen> {
         quantity: int.parse(_quantityController.text),
         unitValue: int.parse(_unitValueController.text),
       );
-
+      
       if (isAuthenticated) {
         final supabase = Supabase.instance.client;
         final tripData = newTrip.toJson();
@@ -222,7 +223,8 @@ class _TripFormScreenState extends State<TripFormScreen> {
                         children: [
                           IconButton(
                             icon: const Icon(Icons.arrow_back, color: Colors.white),
-                            onPressed: () {
+                            onPressed:  () async {
+                              if (!await verificarConexion(context, !isAuthenticated)) return;
                               Navigator.pushReplacement(
                                 context,
                                 MaterialPageRoute(
@@ -364,7 +366,8 @@ class _TripFormScreenState extends State<TripFormScreen> {
                             const SizedBox(height: 12),
                             Center(
                               child: TextButton.icon(
-                                onPressed: () {
+                                onPressed: () async {
+                                  if (!await verificarConexion(context, !isAuthenticated)) return;
                                   Navigator.pushReplacement(
                                     context,
                                     MaterialPageRoute(

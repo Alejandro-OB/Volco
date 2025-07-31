@@ -10,6 +10,9 @@ import '../models/account.dart';
 import '../utils/widgets/volco_header.dart';
 import 'package:uuid/uuid.dart';
 import '../models/provider.dart' as provider_model;
+import 'package:google_fonts/google_fonts.dart';
+import '../utils/helpers/network_helper.dart';
+
 
 class InvoiceCustomizationScreen extends StatefulWidget {
   final Client client;
@@ -160,7 +163,7 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
 
     if (isAuthenticated) {
       final data = _prefs.toMap();
-
+      if (!await verificarConexion(context, !isAuthenticated)) return;
       if (_prefs.applyToAllAccounts) {
         // 🔸 Guardar para proveedor
         data['provider_id'] = widget.provider?.id;
@@ -215,15 +218,47 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   }
 
   Future<void> _pickImage({required bool isLogo}) async {
-    final result = await FilePicker.platform.pickFiles(
-      type: FileType.image,
-      withData: true,
-    );
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.image,
+        withData: true,
+      );
 
-    if (result != null && result.files.single.bytes != null) {
+      if (result == null || result.files.single.bytes == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No se seleccionó ninguna imagen.')),
+        );
+        return;
+      }
+
       final fileBytes = result.files.single.bytes!;
-      final extension = result.files.single.extension ?? 'png';
+      final extension = result.files.single.extension?.toLowerCase() ?? 'png';
+
+      // Validar formato soportado
+      const allowedExtensions = ['png', 'jpg', 'jpeg', 'webp'];
+      if (!allowedExtensions.contains(extension)) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Formato no soportado. Usa PNG, JPG o WEBP.')),
+        );
+        return;
+      }
+
       final fileName = isLogo ? 'logo.$extension' : 'firma.$extension';
+
+      // Mostrar indicador de carga mientras se sube
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (_) => const AlertDialog(
+          content: Row(
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(width: 20),
+              Expanded(child: Text('Procesando imagen...')),
+            ],
+          ),
+        ),
+      );
 
       if (isAuthenticated) {
         final publicUrl = await _uploadImageToStorage(
@@ -239,7 +274,13 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
           }
           _hasUnsavedChanges = true;
         });
+
+        Navigator.of(context).pop(); // cerrar diálogo de carga
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${isLogo ? "Logo" : "Firma"} actualizada correctamente.')),
+        );
       } else {
+        Navigator.of(context).pop(); // cerrar diálogo de carga
         setState(() {
           if (isLogo) {
             _prefs.logoBytes = fileBytes;
@@ -248,9 +289,19 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
           }
           _hasUnsavedChanges = true;
         });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('${isLogo ? "Logo" : "Firma"} actualizada localmente.')),
+        );
       }
+    } catch (e) {
+      Navigator.of(context).maybePop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Ocurrió un error al cargar la imagen.')),
+      );
     }
   }
+
 
   Future<String> _uploadImageToStorage({
     required Uint8List fileBytes,
@@ -344,18 +395,59 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
   Future<bool> _onWillPop() async {
     if (_hasUnsavedChanges) {
       final confirm = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text('Cambios no guardados'),
-          content: const Text('¿Deseas salir sin guardar los cambios?'),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancelar')),
-            TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Salir')),
-          ],
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Cambios no guardados',
+          style: GoogleFonts.poppins(fontSize: 20, fontWeight: FontWeight.bold),
         ),
-      );
+        content: Text(
+          '¿Deseas salir sin guardar los cambios?',
+          style: GoogleFonts.poppins(fontSize: 15),
+        ),
+        actionsPadding: const EdgeInsets.only(bottom: 16, left: 16, right: 16),
+        actions: [
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.black87,
+                    side: const BorderSide(color: Colors.black26),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Cancelar'),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFFF18824),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text('Salir'),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );      
       return confirm ?? false;
     }
+
     return true;
   }
 
@@ -608,52 +700,93 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                           _buildSection(
                             title: 'Opciones adicionales',
                             child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                SwitchListTile(
-                                  title: const Text('¿Incluir firma en el PDF?'),
-                                  value: _prefs.showSignature,
-                                  onChanged: (value) => setState(() {
-                                    _prefs.showSignature = value;
-                                    _hasUnsavedChanges = true;
-                                  }),
-                                ),
-                                if (_prefs.showSignature) ...[
-                                  const SizedBox(height: 12),
-                                  _buildTextField('Nombre del proveedor', _providerNameController, (v) {
-                                    _prefs.providerName = v;
-                                    _hasUnsavedChanges = true;
-                                  }),
-                                  const SizedBox(height: 12),
-                                  _buildTextField('Cédula del proveedor', _providerDocumentController, (v) {
-                                    _prefs.providerDocument = v;
-                                    _hasUnsavedChanges = true;
-                                  }),
-                                ],
 
-                                const SizedBox(height: 12),
-                                SwitchListTile(
-                                  title: const Text('¿Incluir texto de agradecimiento?'),
-                                  value: _prefs.showThankYouText,
-                                  onChanged: (value) => setState(() {
-                                    _prefs.showThankYouText = value;
-                                    _hasUnsavedChanges = true;
-                                  }),
-                                ),
-                                if (_prefs.showThankYouText) ...[
-                                  const SizedBox(height: 12),
-                                  _buildTextField(
-                                    'Texto de agradecimiento',
-                                    _thankYouTextController,
-                                    (v) => _prefs.thankYouText = v,
+                                // Firma
+                                Card(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 2,
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      children: [
+                                        SwitchListTile(
+                                          title: Text('¿Incluir firma en el PDF?', style: GoogleFonts.poppins()),
+                                          value: _prefs.showSignature,
+                                          onChanged: (value) => setState(() {
+                                            _prefs.showSignature = value;
+                                            _hasUnsavedChanges = true;
+                                          }),
+                                        ),
+                                        if (_prefs.showSignature) ...[
+                                          const SizedBox(height: 12),
+                                          _buildTextField('Nombre del proveedor', _providerNameController, (v) {
+                                            _prefs.providerName = v;
+                                            _hasUnsavedChanges = true;
+                                          }),
+                                          const SizedBox(height: 12),
+                                          _buildTextField('Cédula del proveedor', _providerDocumentController, (v) {
+                                            _prefs.providerDocument = v;
+                                            _hasUnsavedChanges = true;
+                                          }),
+                                        ],
+                                      ],
+                                    ),
                                   ),
-                                ],
-                                const SizedBox(height: 12),
+                                ),
 
+                                // Agradecimiento
+                                Card(
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                                  elevation: 2,
+                                  margin: const EdgeInsets.only(bottom: 16),
+                                  child: Padding(
+                                    padding: const EdgeInsets.all(16),
+                                    child: Column(
+                                      children: [
+                                        SwitchListTile(
+                                          title: Text('¿Incluir texto de agradecimiento?', style: GoogleFonts.poppins()),
+                                          value: _prefs.showThankYouText,
+                                          onChanged: (value) => setState(() {
+                                            _prefs.showThankYouText = value;
+                                            _hasUnsavedChanges = true;
+                                          }),
+                                        ),
+                                        if (_prefs.showThankYouText) ...[
+                                          const SizedBox(height: 12),
+                                          _buildTextField(
+                                            'Texto de agradecimiento',
+                                            _thankYouTextController,
+                                            (v) => _prefs.thankYouText = v,
+                                          ),
+                                        ],
+                                      ],
+                                    ),
+                                  ),
+                                ),
+
+                                // Formato de fecha
+                                const SizedBox(height: 8),
                                 DropdownButtonFormField<String>(
-                                  decoration: const InputDecoration(
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.white, // Fondo blanco
                                     labelText: 'Formato de fecha',
-                                    border: OutlineInputBorder(),
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                    labelStyle: GoogleFonts.poppins(),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: const BorderSide(color: Colors.black26),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: const BorderSide(color: Color(0xFFF18824), width: 2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                                   ),
                                   value: _prefs.dateFormatOption,
                                   onChanged: (value) {
@@ -669,10 +802,16 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                     DropdownMenuItem(value: 'MM/yyyy', child: Text('Mes/Año')),
                                     DropdownMenuItem(value: 'MMMM yyyy', child: Text('Mes escrito y Año')),
                                   ],
+                                  style: GoogleFonts.poppins(color: Colors.black87),
+                                  dropdownColor: Colors.white,
                                 ),
-                                if (userRole == 'admin' && widget.provider != null)
+
+
+                                // Aplicar globalmente (solo admin)
+                                if (userRole == 'admin' && widget.provider != null) ...[
+                                  const SizedBox(height: 20),
                                   SwitchListTile(
-                                    title: const Text('Aplicar a todas las cuentas del proveedor'),
+                                    title: Text('Aplicar a todas las cuentas del proveedor', style: GoogleFonts.poppins()),
                                     value: _prefs.applyToAllAccounts,
                                     onChanged: (value) {
                                       setState(() {
@@ -681,10 +820,11 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                       });
                                     },
                                   ),
-
+                                ],
                               ],
                             ),
                           ),
+
                           const SizedBox(height: 24),
                           Row(
                             children: [

@@ -1,28 +1,34 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:http/http.dart' as http;
 
-/// Verifica si hay acceso real a internet.
+
 Future<bool> checkInternetConnection() async {
   final connectivityResult = await Connectivity().checkConnectivity();
   if (connectivityResult == ConnectivityResult.none) return false;
 
   try {
-    final result = await http
-        .get(Uri.parse('https://www.google.com'))
-        .timeout(const Duration(seconds: 3));
-    return result.statusCode == 200;
+    final socket = await Socket.connect('8.8.8.8', 53, timeout: Duration(seconds: 3));
+    socket.destroy();
+    return true;
   } catch (_) {
     return false;
   }
 }
 
 
-Future<bool> verificarConexion(BuildContext context, bool esInvitado) async {
-  if (esInvitado) return true; 
 
-  final conectado = await checkInternetConnection();
-  if (!conectado) {
+Future<bool> verificarConexion(BuildContext context, bool esInvitado) async {
+
+  if (esInvitado) {
+    return true;
+  }
+
+  try {
+    final socket = await Socket.connect('8.8.8.8', 53, timeout: const Duration(seconds: 2));
+    socket.destroy();
+    return true;
+  } catch (e) {
     if (context.mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Sin conexión. No se puede continuar.')),
@@ -30,6 +36,4 @@ Future<bool> verificarConexion(BuildContext context, bool esInvitado) async {
     }
     return false;
   }
-
-  return true;
 }

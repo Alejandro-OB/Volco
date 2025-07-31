@@ -34,7 +34,7 @@ class VolcoHeader extends StatelessWidget {
           ),
           Image.asset('assets/imgs/logo_volco.png', height: 60),
           const SizedBox(width: 12),
-          Expanded( // Este Expanded previene el overflow
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

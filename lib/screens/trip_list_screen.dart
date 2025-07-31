@@ -1,5 +1,3 @@
-// Versión final unificada de TripListScreen
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -7,10 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
-//import 'package:open_file/open_file.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:printing/printing.dart';
@@ -28,6 +24,9 @@ import 'trip_form_screen.dart';
 import 'invoice_customization_screen.dart';
 import 'account_list_screen.dart';
 import '../utils/helpers/network_helper.dart';
+import '../utils/helpers/trip_storage_helper.dart';
+import '../utils/helpers/invoice_preferences_helper.dart';
+import '../utils/helpers/user_helper.dart';
 
 
 
@@ -45,125 +44,14 @@ class TripListScreen extends StatefulWidget {
 class _TripListScreenState extends State<TripListScreen> {
   
   String? userRole;
-  Future<Uint8List> _downloadImageBytes(String url) async {
-    final request = await HttpClient().getUrl(Uri.parse(url));
-    final response = await request.close();
-
-    final bytesBuilder = BytesBuilder();
-    await for (final chunk in response) {
-      bytesBuilder.add(chunk);
-    }
-    return bytesBuilder.takeBytes();
-  }
 
   Future<InvoicePreferences> _loadInvoicePreferences() async {
-    final isAuthenticated = Supabase.instance.client.auth.currentUser != null;
-    debugPrint('📥 Cargando preferencias de factura... Usuario autenticado: $isAuthenticated');
-
-    if (isAuthenticated) {
-      // 1. Buscar preferencias por cuenta
-      final cuentaPrefsResponse = await Supabase.instance.client
-          .from('invoice_preferences')
-          .select()
-          .eq('client_id', widget.client.id)
-          .eq('account_id', widget.account.id)
-          .maybeSingle();
-
-      if (cuentaPrefsResponse != null) {
-        final cuentaPrefs = InvoicePreferences.fromMap(cuentaPrefsResponse);
-
-        // Si hay que aplicar las preferencias globales del proveedor
-        if (cuentaPrefs.applyToAllAccounts && userRole == 'admin' && widget.provider != null) {
-
-          final proveedorPrefsResponse = await Supabase.instance.client
-              .from('invoice_preferences')
-              .select()
-              .eq('provider_id', widget.provider!.id)
-              .eq('apply_to_all_accounts', true)
-              .maybeSingle();
-
-          if (proveedorPrefsResponse != null) {
-            final proveedorPrefs = InvoicePreferences.fromMap(proveedorPrefsResponse);
-            await _downloadImages(proveedorPrefs);
-            return proveedorPrefs;
-          } else {
-            debugPrint('No se encontraron preferencias globales para el proveedor.');
-          }
-        }
-
-        // Retornar las preferencias por cuenta si no aplica global
-        await _downloadImages(cuentaPrefs);
-        return cuentaPrefs;
-      } else {
-        debugPrint('No se encontraron preferencias por cuenta.');
-      }
-
-      // 3. Buscar directamente preferencias globales si no hay por cuenta
-      if (userRole == 'admin' && widget.provider != null) {
-        debugPrint('🔍 Buscando preferencias globales directamente (por proveedor).');
-
-        final proveedorPrefsResponse = await Supabase.instance.client
-            .from('invoice_preferences')
-            .select()
-            .eq('provider_id', widget.provider!.id)
-            .eq('apply_to_all_accounts', true)
-            .maybeSingle();
-
-        if (proveedorPrefsResponse != null) {
-          debugPrint('✅ Preferencias globales del proveedor encontradas (sin cuenta): $proveedorPrefsResponse');
-          final proveedorPrefs = InvoicePreferences.fromMap(proveedorPrefsResponse);
-          await _downloadImages(proveedorPrefs);
-          return proveedorPrefs;
-        } else {
-          debugPrint('⚠️ No se encontraron preferencias globales del proveedor (sin cuenta).');
-        }
-      }
-
-      // 4. Por defecto
-      return InvoicePreferences.defaultValues();
-    } else {
-      // Modo invitado
-      final boxName = 'invoicePreferences_${widget.client.id}_${widget.account.id}';
-      final box = await Hive.openBox<InvoicePreferences>(boxName);
-      final storedPrefs = box.get('prefs');
-      return storedPrefs ?? InvoicePreferences.defaultValues();
-    }
-  }
-
-
-  Future<void> _downloadImages(InvoicePreferences prefs) async {
-    if (prefs.logoUrl != null) {
-      try {
-        prefs.logoBytes = await _downloadImageBytes(prefs.logoUrl!);
-      } catch (_) {
-        debugPrint('Error descargando logo');
-      }
-    }
-
-    if (prefs.signatureUrl != null) {
-      try {
-        prefs.signatureBytes = await _downloadImageBytes(prefs.signatureUrl!);
-      } catch (_) {
-        debugPrint('Error descargando firma');
-      }
-    }
-  }
-
-  Future<void> _loadUserRole() async {
-    final userId = Supabase.instance.client.auth.currentUser?.id;
-    if (userId != null) {
-      final userData = await Supabase.instance.client
-          .from('users')
-          .select('role')
-          .eq('id', userId)
-          .maybeSingle();
-
-      if (userData != null) {
-        setState(() {
-          userRole = userData['role'];
-        });
-      }
-    }
+    return await loadInvoicePreferences(
+      client: widget.client,
+      account: widget.account,
+      userRole: userRole,
+      provider: widget.provider,
+    );
   }
 
 
@@ -171,25 +59,71 @@ class _TripListScreenState extends State<TripListScreen> {
     return await showDialog<String>(
       context: context,
       builder: (_) => AlertDialog(
-        title: const Text('Importar viajes'),
-        content: const Text('¿Qué hacer si un viaje ya existe?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 0),
+        contentPadding: const EdgeInsets.all(24),
+        actionsPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        title: Row(
+          children: const [
+            Icon(Icons.import_export, color: Color(0xFFF18824)),
+            SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Importar viajes',
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          '¿Qué hacer si un viaje ya existe en la cuenta?\n\nPuedes elegir ignorar, sobrescribir o decidir por cada uno.',
+          style: TextStyle(fontSize: 15),
+        ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'skip'),
-            child: const Text('Ignorar duplicados'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'ask'),
-            child: const Text('Preguntar por cada uno'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(context, 'overwrite'),
-            child: const Text('Sobrescribir todos'),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, 'skip'),
+                icon: const Icon(Icons.skip_next),
+                label: const Text('Ignorar duplicados'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey.shade300,
+                  foregroundColor: Colors.black87,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, 'ask'),
+                icon: const Icon(Icons.help_outline),
+                label: const Text('Preguntar por cada uno'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+              const SizedBox(height: 12),
+              ElevatedButton.icon(
+                onPressed: () => Navigator.pop(context, 'overwrite'),
+                icon: const Icon(Icons.edit),
+                label: const Text('Sobrescribir todos'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF18824),
+                  foregroundColor: Colors.white,
+                  minimumSize: const Size.fromHeight(48),
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
+
+
+
 
 
   late Box<Trip> tripBox;
@@ -203,37 +137,31 @@ class _TripListScreenState extends State<TripListScreen> {
     isAuthenticated = Supabase.instance.client.auth.currentUser != null;
     if (isAuthenticated) {
       _fetchSupabaseTrips();
-      _loadUserRole();
+      getUserRole().then((role) => setState(() => userRole = role));
     } else {
       _openHiveBox();
     }
   }
 
   Future<void> _openHiveBox() async {
-    final boxName = 'trips_${widget.client.id}_${widget.account.id}';
-    tripBox = await Hive.openBox<Trip>(boxName);
+    tripBox = await openHiveTripBox(widget.client, widget.account);
     setState(() => isBoxReady = true);
   }
 
   Future<void> _fetchSupabaseTrips() async {
-    final response = await Supabase.instance.client
-        .from('trips')
-        .select()
-        .eq('account_id', widget.account.id)
-        .order('date');
-
-    final data = List<Map<String, dynamic>>.from(response);
-    trips = data.map((e) => Trip.fromJson(e)).toList();
+    trips = await fetchSupabaseTrips(widget.account);
     setState(() => isBoxReady = true);
   }
 
+
   Future<void> _deleteTrip(dynamic tripKey) async {
+
     final confirm = await ConfirmDeleteDialog(
       context: context,
       title: 'Eliminar viaje',
       message: 'Esta acción no se puede deshacer.',
     );
-    if (!await verificarConexion(context, isAuthenticated)) return;
+    if (!await verificarConexion(context, !isAuthenticated)) return;
     if (confirm == true) {
       if (isAuthenticated) {
         await Supabase.instance.client.from('trips').delete().eq('id', tripKey);
@@ -244,31 +172,7 @@ class _TripListScreenState extends State<TripListScreen> {
     }
   }
 
-  Future<void> _exportTrips(List<Trip> trips) async {
-    final date = DateFormat('yyyy-MM-dd').format(DateTime.now());
-    final name = 'viajes_${widget.account.alias}_$date.json';
-    final jsonData = jsonEncode(trips.map((t) => {
-      ...t.toJson(),
-      'account_id': widget.account.id,
-    }).toList());
-    final dir = await getTemporaryDirectory();
-    final file = File('${dir.path}/$name');
-    await file.writeAsString(jsonData);
-    await Share.shareXFiles([XFile(file.path)], text: 'Archivo exportado');
-  }
-
-  Future<List<Trip>> _importTrips() async {
-    try {
-      final result = await FilePicker.platform.pickFiles(type: FileType.custom, allowedExtensions: ['json']);
-      if (result != null) {
-        final file = result.files.single;
-        final jsonStr = file.bytes != null ? utf8.decode(file.bytes!) : await File(file.path!).readAsString();
-        final data = jsonDecode(jsonStr) as List;
-        return data.map((e) => Trip.fromJson(e)).toList();
-      }
-    } catch (_) {}
-    return [];
-  }
+ 
 
   String _calculateTotal() {
     double total = 0;
@@ -336,11 +240,6 @@ class _TripListScreenState extends State<TripListScreen> {
       ),
     );
   }
-
-
-
-
-
 
 
   Future<void> _handlePdf(Uint8List pdfData, String name) async {
@@ -418,6 +317,7 @@ class _TripListScreenState extends State<TripListScreen> {
 
 
   void _navigateToForm({Trip? trip, dynamic tripKey}) async {
+    if (!await verificarConexion(context, !isAuthenticated)) return;
     await Navigator.push(
       context,
       MaterialPageRoute(
@@ -503,7 +403,7 @@ class _TripListScreenState extends State<TripListScreen> {
             final behavior = await _askImportBehavior();
             if (behavior == null) return;
 
-            final imported = await _importTrips();
+            final imported = await importTrips();
             for (final trip in imported) {
               final tripWithAccount = trip.copyWith(accountId: widget.account.id);
 
@@ -572,7 +472,8 @@ class _TripListScreenState extends State<TripListScreen> {
           labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
           onTap: () async {
             final list = isAuthenticated ? trips : tripBox.values.toList();
-            await _exportTrips(list);
+            await exportTrips(list, widget.account);
+
           },
         ),
         SpeedDialChild(
@@ -638,7 +539,8 @@ class _TripListScreenState extends State<TripListScreen> {
             backgroundColor: Colors.grey,
             label: 'Personalizar factura',
             labelStyle: GoogleFonts.poppins(fontWeight: FontWeight.w500),
-            onTap: () {
+            onTap: () async {
+              if (!await verificarConexion(context, !isAuthenticated)) return;
               Navigator.push(context, MaterialPageRoute(
                 builder: (_) => InvoiceCustomizationScreen(
                   client: widget.client,
@@ -666,8 +568,9 @@ class _TripListScreenState extends State<TripListScreen> {
           await tripBox.close();
         }
 
+        if (!await verificarConexion(context, !isAuthenticated)) return false;
 
-        // Redirigir a pantalla de cuentas (AccountListScreen) eliminando pila
+
         Navigator.pushAndRemoveUntil(
           context,
           MaterialPageRoute(
@@ -689,6 +592,7 @@ class _TripListScreenState extends State<TripListScreen> {
                 title: widget.client.name,
                 subtitle: 'Viajes de ${widget.account.alias}',
                 onBack: () async {
+                  if (!await verificarConexion(context, !isAuthenticated)) return;
                   final boxName = 'accounts_${widget.client.id}';
                   if (Hive.isBoxOpen(boxName)) {
                     await Hive.box<Account>(boxName).close();
@@ -744,11 +648,6 @@ class _TripListScreenState extends State<TripListScreen> {
       ),
     );
   }
-
-
-
-
-
 }
 
 extension on Color {
