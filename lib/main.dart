@@ -16,13 +16,14 @@ import 'screens/login_screen.dart';
 import 'screens/register_screen.dart';
 import 'screens/reset_password_screen.dart';
 import 'screens/splash_screen.dart'; 
+import 'secrets.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Supabase.initialize(
-    url: 'https://asoihprqragjwstyqjru.supabase.co',
-    anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFzb2locHJxcmFnandzdHlxanJ1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNjUwNTQsImV4cCI6MjA2Nzc0MTA1NH0.PJRWLX0pZR36WeFyReM-6yt-hOGCe1wJ5XgItQd6qn4',
+    url: supabaseUrl,
+    anonKey: supabaseAnonKey,
   );
 
   final appSupportDir = await getApplicationSupportDirectory();
