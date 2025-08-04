@@ -65,7 +65,6 @@ Future<Uint8List> generateInvoicePdf({
     border: pw.TableBorder.all(width: 1),
     columnWidths: {
       0: pw.FlexColumnWidth(3),
-      1: pw.FlexColumnWidth(1.5),
     },
     children: [
       pw.TableRow(
@@ -81,33 +80,17 @@ Future<Uint8List> generateInvoicePdf({
               ),
             ),
           ),
-          pw.Container(
-            color: headerColor,
-            alignment: pw.Alignment.center,
-            padding: const pw.EdgeInsets.all(6),
-            child: pw.Text(
-              'FECHA',
-              style: pw.TextStyle(
-                font: interFont,
-                fontSize: 10,
-                color: PdfColors.white,
-                fontWeight: pw.FontWeight.bold,
-              ),
-            ),
-          ),
         ],
       ),
     ],
   );
 
+
   // Cuadro de servicio + fecha descompuesta
-  final serviceBox = pw.Table(
+ final serviceBox = pw.Table(
     border: pw.TableBorder.all(width: 1),
     columnWidths: {
       0: pw.FlexColumnWidth(3),
-      1: pw.FlexColumnWidth(0.5),
-      2: pw.FlexColumnWidth(0.5),
-      3: pw.FlexColumnWidth(0.5),
     },
     children: [
       pw.TableRow(
@@ -119,19 +102,11 @@ Future<Uint8List> generateInvoicePdf({
               style: pw.TextStyle(font: interFont, fontSize: 9),
             ),
           ),
-          for (final e in dateParts)
-            pw.Container(
-              alignment: pw.Alignment.center,
-              height: 20,
-              child: pw.Text(
-                e,
-                style: pw.TextStyle(font: interFont, fontSize: 9),
-              ),
-            ),
         ],
       ),
     ],
   );
+
 
   // Cuadro de rango de fechas de la cuenta de cobro
   final rangeDateBox = pw.Table(
@@ -148,24 +123,27 @@ Future<Uint8List> generateInvoicePdf({
               mainAxisAlignment: pw.MainAxisAlignment.start,
               children: [
                 pw.Text(
-                  rangeTitle ?? 'SERVICIOS PRESTADOS DESDE: ',
+                  rangeTitle ?? 'SERVICIOS PRESTADOS DESDE:',
                   style: pw.TextStyle(font: interFont, fontSize: 10, fontWeight: pw.FontWeight.bold),
                 ),
+                pw.SizedBox(width: 4), // espacio entre DESDE: y la fecha
                 pw.Text(
                   startDate ?? '-',
                   style: pw.TextStyle(font: interFont, fontSize: 10),
                 ),
                 pw.SizedBox(width: 20),
                 pw.Text(
-                  'HASTA: ',
+                  'HASTA:',
                   style: pw.TextStyle(font: interFont, fontSize: 10, fontWeight: pw.FontWeight.bold),
                 ),
+                pw.SizedBox(width: 4), // espacio entre HASTA: y la fecha
                 pw.Text(
                   endDate ?? '-',
                   style: pw.TextStyle(font: interFont, fontSize: 10),
                 ),
               ],
             ),
+
           ),
         ],
       ),
@@ -202,6 +180,17 @@ Future<Uint8List> generateInvoicePdf({
   );
 
   final pdfWidgets = <pw.Widget>[
+    pw.Align(
+      alignment: pw.Alignment.topRight,
+      child: pw.Text(
+        'Fecha: $formattedDate',
+        style: pw.TextStyle(
+          font: interFont,
+          fontSize: 10,
+        ),
+      ),
+    ),
+    pw.SizedBox(height: 8),
     pw.Center(
       child: pw.Text(
         'CUENTA DE COBRO',

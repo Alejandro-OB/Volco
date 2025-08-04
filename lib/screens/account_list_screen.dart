@@ -185,6 +185,13 @@ class _AccountListScreenState extends State<AccountListScreen> {
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                         onPressed: () {
+                          final name = nameController.text.trim();
+                          if (name.isEmpty) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Debes ingresar un nombre para la cuenta')),
+                            );
+                            return;
+                          }
                           if (startDate == null || endDate == null) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(content: Text('Debes seleccionar el periodo de la cuenta')),
@@ -369,9 +376,19 @@ class _AccountListScreenState extends State<AccountListScreen> {
             contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
             title: Text(account.name,
                 style: GoogleFonts.poppins(fontSize: 16, fontWeight: FontWeight.w500)),
-            subtitle: account.description.isNotEmpty
-                ? Text(account.description, style: GoogleFonts.poppins(fontSize: 14))
-                : null,
+            subtitle: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (account.description.isNotEmpty)
+                  Text(account.description, style: GoogleFonts.poppins(fontSize: 14)),
+                if (account.startDate != null && account.endDate != null)
+                  Text(
+                    'Del ${DateFormat('dd/MM/yyyy').format(account.startDate!)} al ${DateFormat('dd/MM/yyyy').format(account.endDate!)}',
+                    style: GoogleFonts.poppins(fontSize: 13, color: Colors.grey[700]),
+                  ),
+              ],
+            ),
+
             trailing: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
