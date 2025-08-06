@@ -72,7 +72,8 @@ class InvoicePreferences extends HiveObject {
   @HiveField(21)
   bool applyToAllAccounts;
 
-
+  @HiveField(22)
+  String? pageSizeOption;
 
 
   InvoicePreferences({
@@ -98,6 +99,8 @@ class InvoicePreferences extends HiveObject {
     this.providerDocument = '',
     this.providerId,
     required this.applyToAllAccounts,
+    this.pageSizeOption = 'A4',
+
   });
 
   Color get tableColor => Color(tableColorValue);
@@ -118,13 +121,15 @@ class InvoicePreferences extends HiveObject {
         signatureUrl: null,
         startDate: null,
         endDate: null,
-        rangeTitle: 'SERVICIOS PRESTADOS DESDE',
+        rangeTitle: 'SERVICIOS PRESTADOS DESDE:',
         showRangeDate: true,
         thankYouText: '¡Gracias por confiar en nuestros servicios!',
         providerName: '',
         providerDocument: '',
         providerId: null,
         applyToAllAccounts: false,
+        pageSizeOption: 'A4',
+
       );
 
   
@@ -152,6 +157,8 @@ class InvoicePreferences extends HiveObject {
       providerDocument: map['provider_document'] ?? '',
       providerId: map['provider_id'],
       applyToAllAccounts: map['apply_to_all_accounts'] ?? false,
+      pageSizeOption: map['page_size_option'] ?? 'A4',
+
     );
   }
 
@@ -177,6 +184,8 @@ class InvoicePreferences extends HiveObject {
       'provider_document': providerDocument,
       'provider_id': providerId,
       'apply_to_all_accounts': applyToAllAccounts,
+      'page_size_option': pageSizeOption,
+
     };
   }
 }

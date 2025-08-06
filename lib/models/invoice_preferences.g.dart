@@ -39,13 +39,14 @@ class InvoicePreferencesAdapter extends TypeAdapter<InvoicePreferences> {
       providerDocument: fields[19] as String,
       providerId: fields[20] as String?,
       applyToAllAccounts: fields[21] as bool,
+      pageSizeOption: fields[22] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, InvoicePreferences obj) {
     writer
-      ..writeByte(22)
+      ..writeByte(23)
       ..writeByte(0)
       ..write(obj.tableColorValue)
       ..writeByte(1)
@@ -89,7 +90,9 @@ class InvoicePreferencesAdapter extends TypeAdapter<InvoicePreferences> {
       ..writeByte(20)
       ..write(obj.providerId)
       ..writeByte(21)
-      ..write(obj.applyToAllAccounts);
+      ..write(obj.applyToAllAccounts)
+      ..writeByte(22)
+      ..write(obj.pageSizeOption);
   }
 
   @override

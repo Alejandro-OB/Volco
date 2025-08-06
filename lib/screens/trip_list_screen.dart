@@ -536,6 +536,8 @@ class _TripListScreenState extends State<TripListScreen> {
                 thankYouText: prefs.thankYouText,
                 providerName: prefs.providerName,
                 providerDocument: prefs.providerDocument,
+                pageSizeOption: prefs.pageSizeOption!,
+
               );
 
               Navigator.of(context).pop(); 

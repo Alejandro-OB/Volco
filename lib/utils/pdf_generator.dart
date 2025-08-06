@@ -28,26 +28,28 @@ Future<Uint8List> generateInvoicePdf({
   String? thankYouText,
   String? providerName,
   String? providerDocument,
+  String pageSizeOption = 'A4',
+
 
 }) async {
-  debugPrint('[PDF] Generando con fechas: $startDate - $endDate (mostrar: $showRangeDate)');
+  final isLegal = pageSizeOption == 'Legal';
+  final pageFormat = getPageFormat(pageSizeOption);
+  final usablePageWidth = pageFormat.width - 64;
   final pdf = pw.Document();
   final total = trips.fold<int>(0, (sum, trip) => sum + trip.total);
-  String formattedDate;
-  try {
-    formattedDate = DateFormat('dd/MM/yyyy', 'es_CO').format(date);
-  } catch (e) {
+  //String formattedDate;
+  //try {
+  //  formattedDate = DateFormat('dd/MM/yyyy', 'es_CO').format(date);
+  //} catch (e) {
     // Si falla, usa formato básico como fallback
-    formattedDate = DateFormat('MM/yyyy').format(date);
-  }
+  //  formattedDate = DateFormat('MM/yyyy').format(date);
+  //}
 
-  final dateParts = formattedDate.split(RegExp(r'[ /-]'));
+  //final dateParts = formattedDate.split(RegExp(r'[ /-]'));
 
 
   final logoBytes = customLogoBytes ??
       (await rootBundle.load('assets/imgs/logo_volqueta.png')).buffer.asUint8List();
-  final backgroundBytes =
-      (await rootBundle.load('assets/imgs/fondo.png')).buffer.asUint8List();
 
   final bebasFont =
       pw.Font.ttf(await rootBundle.load('assets/fonts/BebasNeue-Regular.ttf'));
@@ -55,7 +57,6 @@ Future<Uint8List> generateInvoicePdf({
       pw.Font.ttf(await rootBundle.load('assets/fonts/Inter-Regular.ttf'));
 
   final logo = pw.MemoryImage(logoBytes);
-  final background = pw.MemoryImage(backgroundBytes);
   final headerColor = tableHeaderColor ?? PdfColors.black;
   final serviceText = customServiceText ??
       'SERVICIO DE TRANSPORTE  Y SUMINISTRO DE MATERIALES';
@@ -87,10 +88,10 @@ Future<Uint8List> generateInvoicePdf({
 
 
   // Cuadro de servicio + fecha descompuesta
- final serviceBox = pw.Table(
+  final serviceBox = pw.Table(
     border: pw.TableBorder.all(width: 1),
     columnWidths: {
-      0: pw.FlexColumnWidth(3),
+      0: pw.FlexColumnWidth(isLegal ? 5 : 3), // Aumenta el ancho en Legal
     },
     children: [
       pw.TableRow(
@@ -106,6 +107,7 @@ Future<Uint8List> generateInvoicePdf({
       ),
     ],
   );
+
 
 
   // Cuadro de rango de fechas de la cuenta de cobro
@@ -179,18 +181,18 @@ Future<Uint8List> generateInvoicePdf({
     ],
   );
 
+  debugPrint('[PDF] isLegal: $isLegal');
+  final tripTableColumnWidths = {
+    0: pw.FlexColumnWidth(isLegal ? 2.0 : 1.5), // FECHA
+    1: pw.FlexColumnWidth(isLegal ? 1.5 : 1.0), // CANTIDAD
+    2: pw.FlexColumnWidth(isLegal ? 4.5 : 3.0), // DESCRIPCIÓN
+    3: pw.FlexColumnWidth(isLegal ? 2.0 : 1.5), // UNITARIO
+    4: pw.FlexColumnWidth(isLegal ? 2.0 : 1.5), // TOTAL
+  };   
+
   final pdfWidgets = <pw.Widget>[
-    pw.Align(
-      alignment: pw.Alignment.topRight,
-      child: pw.Text(
-        'Fecha: $formattedDate',
-        style: pw.TextStyle(
-          font: interFont,
-          fontSize: 10,
-        ),
-      ),
-    ),
-    pw.SizedBox(height: 8),
+    
+    
     pw.Center(
       child: pw.Text(
         'CUENTA DE COBRO',
@@ -213,7 +215,7 @@ Future<Uint8List> generateInvoicePdf({
           ),
           pw.SizedBox(width: 12),
           pw.Container(
-            width: 420,
+            width: isLegal ? 500 : 420,
             child: bankInfoBox,
           ),
         ],
@@ -249,85 +251,157 @@ Future<Uint8List> generateInvoicePdf({
       ),
 
     pw.SizedBox(height: 10),
-
+    
     // Tabla de viajes
-    pw.Table(
-      border: pw.TableBorder.all(width: 1),
-      columnWidths: {
-        0: pw.FlexColumnWidth(1.5),
-        1: pw.FlexColumnWidth(1),
-        2: pw.FlexColumnWidth(3),
-        3: pw.FlexColumnWidth(1.5),
-        4: pw.FlexColumnWidth(1.5),
-      },
-      children: [
-        pw.TableRow(
-          decoration: pw.BoxDecoration(color: headerColor),
-          children: [
-            for (final h in ['FECHA', 'CANTIDAD', 'DESCRIPCIÓN', 'VALOR UNITARIO', 'VALOR PARCIAL'])
-              pw.Padding(
-                padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 4),
-                child: pw.Text(
-                  h,
-                  style: pw.TextStyle(
-                    font: interFont,
-                    color: PdfColors.white,
-                    fontWeight: pw.FontWeight.bold,
-                    fontSize: 10,
-                  ),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-          ],
-        ),
-        ...trips.map((trip) {
-          return pw.TableRow(
+    isLegal
+    ? pw.Center(
+        child: pw.Container(
+          width: usablePageWidth, // Ajusta este valor si necesitas más o menos margen
+          child: pw.Table(
+            border: pw.TableBorder.all(width: 1),
+            columnWidths: tripTableColumnWidths,
             children: [
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(
-                  DateFormat(dateFormatOption, 'es_CO').format(trip.date),
-                  style: pw.TextStyle(font: interFont, fontSize: 10),
-                  textAlign: pw.TextAlign.center,
-                ),
+              pw.TableRow(
+                decoration: pw.BoxDecoration(color: headerColor),
+                children: [
+                  for (final h in ['FECHA', 'CANTIDAD', 'DESCRIPCIÓN', 'VALOR UNITARIO', 'VALOR PARCIAL'])
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                      child: pw.Text(
+                        h,
+                        style: pw.TextStyle(
+                          font: interFont,
+                          color: PdfColors.white,
+                          fontWeight: pw.FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                ],
               ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(
-                  '${trip.quantity}',
-                  style: pw.TextStyle(font: interFont, fontSize: 10),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(
-                  'Viaje de ${trip.material}',
-                  style: pw.TextStyle(font: interFont, fontSize: 10),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(
-                  NumberFormat('#,###', 'es_CO').format(trip.unitValue),
-                  style: pw.TextStyle(font: interFont, fontSize: 10),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
-              pw.Padding(
-                padding: const pw.EdgeInsets.all(5),
-                child: pw.Text(
-                  NumberFormat('#,###', 'es_CO').format(trip.total),
-                  style: pw.TextStyle(font: interFont, fontSize: 10),
-                  textAlign: pw.TextAlign.center,
-                ),
-              ),
+              ...trips.map((trip) {
+                return pw.TableRow(
+                  children: [
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(5),
+                      child: pw.Text(
+                        DateFormat(dateFormatOption, 'es_CO').format(trip.date),
+                        style: pw.TextStyle(font: interFont, fontSize: 10),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(5),
+                      child: pw.Text(
+                        '${trip.quantity}',
+                        style: pw.TextStyle(font: interFont, fontSize: 10),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(5),
+                      child: pw.Text(
+                        'Viaje de ${trip.material}',
+                        style: pw.TextStyle(font: interFont, fontSize: 10),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(5),
+                      child: pw.Text(
+                        NumberFormat('#,###', 'es_CO').format(trip.unitValue),
+                        style: pw.TextStyle(font: interFont, fontSize: 10),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                    pw.Padding(
+                      padding: const pw.EdgeInsets.all(5),
+                      child: pw.Text(
+                        NumberFormat('#,###', 'es_CO').format(trip.total),
+                        style: pw.TextStyle(font: interFont, fontSize: 10),
+                        textAlign: pw.TextAlign.center,
+                      ),
+                    ),
+                  ],
+                );
+              }),
             ],
-          );
-        }),
-      ],
-    ),
+          ),
+        ),
+      )
+    : pw.Table(
+        border: pw.TableBorder.all(width: 1),
+        columnWidths: tripTableColumnWidths,
+        children: [
+          pw.TableRow(
+            decoration: pw.BoxDecoration(color: headerColor),
+            children: [
+              for (final h in ['FECHA', 'CANTIDAD', 'DESCRIPCIÓN', 'VALOR UNITARIO', 'VALOR PARCIAL'])
+                pw.Padding(
+                  padding: const pw.EdgeInsets.symmetric(vertical: 6, horizontal: 4),
+                  child: pw.Text(
+                    h,
+                    style: pw.TextStyle(
+                      font: interFont,
+                      color: PdfColors.white,
+                      fontWeight: pw.FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+          ...trips.map((trip) {
+            return pw.TableRow(
+              children: [
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(5),
+                  child: pw.Text(
+                    DateFormat(dateFormatOption, 'es_CO').format(trip.date),
+                    style: pw.TextStyle(font: interFont, fontSize: 10),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(5),
+                  child: pw.Text(
+                    '${trip.quantity}',
+                    style: pw.TextStyle(font: interFont, fontSize: 10),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(5),
+                  child: pw.Text(
+                    'Viaje de ${trip.material}',
+                    style: pw.TextStyle(font: interFont, fontSize: 10),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(5),
+                  child: pw.Text(
+                    NumberFormat('#,###', 'es_CO').format(trip.unitValue),
+                    style: pw.TextStyle(font: interFont, fontSize: 10),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+                pw.Padding(
+                  padding: const pw.EdgeInsets.all(5),
+                  child: pw.Text(
+                    NumberFormat('#,###', 'es_CO').format(trip.total),
+                    style: pw.TextStyle(font: interFont, fontSize: 10),
+                    textAlign: pw.TextAlign.center,
+                  ),
+                ),
+              ],
+            );
+          }),
+        ],
+      ),
+
 
     // Total
     pw.Table(
@@ -372,79 +446,75 @@ Future<Uint8List> generateInvoicePdf({
     pw.SizedBox(height: 16),
   ];
 
-  if (showSignature && customSignatureBytes != null) {
-    final signature = pw.MemoryImage(customSignatureBytes);
-    pdfWidgets.add(
-      pw.Align(
-        alignment: pw.Alignment.centerRight,
-        child: pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.center,
-          children: [
-            pw.SizedBox(height: 20),
-            pw.Image(signature, width: 160),
-            pw.SizedBox(height: 10),
-            pw.Container(
-              width: 140,
-              height: 1,
-              color: headerColor,
-            ),
-            pw.SizedBox(height: 4),
-            pw.Text('Firma autorizada', style: pw.TextStyle(font: interFont, fontSize: 9)),
-            if (providerName != null && providerName.isNotEmpty) ...[
+    // Firma y texto de agradecimiento como widgets separados
+  final signatureWidget = (showSignature && customSignatureBytes != null)
+      ? pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              pw.SizedBox(height: 20),
+              pw.Image(pw.MemoryImage(customSignatureBytes), width: 160),
+              pw.SizedBox(height: 10),
+              pw.Container(width: 140, height: 1, color: headerColor),
               pw.SizedBox(height: 4),
-              pw.Text(providerName, style: pw.TextStyle(font: interFont, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+              pw.Text('Firma', style: pw.TextStyle(font: interFont, fontSize: 9)),
+              if (providerName != null && providerName.isNotEmpty)
+                pw.Text(providerName, style: pw.TextStyle(font: interFont, fontSize: 9, fontWeight: pw.FontWeight.bold)),
+              if (providerDocument != null && providerDocument.isNotEmpty)
+                pw.Text('C.C. $providerDocument', style: pw.TextStyle(font: interFont, fontSize: 9)),
             ],
-            if (providerDocument != null && providerDocument.isNotEmpty) ...[
-              pw.SizedBox(height: 2),
-              pw.Text('C.C. $providerDocument', style: pw.TextStyle(font: interFont, fontSize: 9)),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
-
-
-  if (showThankYouText && (thankYouText?.trim().isNotEmpty ?? false)) {
-    pdfWidgets.add(
-      pw.Center(
-        child: pw.Text(
-          thankYouText!,
-          style: pw.TextStyle(
-            font: interFont,
-            fontStyle: pw.FontStyle.italic,
-            fontSize: 10,
           ),
-        ),
-      ),
-    );
-  }
+        )
+      : null;
 
-
-
+  
+  debugPrint('[PDF] Tamaño de página seleccionado: $pageSizeOption → ${getPageFormat(pageSizeOption)}');
+  
+  // Página principal
   pdf.addPage(
-    pw.Page(
-      pageFormat: PdfPageFormat.a4,
-      margin: pw.EdgeInsets.zero,
-      build: (context) => pw.Stack(
-        children: [
-          pw.Positioned.fill(
-            child: pw.Opacity(
-              opacity: 0.05,
-              child: pw.Image(background, fit: pw.BoxFit.cover),
+    pw.MultiPage(
+      pageFormat: pageFormat,
+      margin: pw.EdgeInsets.all(32),
+      build: (context) => [
+        ...pdfWidgets,
+        if (signatureWidget != null) pw.SizedBox(height: 0),
+        if (signatureWidget != null) signatureWidget,
+        
+      ],
+      footer: (context) {
+        if (showThankYouText && thankYouText != null && thankYouText.trim().isNotEmpty) {
+          return pw.Container(
+            alignment: pw.Alignment.center,
+            margin: const pw.EdgeInsets.only(top: 10),
+            child: pw.Text(
+              thankYouText,
+              style: pw.TextStyle(
+                font: interFont,
+                fontStyle: pw.FontStyle.italic,
+                fontSize: 10,
+              ),
             ),
-          ),
-          pw.Padding(
-            padding: const pw.EdgeInsets.all(32),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: pdfWidgets,
-            ),
-          ),
-        ],
-      ),
+          );
+        } else {
+          return pw.SizedBox();
+        }
+      },
+
     ),
   );
 
   return pdf.save();
+}
+
+PdfPageFormat getPageFormat(String? option) {
+  switch (option) {
+    case 'Letter':
+      return PdfPageFormat(612, 792); // Carta
+    case 'Legal':
+      return PdfPageFormat(612, 1008); // Oficio
+    case 'A4':
+    default:
+      return PdfPageFormat.a4;
+  }
 }

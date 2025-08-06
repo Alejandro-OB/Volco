@@ -81,7 +81,6 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
               .maybeSingle();
 
           if (globalPrefs != null && globalPrefs['apply_to_all_accounts'] == true) {
-            debugPrint('[Prefs] Usando preferencias globales del proveedor');
             prefs = InvoicePreferences.fromMap(globalPrefs);
           }
         }
@@ -805,6 +804,43 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                   style: GoogleFonts.poppins(color: Colors.black87),
                                   dropdownColor: Colors.white,
                                 ),
+                                const SizedBox(height: 16),
+                                DropdownButtonFormField<String>(
+                                  decoration: InputDecoration(
+                                    filled: true,
+                                    fillColor: Colors.white,
+                                    labelText: 'Tamaño de hoja del PDF',
+                                    labelStyle: GoogleFonts.poppins(),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderSide: const BorderSide(color: Colors.black26),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderSide: const BorderSide(color: Color(0xFFF18824), width: 2),
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
+                                  ),
+                                  value: _prefs.pageSizeOption,
+                                  onChanged: (value) {
+                                    if (value != null) {
+                                      setState(() {
+                                        _prefs.pageSizeOption = value;
+                                        _hasUnsavedChanges = true;
+                                      });
+                                    }
+                                  },
+                                  items: const [
+                                    DropdownMenuItem(value: 'A4', child: Text('A4 (210 × 297 mm)')),
+                                    DropdownMenuItem(value: 'Letter', child: Text('Carta (216 × 279 mm)')),
+                                    DropdownMenuItem(value: 'Legal', child: Text('Oficio (216 × 356 mm)')),
+                                  ],
+                                  style: GoogleFonts.poppins(color: Colors.black87),
+                                  dropdownColor: Colors.white,
+                                ),
 
 
                                 // Aplicar globalmente (solo admin)
@@ -823,6 +859,8 @@ class _InvoiceCustomizationScreenState extends State<InvoiceCustomizationScreen>
                                 ],
                               ],
                             ),
+
+                            
                           ),
 
                           const SizedBox(height: 24),

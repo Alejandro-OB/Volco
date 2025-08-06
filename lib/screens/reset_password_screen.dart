@@ -17,7 +17,7 @@ class _ResetPasswordScreenState extends State<ResetPasswordScreen> {
     try {
       await Supabase.instance.client.auth.resetPasswordForEmail(
         emailController.text.trim(),
-        redirectTo: 'volco://reset-password',
+        redirectTo: 'https://alejandro-ob.github.io/volco-page/',
       );
 
       if (context.mounted) {
