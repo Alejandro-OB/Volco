@@ -1,0 +1,17 @@
+fastapi[standard]
+sqlalchemy==2.0.44
+python-dotenv==1.2.1
+psycopg2-binary==2.9.11
+alembic==1.17.1
+sqlmodel==0.0.27
+autopep8==2.3.2
+python-multipart==0.0.20
+pydantic-settings==2.11.0
+argon2-cffi==25.1.0
+weasyprint==66.0
+supabase==2.24.0
+python-jose[cryptography]
+passlib[bcrypt]
+passlib[argon2]
+fastapi-mail==1.5.8
+sib-api-v3-sdk==7.6.0
