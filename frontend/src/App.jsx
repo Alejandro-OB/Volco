@@ -1,16 +1,17 @@
 import { useState } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css'
-import Clients from './Components/Clients'
-import Materials from './Components/Materials'
-import Accounts from './Components/Accounts'
-import Navbar from './Components/Layout/Navbar.jsx';
-import Auth from './Components/Auth/Auth.jsx';
-import Services from './Components/Services'
-import InvoiceCustomizationForm from './Components/InvoiceCustomizationForm'
-import EditProvider from './Components/EditProvider'
-import ForgotPassword from './Components/Auth/ForgotPassword'
-import ResetPassword from './Components/Auth/ResetPassword'
+import Clients from './pages/Clients'
+import Materials from './pages/Materials'
+import Accounts from './pages/Accounts'
+import Navbar from './components/Layout/Navbar.jsx';
+import Auth from './components/Auth/Auth.jsx';
+import Services from './pages/Services'
+import InvoiceCustomizationForm from './pages/InvoiceCustomizationForm'
+import EditProvider from './pages/EditProvider'
+import ForgotPassword from './components/Auth/ForgotPassword'
+import ResetPassword from './components/Auth/ResetPassword'
+import { ToastProvider } from './hooks/useToast'
 
 function App() {
 
@@ -30,44 +31,46 @@ function App() {
   };
 
   return (
-    <Router>
-      {token && <Navbar onLogout={handleLogout} />}
-      <div style={{ paddingTop: token ? '50px' : '0' }}>
-        <Routes>
-          <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
-          <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
-          <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
-          <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
-          <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
-          <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
-          <Route path="/register" element={<Auth />} />
+    <ToastProvider>
+      <Router>
+        {token && <Navbar onLogout={handleLogout} />}
+        <div style={{ paddingTop: token ? '80px' : '0' }}>
+          <Routes>
+            <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
+            <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
+            <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
+            <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
+            <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
+            <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
+            <Route path="/register" element={<Auth />} />
 
-          <Route
-            path="/clientes/:clientId/cuentas"
-            element={token ? <Accounts /> : <Navigate to="/login" />}
-          />
+            <Route
+              path="/clientes/:clientId/cuentas"
+              element={token ? <Accounts /> : <Navigate to="/login" />}
+            />
 
-          <Route
-            path="/cuentas/:accountId/servicios"
-            element={token ? <Services /> : <Navigate to="/login" />}
-          />
-          
-          <Route
-            path="/factura/personalizar"
-            element={token ? <InvoiceCustomizationForm /> : <Navigate to="/login" />}
-          />
+            <Route
+              path="/cuentas/:accountId/servicios"
+              element={token ? <Services /> : <Navigate to="/login" />}
+            />
 
-          <Route
-            path="/proveedor/editar/:providerId"
-            element={token ? <EditProvider /> : <Navigate to="/login" />}
-          />
-          
-          <Route path="/olvido-contraseña" element={<ForgotPassword />} />
+            <Route
+              path="/factura/personalizar"
+              element={token ? <InvoiceCustomizationForm /> : <Navigate to="/login" />}
+            />
 
-          <Route path="/reset-password" element={<ResetPassword />} />
-        </Routes>
-      </div>
-    </Router>
+            <Route
+              path="/proveedor/editar/:providerId"
+              element={token ? <EditProvider /> : <Navigate to="/login" />}
+            />
+
+            <Route path="/olvido-contraseña" element={<ForgotPassword />} />
+
+            <Route path="/reset-password" element={<ResetPassword />} />
+          </Routes>
+        </div>
+      </Router>
+    </ToastProvider>
   )
 }
 
