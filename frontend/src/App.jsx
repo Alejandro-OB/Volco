@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css'
 import Clients from './pages/Clients'
@@ -12,6 +13,15 @@ import EditProvider from './pages/EditProvider'
 import ForgotPassword from './components/Auth/ForgotPassword'
 import ResetPassword from './components/Auth/ResetPassword'
 import { ToastProvider } from './hooks/useToast'
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000, // 5 minutos en caché
+      retry: 1,
+    },
+  },
+});
 
 function App() {
 
@@ -31,47 +41,49 @@ function App() {
   };
 
   return (
-    <ToastProvider>
-      <Router>
-        {token && <Navbar onLogout={handleLogout} />}
-        <div style={{ paddingTop: token ? '80px' : '0' }}>
-          <Routes>
-            <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
-            <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
-            <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
-            <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
-            <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
-            <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
-            <Route path="/register" element={<Auth />} />
+    <QueryClientProvider client={queryClient}>
+      <ToastProvider>
+        <Router>
+          {token && <Navbar onLogout={handleLogout} />}
+          <div style={{ paddingTop: token ? '80px' : '0' }}>
+            <Routes>
+              <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
+              <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
+              <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
+              <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
+              <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
+              <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
+              <Route path="/register" element={<Auth />} />
 
-            <Route
-              path="/clientes/:clientId/cuentas"
-              element={token ? <Accounts /> : <Navigate to="/login" />}
-            />
+              <Route
+                path="/clientes/:clientId/cuentas"
+                element={token ? <Accounts /> : <Navigate to="/login" />}
+              />
 
-            <Route
-              path="/cuentas/:accountId/servicios"
-              element={token ? <Services /> : <Navigate to="/login" />}
-            />
+              <Route
+                path="/cuentas/:accountId/servicios"
+                element={token ? <Services /> : <Navigate to="/login" />}
+              />
 
-            <Route
-              path="/factura/personalizar"
-              element={token ? <InvoiceCustomizationForm /> : <Navigate to="/login" />}
-            />
+              <Route
+                path="/factura/personalizar"
+                element={token ? <InvoiceCustomizationForm /> : <Navigate to="/login" />}
+              />
 
-            <Route
-              path="/proveedor/editar/:providerId"
-              element={token ? <EditProvider /> : <Navigate to="/login" />}
-            />
+              <Route
+                path="/proveedor/editar/:providerId"
+                element={token ? <EditProvider /> : <Navigate to="/login" />}
+              />
 
-            <Route path="/olvido-contraseña" element={<ForgotPassword />} />
+              <Route path="/olvido-contraseña" element={<ForgotPassword />} />
 
-            <Route path="/reset-password" element={<ResetPassword />} />
-          </Routes>
-        </div>
-      </Router>
-    </ToastProvider>
-  )
+              <Route path="/reset-password" element={<ResetPassword />} />
+            </Routes>
+          </div>
+        </Router>
+      </ToastProvider>
+    </QueryClientProvider>
+  );
 }
 
-export default App
+export default App;

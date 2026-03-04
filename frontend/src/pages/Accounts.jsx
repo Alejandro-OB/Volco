@@ -6,31 +6,34 @@ import {
   Loader2, AlertTriangle, CheckCircle, Type, FileText,
   DollarSign, Info, ChevronRight, Briefcase, Palette
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import PdfModal from '../components/Modals/PdfModal';
 import { useToast } from '../hooks/useToast';
+import { fetchClients, fetchAccounts, fetchInvoices, fetchServices, fetchMaterials, QK } from '../api/queries';
 
 const Accounts = () => {
   const navigate = useNavigate();
   const { clientId } = useParams();
+  const queryClient = useQueryClient();
+  const addToast = useToast();
 
-  // --- ESTADOS DE DATOS ---
-  const [allAccounts, setAllAccounts] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [invoices, setInvoices] = useState([]);
-  const [services, setServices] = useState([]);
-  const [materials, setMaterials] = useState([]);
+  // --- CAchÉ: 5 queries en paralelo ---
+  const { data: clients = [] } = useQuery({ queryKey: QK.clients, queryFn: fetchClients });
+  const { data: allAccounts = [], isLoading: loadingAccounts } = useQuery({ queryKey: QK.accounts, queryFn: fetchAccounts });
+  const { data: invoices = [] } = useQuery({ queryKey: QK.invoices, queryFn: fetchInvoices });
+  const { data: services = [] } = useQuery({ queryKey: QK.services(), queryFn: () => fetchServices(null) });
+  const { data: materials = [] } = useQuery({ queryKey: QK.materials, queryFn: fetchMaterials });
+  const loading = loadingAccounts;
 
   // --- ESTADOS DE UI Y FILTROS ---
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedClient, setSelectedClient] = useState(clientId || '');
   const [activeTab, setActiveTab] = useState('Todas');
   const [openClients, setOpenClients] = useState({});
-  const [loading, setLoading] = useState(true);
   const [loadingAction, setLoadingAction] = useState(false);
   const [loadingId, setLoadingId] = useState(null);
-  const addToast = useToast();
 
   // --- ESTADOS DEL MODAL DE FORMULARIO ---
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -51,33 +54,9 @@ const Accounts = () => {
 
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
 
-  // --- CARGA INICIAL ---
+  // sync clientId URL param
   useEffect(() => {
-    const fetchData = async () => {
-      setLoading(true);
-      try {
-        const [clientsRes, invoicesRes, servicesRes, accountsRes, materialsRes] = await Promise.all([
-          api.get('clients/'),
-          api.get('invoices/'),
-          api.get('services/'),
-          api.get('service-accounts/'),
-          api.get('materials/')
-        ]);
-
-        setClients(clientsRes.data);
-        setInvoices(invoicesRes.data);
-        setServices(servicesRes.data);
-        setAllAccounts(accountsRes.data);
-        setMaterials(materialsRes.data);
-        if (clientId) setSelectedClient(clientId.toString());
-
-      } catch (err) {
-        addToast('Error al sincronizar datos.', 'error');
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
+    if (clientId) setSelectedClient(clientId.toString());
   }, [clientId]);
 
   // --- UTILIDAD: FORMATEAR MONEDA ---

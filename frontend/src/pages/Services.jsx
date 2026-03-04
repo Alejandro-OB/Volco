@@ -5,16 +5,30 @@ import {
   Hash, Wallet, Mountain, Package, AlertTriangle, CheckCircle,
   DollarSign, Briefcase
 } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import { useToast } from '../hooks/useToast';
+import { fetchClients, fetchAccounts, fetchMaterials, fetchServices, QK } from '../api/queries';
 
 function Services() {
-  const [services, setServices] = useState([]);
-  const [accounts, setAccounts] = useState([]);
-  const [materials, setMaterials] = useState([]);
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
+  const { accountId } = useParams();
+  const queryClient = useQueryClient();
+  const addToast = useToast();
+
+  // --- CACHÉ: catálogos compartidos ---
+  const { data: accounts = [] } = useQuery({ queryKey: QK.accounts, queryFn: fetchAccounts });
+  const { data: materials = [] } = useQuery({ queryKey: QK.materials, queryFn: fetchMaterials });
+  const { data: clients = [] } = useQuery({ queryKey: QK.clients, queryFn: fetchClients });
+
+  // --- CACHÉ: servicios (cambia con accountId) ---
+  const { data: services = [], isLoading: loading } = useQuery({
+    queryKey: QK.services(accountId),
+    queryFn: () => fetchServices(accountId),
+  });
+
+  // --- ESTADOS DE UI ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [targetId, setTargetId] = useState(null);
@@ -22,11 +36,6 @@ function Services() {
   const [openAccounts, setOpenAccounts] = useState({});
   const [openClients, setOpenClients] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
-  const addToast = useToast();
-
-  const navigate = useNavigate();
-  // Capturamos el accountId de la URL (si existe)
-  const { accountId } = useParams();
 
   // --- FUNCIONES AUXILIARES ---
   const formatCurrency = (v) =>
@@ -46,46 +55,7 @@ function Services() {
 
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
 
-  // Carga de catálogos (Cuentas y Materiales)
-  useEffect(() => {
-    const fetchAux = async () => {
-      try {
-        const [accRes, matRes, cliRes] = await Promise.all([
-          api.get('service-accounts/'),
-          api.get('materials/'),
-          api.get('clients/')
-        ]);
-        setAccounts(accRes.data);
-        setMaterials(matRes.data);
-        setClients(cliRes.data);
-      } catch (err) { console.error(err); }
-    };
-    fetchAux();
-  }, []);
-
-  // --- FETCH DE SERVICIOS FILTRADO ---
-  const fetchServices = async () => {
-    setLoading(true);
-    try {
-      // Si hay accountId en la URL, usamos el endpoint filtrado, si no, traemos todos
-      const url = accountId ? `account-services/${accountId}/services/` : 'services/';
-      const res = await api.get(url);
-      setServices(res.data);
-
-      // Fetch completado, el estado de expansión de url
-      // se gestionará por un useEffect separado.
-
-    } catch (err) {
-      setServices([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchServices();
-  }, [accountId]); // Se vuelve a ejecutar si la URL cambia
-
+  // Expandir acordeón automáticamente si venimos con accountId en la URL
   useEffect(() => {
     if (accountId && accounts.length > 0 && clients.length > 0) {
       const activeAccount = accounts.find(a => a.id === Number(accountId));

@@ -1,22 +1,26 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus, Search, Edit2, Trash2,
   User, Phone, MapPin,
   Mail, AlertTriangle, CheckCircle, Wallet, Hash, Users, X, Save, Loader2
 } from 'lucide-react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import { useToast } from '../hooks/useToast';
+import { fetchClients, QK } from '../api/queries';
 
 const Clients = () => {
   const navigate = useNavigate();
-
-  // --- ESTADOS LÓGICOS ---
-  const [clients, setClients] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const addToast = useToast();
+
+  // --- CACHÉ: clientes ---
+  const { data: clients = [], isLoading: loading } = useQuery({
+    queryKey: QK.clients,
+    queryFn: fetchClients,
+  });
 
   // --- ESTADOS DE UI ---
   const [searchTerm, setSearchTerm] = useState("");
@@ -37,22 +41,6 @@ const Clients = () => {
 
   // --- COMPONENTE AUXILIAR PARA CAMPOS OBLIGATORIOS ---
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
-
-  // --- CARGA DE DATOS ---
-  useEffect(() => {
-    fetchClients();
-  }, []);
-
-  const fetchClients = async () => {
-    try {
-      const res = await api.get('clients/');
-      setClients(res.data);
-      setLoading(false);
-    } catch (err) {
-      setError('No se pudieron cargar los clientes.');
-      setLoading(false);
-    }
-  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -90,14 +78,13 @@ const Clients = () => {
         Object.entries(formData).map(([k, v]) => [k, v?.trim() || null])
       );
       if (isEditing) {
-        const res = await api.patch(`clients/${selectedId}/`, cleanData);
-        setClients(prev => prev.map(c => c.id === selectedId ? res.data : c));
+        await api.patch(`clients/${selectedId}/`, cleanData);
         addToast('Cliente actualizado con éxito.', 'success');
       } else {
-        const res = await api.post('clients/', cleanData);
-        setClients(prev => [res.data, ...prev]);
+        await api.post('clients/', cleanData);
         addToast('Cliente registrado con éxito.', 'success');
       }
+      queryClient.invalidateQueries({ queryKey: QK.clients });
       setIsModalOpen(false);
     } catch (err) {
       addToast('Error al procesar la solicitud.', 'error');
@@ -109,7 +96,7 @@ const Clients = () => {
   const handleConfirmDelete = async () => {
     try {
       await api.delete(`clients/${selectedId}/`);
-      setClients(prev => prev.filter(c => c.id !== selectedId));
+      queryClient.invalidateQueries({ queryKey: QK.clients });
       setShowDeleteModal(false);
       addToast('Cliente eliminado correctamente.', 'success');
     } catch {

@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import { fetchMaterials, QK } from '../api/queries';
 import {
   Plus,
   Edit2,
@@ -18,14 +20,18 @@ import {
 } from 'lucide-react';
 
 const Materials = () => {
-  // --- ESTADOS DE LÓGICA ---
-  const [materials, setMaterials] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
   const addToast = useToast();
+  const navigate = useNavigate();
+
+  // --- CACHÉ: materiales ---
+  const { data: materials = [], isLoading: loading } = useQuery({
+    queryKey: QK.materials,
+    queryFn: fetchMaterials,
+  });
 
   // --- ESTADOS DE UI ---
+  const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -36,26 +42,7 @@ const Materials = () => {
   const [formData, setFormData] = useState({ name: '', price: '' });
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const navigate = useNavigate();
-
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
-
-  // --- EFECTOS Y CARGA ---
-  useEffect(() => {
-    fetchMaterials();
-  }, []);
-
-  const fetchMaterials = async () => {
-    setLoading(true);
-    try {
-      const res = await api.get('/materials/');
-      setMaterials(res.data);
-    } catch (err) {
-      console.error("Error fetching materials", err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   // --- HANDLERS ---
   const handleOpenModal = (material = null) => {
@@ -79,13 +66,15 @@ const Materials = () => {
     try {
       if (editingMaterial) {
         await api.patch(`/materials/${editingMaterial.id}/`, formData);
+        addToast('Material actualizado.', 'success');
       } else {
         await api.post('/materials/', formData);
+        addToast('Material registrado.', 'success');
       }
+      queryClient.invalidateQueries({ queryKey: QK.materials });
       setIsModalOpen(false);
-      fetchMaterials();
     } catch (err) {
-      setError('Error al procesar la solicitud');
+      addToast('Error al procesar la solicitud', 'error');
     } finally {
       setSaving(false);
     }
@@ -94,7 +83,7 @@ const Materials = () => {
   const handleDelete = async () => {
     try {
       await api.delete(`/materials/${selectedId}/`);
-      setMaterials(prev => prev.filter(m => m.id !== selectedId));
+      queryClient.invalidateQueries({ queryKey: QK.materials });
       setConfirmOpen(false);
       addToast('Material eliminado.', 'success');
     } catch (err) {
