@@ -116,7 +116,7 @@ const Clients = () => {
   }, [searchTerm, clients]);
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
       <main className="max-w-7xl mx-auto">
 
         {/* Encabezado */}
@@ -143,7 +143,7 @@ const Clients = () => {
               placeholder="Buscar por nombre, ID o teléfono..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:outline-none focus:border-[#f58d2f]/20 focus:bg-white transition-all text-sm font-medium shadow-inner"
+              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-medium shadow-inner input-fancy"
             />
           </div>
         </div>
@@ -164,12 +164,12 @@ const Clients = () => {
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   [1, 2, 3, 4].map((i) => (
-                    <tr key={i} className="animate-pulse border-b border-slate-50">
-                      <td className="px-8 py-5"><div className="flex items-center gap-3"><div className="h-10 w-10 bg-slate-100 rounded-2xl flex-shrink-0" /><div className="h-4 bg-slate-100 rounded-lg w-36" /></div></td>
-                      <td className="px-8 py-5"><div className="h-4 bg-slate-100 rounded-lg w-20" /></td>
-                      <td className="px-8 py-5"><div className="h-4 bg-slate-100 rounded-lg w-28" /></td>
-                      <td className="px-8 py-5"><div className="h-4 bg-slate-100 rounded-lg w-32" /></td>
-                      <td className="px-8 py-5"><div className="h-6 bg-slate-100 rounded-xl w-20 mx-auto" /></td>
+                    <tr key={i} className="border-b border-slate-50">
+                      <td className="px-8 py-5"><div className="flex items-center gap-3"><div className="skeleton h-10 w-10 rounded-2xl flex-shrink-0" /><div className="skeleton h-4 w-36" /></div></td>
+                      <td className="px-8 py-5"><div className="skeleton h-4 w-20" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-4 w-28" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-4 w-32" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-6 w-20 mx-auto" /></td>
                     </tr>
                   ))
                 ) : filteredClients.length > 0 ? (
@@ -212,39 +212,32 @@ const Clients = () => {
                       </td>
                       <td className="px-8 py-6 text-center">
                         <div className="flex justify-center items-center gap-1">
-                          <button
-                            onClick={() => navigate(`/clientes/${client.id}/cuentas`)}
-                            title="Ver Cuentas"
-                            className="p-2.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all"
-                          >
-                            <Wallet size={18} />
-                          </button>
-                          <button
-                            onClick={() => handleOpenEditModal(client)}
-                            title="Editar"
-                            className="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
-                          >
-                            <Edit2 size={18} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              setSelectedId(client.id);
-                              setShowDeleteModal(true);
-                            }}
-                            title="Eliminar"
-                            className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                          >
-                            <Trash2 size={18} />
-                          </button>
+                          <div className="tooltip-wrapper">
+                            <button onClick={() => navigate(`/clientes/${client.id}/cuentas`)} className="p-2.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all"><Wallet size={18} /></button>
+                            <span className="tooltip-text">Ver Cuentas</span>
+                          </div>
+                          <div className="tooltip-wrapper">
+                            <button onClick={() => handleOpenEditModal(client)} className="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={18} /></button>
+                            <span className="tooltip-text">Editar</span>
+                          </div>
+                          <div className="tooltip-wrapper">
+                            <button onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
+                            <span className="tooltip-text">Eliminar</span>
+                          </div>
                         </div>
                       </td>
                     </tr>
                   ))
                 ) : (
                   <tr>
-                    <td colSpan="5" className="px-8 py-20 text-center text-slate-400">
-                      <Users size={48} className="mx-auto mb-4 opacity-20" />
-                      <p className="font-bold">No se encontraron clientes</p>
+                    <td colSpan="5" className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
+                          <Users size={36} className="text-slate-200" />
+                        </div>
+                        <p className="text-slate-700 font-bold text-base">No se encontraron clientes</p>
+                        <p className="text-slate-400 text-sm">Crea el primer cliente usando el botón superior</p>
+                      </div>
                     </td>
                   </tr>
                 )}
@@ -257,10 +250,10 @@ const Clients = () => {
         <div className="md:hidden space-y-3">
           {loading ? (
             [1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-5 animate-pulse space-y-3">
-                <div className="flex items-center gap-3"><div className="h-10 w-10 bg-slate-100 rounded-2xl" /><div className="h-4 bg-slate-100 rounded-lg w-40" /></div>
-                <div className="h-3 bg-slate-100 rounded w-full" />
-                <div className="h-3 bg-slate-100 rounded w-2/3" />
+              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-5 space-y-3">
+                <div className="flex items-center gap-3"><div className="skeleton h-10 w-10 rounded-2xl" /><div className="skeleton h-4 w-40" /></div>
+                <div className="skeleton h-3 w-full" />
+                <div className="skeleton h-3 w-2/3" />
               </div>
             ))
           ) : filteredClients.length > 0 ? filteredClients.map(client => (

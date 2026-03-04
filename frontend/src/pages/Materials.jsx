@@ -53,7 +53,6 @@ const Materials = () => {
       setEditingMaterial(null);
       setFormData({ name: '', price: '' });
     }
-    setError('');
     setIsModalOpen(true);
   };
 
@@ -104,7 +103,7 @@ const Materials = () => {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
       <div className="max-w-3xl mx-auto">
 
         {/* ENCABEZADO */}
@@ -132,7 +131,7 @@ const Materials = () => {
             placeholder="Buscar material..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm outline-none focus:ring-2 ring-orange-100 transition-all"
+            className="w-full bg-white border border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm input-fancy"
           />
         </div>
 
@@ -150,10 +149,10 @@ const Materials = () => {
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   [1, 2, 3, 4].map(i => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-6 py-3"><div className="h-8 bg-slate-100 rounded-xl w-3/4" /></td>
-                      <td className="px-6 py-3"><div className="h-6 bg-slate-100 rounded-xl w-24 ml-auto" /></td>
-                      <td className="px-6 py-3"><div className="h-6 bg-slate-100 rounded-xl w-16 mx-auto" /></td>
+                    <tr key={i}>
+                      <td className="px-6 py-3"><div className="skeleton h-8 w-3/4" /></td>
+                      <td className="px-6 py-3"><div className="skeleton h-6 w-24 ml-auto" /></td>
+                      <td className="px-6 py-3"><div className="skeleton h-6 w-16 mx-auto" /></td>
                     </tr>
                   ))
                 ) : filteredMaterials.map((m) => (
@@ -174,18 +173,14 @@ const Materials = () => {
                     </td>
                     <td className="px-6 py-3">
                       <div className="flex justify-center items-center gap-1">
-                        <button
-                          onClick={() => handleOpenModal(m)}
-                          className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
-                        >
-                          <Edit2 size={15} />
-                        </button>
-                        <button
-                          onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }}
-                          className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
-                        >
-                          <Trash2 size={15} />
-                        </button>
+                        <div className="tooltip-wrapper">
+                          <button onClick={() => handleOpenModal(m)} className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={15} /></button>
+                          <span className="tooltip-text">Editar</span>
+                        </div>
+                        <div className="tooltip-wrapper">
+                          <button onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={15} /></button>
+                          <span className="tooltip-text">Eliminar</span>
+                        </div>
                       </div>
                     </td>
                   </tr>
@@ -194,7 +189,13 @@ const Materials = () => {
             </table>
             {!loading && filteredMaterials.length === 0 && (
               <div className="px-8 py-20 text-center">
-                <p className="text-slate-400 font-medium italic">No se encontraron materiales registrados.</p>
+                <div className="flex flex-col items-center gap-3">
+                  <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
+                    <Box size={36} className="text-slate-200" />
+                  </div>
+                  <p className="text-slate-700 font-bold text-base">Sin materiales registrados</p>
+                  <p className="text-slate-400 text-sm">Agrega materiales para usarlos en los servicios</p>
+                </div>
               </div>
             )}
           </div>
@@ -250,11 +251,7 @@ const Materials = () => {
                   </div>
                 </div>
 
-                {error && (
-                  <div className="flex items-center gap-2 p-4 rounded-2xl bg-red-50 text-red-500 text-xs font-bold uppercase tracking-wider">
-                    <AlertTriangle size={16} /> {error}
-                  </div>
-                )}
+
               </div>
 
               <div className="mt-12 flex gap-4">

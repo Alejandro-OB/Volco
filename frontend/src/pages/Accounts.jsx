@@ -139,14 +139,13 @@ const Accounts = () => {
     setLoadingAction(true);
     try {
       if (editingAccount) {
-        const res = await api.patch(`service-accounts/${editingAccount.id}/`, formData);
-        setAllAccounts(prev => prev.map(a => a.id === editingAccount.id ? res.data : a));
+        await api.patch(`service-accounts/${editingAccount.id}/`, formData);
         addToast('Cuenta actualizada correctamente.', 'success');
       } else {
-        const res = await api.post('service-accounts/', formData);
-        setAllAccounts(prev => [res.data, ...prev]);
+        await api.post('service-accounts/', formData);
         addToast('Cuenta aperturada con éxito.', 'success');
       }
+      queryClient.invalidateQueries({ queryKey: QK.accounts });
       setIsModalOpen(false);
     } catch (err) {
       addToast('Error al guardar la cuenta.', 'error');
@@ -158,7 +157,7 @@ const Accounts = () => {
   const handleConfirmDelete = async () => {
     try {
       await api.delete(`service-accounts/${deleteId}/`);
-      setAllAccounts(prev => prev.filter(a => a.id !== deleteId));
+      queryClient.invalidateQueries({ queryKey: QK.accounts });
       setShowConfirmModal(false);
       addToast('Cuenta eliminada.', 'success');
     } catch {
@@ -182,7 +181,7 @@ const Accounts = () => {
 
         const res = await api.post('invoices/', { service_account_id: account.id });
         currentInvoice = res.data;
-        setInvoices(prev => [...prev, currentInvoice]);
+        queryClient.invalidateQueries({ queryKey: QK.invoices });
         addToast('Factura generada con éxito.', 'success');
       }
 
@@ -201,7 +200,7 @@ const Accounts = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12">
+    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
       <div className="max-w-7xl mx-auto space-y-10">
 
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -336,8 +335,11 @@ const Accounts = () => {
                             </td>
                             <td className="px-8 py-6 text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                                  {hasInvoice && <CheckCircle size={10} />} {hasInvoice ? 'Facturado' : 'Pendiente'}
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                  {hasInvoice
+                                    ? <CheckCircle size={10} />
+                                    : <span className="w-2 h-2 rounded-full bg-amber-400 pulse-dot" />}
+                                  {hasInvoice ? 'Facturado' : 'Pendiente'}
                                 </span>
                                 {!hasInvoice && !hasServices && (
                                   <div className="flex items-center gap-1 text-[9px] text-orange-500 font-bold animate-pulse">
@@ -372,12 +374,18 @@ const Accounts = () => {
 
                                 <button onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} className="flex flex-col items-center p-2 text-slate-400 hover:text-[#f58d2f] hover:bg-orange-50 rounded-xl transition-all">
                                   <Palette size={18} />
-                                  <span className="text-[8px] font-bold uppercase mt-1">Logo</span>
+                                  <span className="text-[8px] font-bold uppercase mt-1">Personalizar</span>
                                 </button>
 
                                 <div className="w-px h-6 bg-slate-100 mx-1"></div>
-                                <button onClick={() => handleOpenModal(account)} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"><Edit2 size={16} /></button>
-                                <button onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                <div className="tooltip-wrapper">
+                                  <button onClick={() => handleOpenModal(account)} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"><Edit2 size={16} /></button>
+                                  <span className="tooltip-text">Editar</span>
+                                </div>
+                                <div className="tooltip-wrapper">
+                                  <button onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                  <span className="tooltip-text">Eliminar</span>
+                                </div>
                               </div>
                             </td>
                           </tr>
@@ -386,7 +394,17 @@ const Accounts = () => {
                     </React.Fragment>
                   ))
                 ) : (
-                  <tr><td colSpan="5" className="px-8 py-20 text-center text-slate-400 font-bold">No se encontraron cuentas.</td></tr>
+                  <tr>
+                    <td colSpan="5" className="px-8 py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
+                          <Briefcase size={36} className="text-slate-200" />
+                        </div>
+                        <p className="text-slate-700 font-bold text-base">No se encontraron cuentas</p>
+                        <p className="text-slate-400 text-sm">Registra una nueva cuenta para empezar</p>
+                      </div>
+                    </td>
+                  </tr>
                 )}
               </tbody>
             </table>

@@ -163,7 +163,7 @@ function Services() {
         }));
         setShowCustomMaterial(false);
       }
-      fetchServices();
+      queryClient.invalidateQueries({ queryKey: QK.services(accountId) });
     } catch (err) {
       addToast('Error al guardar.', 'error');
     }
@@ -172,7 +172,7 @@ function Services() {
   const handleDelete = async () => {
     try {
       await api.delete(`services/${targetId}/`);
-      setServices(prev => prev.filter(s => s.id !== targetId));
+      queryClient.invalidateQueries({ queryKey: QK.services(accountId) });
       setShowDeleteModal(false);
       addToast('Eliminado con éxito.', 'success');
     } catch (err) { addToast('Error al eliminar.', 'error'); }
@@ -208,7 +208,7 @@ function Services() {
   const canSubmit = validateForm();
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-12 font-sans">
+    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-12 font-sans page-enter">
       <div className="max-w-7xl mx-auto">
 
         {/* HEADER */}
@@ -233,7 +233,7 @@ function Services() {
               placeholder="Buscar por cliente o cuenta..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm outline-none focus:ring-2 ring-orange-100 transition-all"
+              className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm input-fancy"
             />
           </div>
         )}
@@ -254,16 +254,26 @@ function Services() {
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   [1, 2, 3].map(i => (
-                    <tr key={i} className="animate-pulse">
-                      <td className="px-8 py-5"><div className="h-5 bg-slate-100 rounded-lg w-2/3" /></td>
-                      <td className="px-8 py-5"><div className="h-5 bg-slate-100 rounded-lg w-20 mx-auto" /></td>
-                      <td className="px-8 py-5"><div className="h-5 bg-slate-100 rounded-lg w-12 mx-auto" /></td>
-                      <td className="px-8 py-5"><div className="h-5 bg-slate-100 rounded-lg w-24 ml-auto" /></td>
-                      <td className="px-8 py-5"><div className="h-5 bg-slate-100 rounded-lg w-16 mx-auto" /></td>
+                    <tr key={i}>
+                      <td className="px-8 py-5"><div className="skeleton h-5 w-2/3" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-5 w-20 mx-auto" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-5 w-12 mx-auto" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-5 w-24 ml-auto" /></td>
+                      <td className="px-8 py-5"><div className="skeleton h-5 w-16 mx-auto" /></td>
                     </tr>
                   ))
                 ) : Object.keys(groupedData).length === 0 ? (
-                  <tr><td colSpan="5" className="py-20 text-center text-slate-400 font-bold uppercase tracking-widest text-[10px]">Sin movimientos registrados</td></tr>
+                  <tr>
+                    <td colSpan="5" className="py-20 text-center">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
+                          <Briefcase size={36} className="text-slate-200" />
+                        </div>
+                        <p className="text-slate-700 font-bold text-base">Sin movimientos registrados</p>
+                        <p className="text-slate-400 text-sm">Registra el primer servicio usando el botón superior</p>
+                      </div>
+                    </td>
+                  </tr>
                 ) : Object.entries(groupedData).map(([clientName, clientAccounts]) => (
                   <React.Fragment key={clientName}>
                     {/* ENCABEZADO CLIENTE */}
@@ -321,8 +331,14 @@ function Services() {
                             </td>
                             <td className="px-8 py-6">
                               <div className="flex justify-center gap-2">
-                                <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-300 hover:text-blue-500 transition-colors"><Edit2 size={16} /></button>
-                                <button onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} className="p-2 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={16} /></button>
+                                <div className="tooltip-wrapper">
+                                  <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={16} /></button>
+                                  <span className="tooltip-text">Editar</span>
+                                </div>
+                                <div className="tooltip-wrapper">
+                                  <button onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
+                                  <span className="tooltip-text">Eliminar</span>
+                                </div>
                               </div>
                             </td>
                           </tr>
