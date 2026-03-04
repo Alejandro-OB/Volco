@@ -4,7 +4,7 @@ import {
   Search, Plus, ChevronDown, Calendar, Trash2, Edit2,
   Receipt, Truck, X, Check, Filter, ArrowLeft,
   Loader2, AlertTriangle, CheckCircle, Type, FileText,
-  DollarSign, Info, ChevronRight, Briefcase, Palette
+  DollarSign, Info, ChevronRight, Briefcase, Palette, Wallet
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
