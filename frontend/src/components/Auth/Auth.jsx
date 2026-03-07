@@ -73,17 +73,17 @@ function Auth({ onLoginSuccess }) {
   };
 
   // Clases Reutilizables
-  const inputClass = "w-full rounded-2xl bg-slate-50 border-2 border-transparent pl-12 pr-12 py-3.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all shadow-sm font-medium text-sm";
-  const labelClass = "text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1 flex items-center";
+  const inputClass = "w-full rounded-2xl bg-white/50 border-2 border-slate-100 pl-12 pr-4 py-3.5 text-slate-700 placeholder:text-slate-400 input-fancy font-medium text-sm";
+  const labelClass = "text-[11px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center";
   const iconClass = "absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#f58d2f] transition-colors";
-  const buttonClass = "group relative inline-flex items-center justify-center gap-2 w-full max-w-[240px] rounded-xl border border-orange-600/20 bg-gradient-to-b from-[#f58d2f] to-[#e87a1c] px-10 py-3.5 text-sm font-bold text-white shadow-[0_10px_20px_-5px_rgba(245,141,47,0.4)] transition-all duration-200 hover:brightness-110 active:scale-[0.97] disabled:opacity-50";
+  const buttonClass = "group relative inline-flex items-center justify-center gap-2 w-full max-w-[240px] rounded-xl border border-orange-600/20 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-10 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_-4px_rgba(245,141,47,0.4)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_20px_-4px_rgba(245,141,47,0.5)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
 
   const Required = () => <span className="text-red-500 ml-1" title="Obligatorio">*</span>;
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-slate-50 px-4 py-12 font-sans selection:bg-[#f58d2f]/30">
+    <main className="min-h-screen flex items-center justify-center px-4 py-12 font-sans selection:bg-[#f58d2f]/30">
       <section className={`w-full transition-all duration-500 ${isLogin ? 'max-w-[460px]' : 'max-w-[620px]'}`}>
-        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] border border-slate-100 p-8 sm:p-14 relative overflow-hidden">
+        <div className="glass-panel rounded-[2.5rem] p-8 sm:p-14 relative overflow-hidden">
           
           <div className="text-center mb-10">
             <img src={logoVolco} alt="VOLCO" className="h-28 w-auto mx-auto mb-6" />

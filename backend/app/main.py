@@ -1,8 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import JSONResponse
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from sqlalchemy.exc import OperationalError
-from app.routers import clients, providers, login, service_accounts, services, materials, invoices, invoice_customization, reset_password, heartbeat
+from app.api.routes import clients, providers, login, service_accounts, services, materials, invoices, invoice_customization, reset_password, heartbeat
+from app.api.responses import ErrorResponse
 #from .config import settings
 
 
@@ -24,9 +27,13 @@ class DBExceptionMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
         except OperationalError:
             # Error del pool de Supabase
-            raise HTTPException(
+            return JSONResponse(
                 status_code=503,
-                detail="Supabase is currently overloaded. Please try again in a moment."
+                content=ErrorResponse(
+                    success=False,
+                    message="Service Unavailable",
+                    details="Supabase is currently overloaded. Please try again in a moment."
+                ).model_dump()
             )
         except Exception as e:
             raise e
@@ -41,3 +48,36 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    return JSONResponse(
+        status_code=exc.status_code,
+        content=ErrorResponse(
+            success=False,
+            message=str(exc.detail),
+            details=None
+        ).model_dump()
+    )
+
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+    return JSONResponse(
+        status_code=422,
+        content=ErrorResponse(
+            success=False,
+            message="Validation Error",
+            details=exc.errors()
+        ).model_dump()
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    return JSONResponse(
+        status_code=500,
+        content=ErrorResponse(
+            success=False,
+            message="Internal Server Error",
+            details=str(exc)
+        ).model_dump()
+    )

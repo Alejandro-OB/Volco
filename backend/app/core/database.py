@@ -1,7 +1,7 @@
 from typing import Annotated
 from fastapi import Depends
 from sqlmodel import Session, create_engine
-from app.config import settings
+from app.core.config import settings
 
 
 DATABASE_URL = settings.DATABASE_URL
@@ -22,7 +22,4 @@ def get_session():
 
     
 SessionDep = Annotated[Session, Depends(get_session)]
-
-
-
 

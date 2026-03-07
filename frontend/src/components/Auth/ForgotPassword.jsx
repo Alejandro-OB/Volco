@@ -24,7 +24,7 @@ function ForgotPassword() {
 
     try {
       await api.post('forgot-password/', { email });
-      setMessage('Instrucciones enviadas. Revisa tu bandeja de entrada.');
+      setMessage('Si el correo está registrado, recibirás las instrucciones en breve.');
       setEmail('');
     } catch (err) {
       if (err.response?.data) {

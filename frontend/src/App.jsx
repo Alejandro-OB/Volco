@@ -5,7 +5,7 @@ import './App.css'
 import Clients from './pages/Clients'
 import Materials from './pages/Materials'
 import Accounts from './pages/Accounts'
-import Navbar from './components/Layout/Navbar.jsx';
+import Sidebar from './components/Layout/Sidebar.jsx';
 import Auth from './components/Auth/Auth.jsx';
 import Services from './pages/Services'
 import InvoiceCustomizationForm from './pages/InvoiceCustomizationForm'
@@ -44,41 +44,52 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ToastProvider>
         <Router>
-          {token && <Navbar onLogout={handleLogout} />}
-          <div style={{ paddingTop: token ? '80px' : '0' }}>
-            <Routes>
-              <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
-              <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
-              <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
-              <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
-              <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
-              <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
-              <Route path="/register" element={<Auth />} />
+          {token && <Sidebar onLogout={handleLogout} />}
+          {/* Main Content Layout Container */}
+          <div className="flex min-h-screen">
+            {/* 
+              Empty placeholder matching the sidebar width on desktop. 
+              The sidebar is fixed, so this prevents content from sliding under it. 
+            */}
+            {token && (
+              <div className="hidden md:block w-72 shrink-0"></div>
+            )}
+            
+            {/* Main scrollable area */}
+            <main className={`flex-1 flex flex-col min-w-0 ${token ? 'pt-[80px] md:pt-6 px-4 md:px-8 pb-8' : ''}`}>
+              <Routes>
+                <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
+                <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
+                <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
+                <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
+                <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
+                <Route path="/register" element={<Auth />} />
 
-              <Route
-                path="/clientes/:clientId/cuentas"
-                element={token ? <Accounts /> : <Navigate to="/login" />}
-              />
+                <Route
+                  path="/clientes/:clientId/cuentas"
+                  element={token ? <Accounts /> : <Navigate to="/login" />}
+                />
 
-              <Route
-                path="/cuentas/:accountId/servicios"
-                element={token ? <Services /> : <Navigate to="/login" />}
-              />
+                <Route
+                  path="/cuentas/:accountId/servicios"
+                  element={token ? <Services /> : <Navigate to="/login" />}
+                />
 
-              <Route
-                path="/factura/personalizar"
-                element={token ? <InvoiceCustomizationForm /> : <Navigate to="/login" />}
-              />
+                <Route
+                  path="/factura/personalizar"
+                  element={token ? <InvoiceCustomizationForm /> : <Navigate to="/login" />}
+                />
 
-              <Route
-                path="/proveedor/editar/:providerId"
-                element={token ? <EditProvider /> : <Navigate to="/login" />}
-              />
+                <Route
+                  path="/proveedor/editar/:providerId"
+                  element={token ? <EditProvider /> : <Navigate to="/login" />}
+                />
 
-              <Route path="/olvido-contraseña" element={<ForgotPassword />} />
-
-              <Route path="/reset-password" element={<ResetPassword />} />
-            </Routes>
+                <Route path="/olvido-contraseña" element={<ForgotPassword />} />
+                <Route path="/reset-password" element={<ResetPassword />} />
+              </Routes>
+            </main>
           </div>
         </Router>
       </ToastProvider>

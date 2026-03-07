@@ -1,16 +1,9 @@
-from datetime import date
 from typing import Optional, TYPE_CHECKING
-from sqlmodel import Field, Relationship, SQLModel
+from sqlmodel import Field, Relationship
+from app.schemas.service import ServiceBase
 
 if TYPE_CHECKING:
     from app.models import Material, ServiceAccount
-
-
-class ServiceBase(SQLModel):
-    service_date: date | None = None
-    quantity: int
-    price: int
-    custom_material: str | None = Field(max_length=50, default=None)
 
 
 class Service(ServiceBase, table=True):
@@ -25,15 +18,3 @@ class Service(ServiceBase, table=True):
         back_populates="services"
     )
     total_amount: int | None = Field(default=None)
-
-
-class ServiceCreate(ServiceBase):
-    material_id: int | None = None
-    service_account_id: int
-
-class ServiceUpdate(SQLModel):
-    service_date: date | None = None
-    quantity: int | None = None
-    price: int | None = None
-    material_id: int | None = None
-    custom_material: str | None = None

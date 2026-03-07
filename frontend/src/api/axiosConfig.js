@@ -15,8 +15,28 @@ api.interceptors.request.use((config) => {
 
 // Refresca token si expira
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.data && typeof response.data.success !== 'undefined' && typeof response.data.data !== 'undefined') {
+      response.data = response.data.data;
+    }
+    return response;
+  },
   async (error) => {
+    // Intercept and standardize Volco ErrorResponses for UI components
+    if (error.response?.data && error.response.data.success === false) {
+      let errorMessage = error.response.data.message || 'Error en el servidor';
+      
+      if (error.response.data.details && Array.isArray(error.response.data.details)) {
+         const detailsStr = error.response.data.details.map(d => d.msg || d).join(', ');
+         if (detailsStr) {
+             errorMessage += `: ${detailsStr}`;
+         }
+      }
+      
+      // Remap to { detail } so legacy UI components don't break
+      error.response.data = { detail: errorMessage };
+    }
+
     const originalRequest = error.config;
 
     if (error.response?.status === 401 && !originalRequest._retry) {

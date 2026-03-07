@@ -1,124 +1,386 @@
-<!DOCTYPE html>
-<html lang="es" style="margin:0;padding:0;">
-<head>
-  <meta charset="UTF-8" />
-  <title>Recuperar Contraseña - Volco</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <style>
-    /* Estilos base para clientes de correo */
-    body, table, td, a { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; }
-    table, td { mso-table-lspace: 0pt; mso-table-rspace: 0pt; border-collapse: collapse !important; }
-    img { -ms-interpolation-mode: bicubic; border: 0; height: auto; line-height: 100%; outline: none; text-decoration: none; }
-    
-    /* Fuentes del sistema modernas */
-    body { 
-      font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; 
-      background-color: #f8fafc; 
-      margin: 0; 
-      padding: 0; 
-    }
+<!doctype html>
+<html lang="es" style="margin: 0; padding: 0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Recuperar Contraseña - Volco</title>
+    <style>
+      /* Reset styles */
+      body,
+      table,
+      td,
+      a {
+        -webkit-text-size-adjust: 100%;
+        -ms-text-size-adjust: 100%;
+      }
+      table,
+      td {
+        mso-table-lspace: 0pt;
+        mso-table-rspace: 0pt;
+        border-collapse: collapse !important;
+      }
+      img {
+        -ms-interpolation-mode: bicubic;
+        border: 0;
+        height: auto;
+        line-height: 100%;
+        outline: none;
+        text-decoration: none;
+      }
 
-    /* Estilos responsivos */
-    @media only screen and (max-width: 600px) {
-      .container { width: 100% !important; border-radius: 0 !important; }
-      .card { padding: 30px 20px !important; }
-      .button-container { width: 100% !important; }
-      .button { display: block !important; width: auto !important; padding: 16px 20px !important; }
-    }
-  </style>
-</head>
-<body style="background-color:#f8fafc; padding: 40px 10px;">
-  <table width="100%" cellspacing="0" cellpadding="0">
-    <tr>
-      <td align="center">
-        <table class="container" width="550" cellpadding="0" cellspacing="0" 
-               style="background-color:#ffffff; border: 1px solid #edf2f7; border-radius: 40px; 
-                      box-shadow: 0 20px 40px rgba(0,0,0,0.03); overflow: hidden;">
-          
-          <tr>
-            <td height="8" style="background: linear-gradient(to right, #f58d2f, #e87a1c);"></td>
-          </tr>
+      /* Global */
+      body {
+        font-family:
+          "Inter",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          Helvetica,
+          Arial,
+          sans-serif;
+        background-color: #f4f7f6;
+        margin: 0;
+        padding: 0;
+        width: 100% !important;
+      }
 
-          <tr>
-            <td class="card" style="padding: 50px 40px;">
-              
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom: 30px;">
-                    <div style="background-color: #fffaf5; width: 64px; height: 64px; border-radius: 20px; line-height: 70px; text-align: center;">
-                        <span style="font-size: 32px;">🔑</span>
-                    </div>
-                  </td>
-                </tr>
-              </table>
+      /* Container */
+      .email-wrapper {
+        width: 100%;
+        background-color: #f4f7f6;
+        padding: 40px 20px;
+      }
+      .email-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background-color: #ffffff;
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+      }
 
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom: 15px;">
-                    <h1 style="color:#1a202c; margin:0; font-size:26px; font-weight: 900; letter-spacing: -0.5px;">
-                      Recuperar acceso
-                    </h1>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center" style="padding-bottom: 35px;">
-                    <p style="color:#718096; font-size:16px; margin:0; line-height: 1.5;">
-                      Hola, recibimos una solicitud para restablecer la contraseña de tu cuenta en <strong>Volco</strong>.
-                    </p>
-                  </td>
-                </tr>
-              </table>
+      /* Header */
+      .header-bar {
+        height: 6px;
+        background: linear-gradient(90deg, #f58d2f 0%, #e87a1c 100%);
+        width: 100%;
+      }
 
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr>
-                  <td align="center" style="padding-bottom: 35px;">
-                    <a href="{{ reset_link }}" class="button"
-                       style="background-color:#f58d2f; background: linear-gradient(to bottom, #f58d2f, #e87a1c); 
-                              color:#ffffff; text-decoration:none; padding:16px 40px; border-radius:16px; 
-                              font-size:14px; font-weight:800; text-transform: uppercase; letter-spacing: 2px;
-                              display:inline-block; box-shadow: 0 10px 20px rgba(245,141,47,0.2);">
-                      Restablecer Contraseña
-                    </a>
-                  </td>
-                </tr>
-                <tr>
-                  <td align="center">
-                    <p style="color:#a0aec0; font-size:12px; margin:0; max-width: 300px; line-height: 1.4;">
-                      Este enlace expirará en <strong>15 minutos</strong> por motivos de seguridad.
-                    </p>
-                  </td>
-                </tr>
-              </table>
+      /* Content */
+      .content-body {
+        padding: 48px 40px;
+        text-align: center;
+      }
 
-              <table width="100%" cellpadding="0" cellspacing="0" style="margin-top: 50px; border-top: 1px solid #f1f5f9; padding-top: 30px;">
-                <tr>
-                  <td align="center">
-                    <p style="color:#a0aec0; font-size:13px; margin:0 0 10px 0;">
-                      Si no solicitaste este cambio, puedes ignorar este correo.
-                    </p>
-                    <p style="color:#1a202c; font-size:13px; font-weight: 800; margin:0; text-transform: uppercase; letter-spacing: 1px;">
-                      Equipo Volco
-                    </p>
-                  </td>
-                </tr>
-              </table>
+      .icon-wrapper {
+        display: inline-block;
+        width: 64px;
+        height: 64px;
+        background-color: #fff4ec;
+        border-radius: 50%;
+        line-height: 64px;
+        margin-bottom: 24px;
+      }
 
-            </td>
-          </tr>
-        </table>
+      h1 {
+        color: #0f172a;
+        font-size: 24px;
+        font-weight: 700;
+        margin: 0 0 16px 0;
+        letter-spacing: -0.5px;
+      }
 
-        <table width="550" cellpadding="0" cellspacing="0">
-          <tr>
-            <td align="center" style="padding: 30px 20px;">
-              <p style="font-size:12px; color:#cbd5e0; margin:0;">
-                © {{ year }} Volco. Todos los derechos reservados.
-              </p>
-            </td>
-          </tr>
-        </table>
+      p {
+        color: #475569;
+        font-size: 16px;
+        line-height: 1.6;
+        margin: 0 0 32px 0;
+      }
 
-      </td>
-    </tr>
-  </table>
-</body>
+      /* Button */
+      .button-container {
+        margin-bottom: 40px;
+      }
+      .btn {
+        display: inline-block;
+        background: linear-gradient(135deg, #f58d2f 0%, #e87a1c 100%);
+        color: #ffffff !important;
+        text-decoration: none;
+        padding: 16px 36px;
+        border-radius: 12px;
+        font-size: 15px;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        box-shadow: 0 8px 16px rgba(245, 141, 47, 0.25);
+        transition: all 0.3s ease;
+      }
+
+      .btn:hover {
+        box-shadow: 0 12px 20px rgba(245, 141, 47, 0.3);
+      }
+
+      /* Footer */
+      .footer-divider {
+        height: 1px;
+        background-color: #e2e8f0;
+        margin: 0 40px 32px 40px;
+      }
+
+      .footer-text {
+        color: #64748b;
+        font-size: 14px;
+        line-height: 1.5;
+        margin: 0 0 8px 0;
+      }
+      .footer-brand {
+        color: #0f172a;
+        font-size: 14px;
+        font-weight: 700;
+        margin: 0 0 24px 0;
+      }
+
+      .copyright {
+        text-align: center;
+        padding: 24px 20px;
+        color: #94a3b8;
+        font-size: 13px;
+      }
+
+      /* Responsive */
+      @media only screen and (max-width: 600px) {
+        .email-wrapper {
+          padding: 20px 10px;
+        }
+        .content-body {
+          padding: 32px 24px;
+        }
+        h1 {
+          font-size: 22px;
+        }
+        p {
+          font-size: 15px;
+        }
+        .btn {
+          padding: 16px 32px;
+          width: 100%;
+          box-sizing: border-box;
+        }
+      }
+    </style>
+  </head>
+  <body style="margin: 0; padding: 0; background-color: #f4f7f6">
+    <table
+      class="email-wrapper"
+      width="100%"
+      cellpadding="0"
+      cellspacing="0"
+      border="0"
+      style="background-color: #f4f7f6"
+    >
+      <tr>
+        <td align="center">
+          <!-- Main Card Container -->
+          <table
+            class="email-container"
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="
+              max-width: 600px;
+              width: 100%;
+              border-radius: 16px;
+              overflow: hidden;
+              background-color: #ffffff;
+              box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+              margin: 0 auto;
+            "
+          >
+            <!-- Top Gradient Bar -->
+            <tr>
+              <td
+                class="header-bar"
+                height="6"
+                style="
+                  background: linear-gradient(90deg, #f58d2f 0%, #e87a1c 100%);
+                "
+              ></td>
+            </tr>
+
+            <!-- Content Body -->
+            <tr>
+              <td
+                class="content-body"
+                align="center"
+                style="padding: 48px 40px; text-align: center"
+              >
+                <!-- Icon -->
+                <div
+                  class="icon-wrapper"
+                  style="
+                    display: inline-block;
+                    width: 64px;
+                    height: 64px;
+                    background-color: #fff4ec;
+                    border-radius: 50%;
+                    line-height: 64px;
+                    margin-bottom: 24px;
+                  "
+                >
+                  <span style="font-size: 28px">🔒</span>
+                </div>
+
+                <!-- Title -->
+                <h1
+                  style="
+                    color: #0f172a;
+                    font-size: 24px;
+                    font-weight: 700;
+                    margin: 0 0 16px 0;
+                    letter-spacing: -0.5px;
+                    font-family: &quot;Inter&quot;, sans-serif;
+                  "
+                >
+                  Recuperación de Contraseña
+                </h1>
+
+                <!-- Message -->
+                <p
+                  style="
+                    color: #475569;
+                    font-size: 16px;
+                    line-height: 1.6;
+                    margin: 0 0 32px 0;
+                    font-family: &quot;Inter&quot;, sans-serif;
+                  "
+                >
+                  Hola. Hemos recibido una solicitud para cambiar la contraseña
+                  de tu cuenta en <strong>Volco</strong>. Puedes restablecerla
+                  haciendo clic en el siguiente botón:
+                </p>
+
+                <!-- Call to Action -->
+                <div class="button-container" style="margin-bottom: 40px">
+                  <a
+                    href="{{ reset_link }}"
+                    class="btn"
+                    style="
+                      display: inline-block;
+                      background: linear-gradient(
+                        135deg,
+                        #f58d2f 0%,
+                        #e87a1c 100%
+                      );
+                      color: #ffffff;
+                      text-decoration: none;
+                      padding: 16px 36px;
+                      border-radius: 12px;
+                      font-size: 15px;
+                      font-weight: 600;
+                      text-transform: uppercase;
+                      letter-spacing: 0.5px;
+                      font-family: &quot;Inter&quot;, sans-serif;
+                      box-shadow: 0 8px 16px rgba(245, 141, 47, 0.25);
+                    "
+                  >
+                    Restablecer Contraseña
+                  </a>
+                </div>
+
+                <p
+                  style="
+                    color: #94a3b8;
+                    font-size: 13px;
+                    line-height: 1.5;
+                    margin: 0;
+                    font-family: &quot;Inter&quot;, sans-serif;
+                  "
+                >
+                  Por motivos de seguridad, este enlace expirará en
+                  <strong>15 minutos</strong>.
+                </p>
+              </td>
+            </tr>
+
+            <!-- Footer Area within Card -->
+            <tr>
+              <td>
+                <div
+                  class="footer-divider"
+                  style="
+                    height: 1px;
+                    background-color: #e2e8f0;
+                    margin: 0 40px 32px 40px;
+                  "
+                ></div>
+                <table
+                  width="100%"
+                  cellpadding="0"
+                  cellspacing="0"
+                  border="0"
+                  style="padding-bottom: 32px"
+                >
+                  <tr>
+                    <td align="center">
+                      <p
+                        class="footer-text"
+                        style="
+                          color: #64748b;
+                          font-size: 14px;
+                          line-height: 1.5;
+                          margin: 0 0 8px 0;
+                          font-family: &quot;Inter&quot;, sans-serif;
+                        "
+                      >
+                        Si no solicitaste este cambio, simplemente ignora este
+                        correo.
+                      </p>
+                      <p
+                        class="footer-brand"
+                        style="
+                          color: #0f172a;
+                          font-size: 14px;
+                          font-weight: 700;
+                          margin: 0 0 0 0;
+                          font-family: &quot;Inter&quot;, sans-serif;
+                        "
+                      >
+                        Equipo Volco
+                      </p>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+
+          <!-- Outside Footer -->
+          <table
+            width="100%"
+            cellpadding="0"
+            cellspacing="0"
+            border="0"
+            style="max-width: 600px; margin: 0 auto"
+          >
+            <tr>
+              <td
+                class="copyright"
+                align="center"
+                style="
+                  padding: 24px 20px;
+                  color: #94a3b8;
+                  font-size: 13px;
+                  font-family: &quot;Inter&quot;, sans-serif;
+                "
+              >
+                &copy; {{ year }} Volco. Todos los derechos reservados.
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  </body>
 </html>
