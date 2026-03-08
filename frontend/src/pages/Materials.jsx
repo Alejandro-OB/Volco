@@ -4,6 +4,7 @@ import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import Button from '../components/UI/Button';
 import { fetchMaterials, QK } from '../api/queries';
 import {
   Plus,
@@ -115,13 +116,14 @@ const Materials = () => {
             </div>
           </div>
 
-          <button
+          <Button
+            variant="primary"
+            size="md"
+            icon={Plus}
             onClick={() => handleOpenModal()}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-200 transition-all hover:-translate-y-1 active:scale-95 border-none"
           >
-            <Plus className="h-5 w-5" />
             Registrar Material
-          </button>
+          </Button>
         </div>
 
         {/* BUSCADOR RÁPIDO */}
@@ -136,14 +138,13 @@ const Materials = () => {
           />
         </div>
 
-        {/* Catálogo de Materiales - Premium Grid Layer */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Catálogo de Materiales - Desktop Grid */}
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
             [1, 2, 3, 4, 5, 6].map(i => (
               <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-8 animate-pulse space-y-4">
                 <div className="h-16 w-16 rounded-2xl bg-slate-50 mx-auto" />
                 <div className="h-5 bg-slate-50 rounded-lg w-1/2 mx-auto" />
-                <div className="h-4 bg-slate-50 rounded-lg w-1/3 mx-auto" />
               </div>
             ))
           ) : filteredMaterials.length > 0 ? (
@@ -178,37 +179,76 @@ const Materials = () => {
                   </div>
                 </div>
 
-                {/* Action Floating Buttons */}
                 <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                  <button 
+                  <Button 
+                    variant="secondary" 
+                    size="icon" 
+                    icon={Edit2}
+                    className="!p-3 border-transparent shadow-xl"
                     onClick={() => handleOpenModal(m)} 
-                    className="p-3 bg-white shadow-xl hover:text-blue-500 rounded-2xl border border-slate-100 transition-all"
-                  >
-                    <Edit2 size={16} />
-                  </button>
-                  <button 
+                  />
+                  <Button 
+                    variant="secondary" 
+                    size="icon" 
+                    icon={Trash2}
+                    className="!p-3 border-transparent shadow-xl hover:text-red-500"
                     onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
-                    className="p-3 bg-white shadow-xl hover:text-red-500 rounded-2xl border border-slate-100 transition-all"
-                  >
-                    <Trash2 size={16} />
-                  </button>
+                  />
                 </div>
 
                 {/* Bottom Glow Line */}
                 <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#f58d2f]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
               </div>
             ))
-          ) : (
-            <div className="col-span-full py-20 bg-white rounded-[3rem] border border-slate-100 text-center shadow-sm">
-              <div className="flex flex-col items-center gap-6">
-                <div className="h-24 w-24 rounded-[2.5rem] bg-slate-50 flex items-center justify-center text-slate-200">
-                  <Box size={48} />
+          ) : null}
+        </div>
+
+        {/* Catálogo de Materiales — Mobile List */}
+        <div className="md:hidden space-y-3">
+          {loading ? (
+             [1, 2, 3].map(i => (
+              <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse flex items-center gap-4">
+                <div className="h-10 w-10 rounded-xl bg-slate-50" />
+                <div className="flex-1 space-y-2"><div className="h-4 bg-slate-50 rounded w-1/2" /><div className="h-3 bg-slate-50 rounded w-1/3" /></div>
+              </div>
+            ))
+          ) : filteredMaterials.length > 0 ? (
+            filteredMaterials.map((m) => (
+              <div key={m.id} className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white p-4 shadow-sm flex items-center justify-between group">
+                <div className="flex items-center gap-4 min-w-0">
+                  <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0 shadow-sm">
+                    <Box size={20} />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-tight truncate">{m.name}</h3>
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="text-[9px] font-black text-[#f58d2f] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">{formatCurrency(m.price)}</span>
+                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">ID-{m.id}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-slate-900">Catálogo Vacío</h3>
-                  <p className="text-slate-400 text-sm max-w-xs mx-auto">Agrega materiales con sus precios base para poder registrarlos en los viajes de servicios.</p>
+                <div className="flex items-center gap-1">
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    icon={Edit2}
+                    className="hover:text-blue-500"
+                    onClick={() => handleOpenModal(m)} 
+                  />
+                  <Button 
+                    variant="ghost" 
+                    size="icon" 
+                    icon={Trash2}
+                    className="hover:text-red-500"
+                    onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
+                  />
                 </div>
               </div>
+            ))
+          ) : (
+            <div className="bg-white rounded-[2rem] border border-slate-100 p-12 text-center">
+               <Box size={32} className="mx-auto mb-3 text-slate-100" />
+               <p className="text-slate-400 font-bold text-xs">No se encontraron materiales</p>
             </div>
           )}
         </div>
@@ -267,21 +307,25 @@ const Materials = () => {
               </div>
 
               <div className="mt-12 flex gap-4">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="md"
+                  fullWidth
                   onClick={() => setIsModalOpen(false)}
-                  className="flex-1 px-6 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all text-[11px] uppercase tracking-[0.2em]"
                 >
                   Cancelar
-                </button>
-                <button
+                </Button>
+                <Button
                   type="submit"
-                  disabled={saving || !formData.name.trim()}
-                  className={`flex-1 px-6 py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 hover:brightness-110 disabled:opacity-50 transition-all text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 border-none ${!formData.name.trim() ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  variant="primary"
+                  size="md"
+                  fullWidth
+                  isLoading={saving}
+                  isDisabled={!formData.name.trim()}
+                  icon={editingMaterial ? Check : Plus}
                 >
-                  {saving ? <Loader2 className="animate-spin" size={18} /> : (editingMaterial ? <Check size={18} /> : <Plus size={18} />)}
-                  {saving ? 'Procesando...' : (editingMaterial ? 'Actualizar' : 'Crear Material')}
-                </button>
+                  {editingMaterial ? 'Actualizar' : 'Crear Material'}
+                </Button>
               </div>
             </form>
           </div>

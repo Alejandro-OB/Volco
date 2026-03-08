@@ -31,9 +31,12 @@ function App() {
   const addToast = useToast();
 
   // función que se pasa al Login
-  const handleLoginSuccess = (newToken) => {
-    localStorage.setItem('access_token', newToken);
-    setToken(newToken);
+  const handleLoginSuccess = (accessToken, refreshToken) => {
+    localStorage.setItem('access_token', accessToken);
+    if (refreshToken) {
+      localStorage.setItem('refresh_token', refreshToken);
+    }
+    setToken(accessToken);
     setIsLoggedIn(true);
   };
 

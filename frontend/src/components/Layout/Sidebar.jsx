@@ -64,7 +64,7 @@ function Sidebar({ onLogout }) {
         <img
           src={logoVolco}
           alt="Volco"
-          className="h-12 w-auto object-contain cursor-pointer"
+          className="h-14 w-auto object-contain cursor-pointer"
           onClick={() => navigate('/clientes')}
         />
         <div className="w-8"></div> {/* Spacer for centering */}

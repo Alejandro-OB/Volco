@@ -3,15 +3,15 @@ import { useNavigate, useParams } from 'react-router-dom';
 import {
   Search, Plus, Filter, MoreHorizontal, FileText, ChevronRight,
   MapPin, Calendar, Clock, Edit2, Trash2, CheckCircle, Save,
-  X, Check, DollarSign, ExternalLink, RefreshCw, Layers, Inbox, Loader2, DownloadCloud, ChevronDown, Briefcase, Wallet, Mountain
+  X, Check, DollarSign, ExternalLink, RefreshCw, Layers, Inbox, Loader2, ChevronDown, Briefcase, Wallet, Mountain
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import ServiceFormModal from '../components/Modals/ServiceFormModal';
+import Button from '../components/UI/Button';
 import { useToast } from '../hooks/useToast';
 import { fetchClients, fetchAccounts, fetchMaterials, fetchServices, QK } from '../api/queries';
-import { exportToExcel, formatServicesForExport } from '../utils/exportUtils';
 
 function Services() {
   const navigate = useNavigate();
@@ -99,13 +99,6 @@ function Services() {
 
   const toggleAccount = (name) => {
     setOpenAccounts(prev => ({ ...prev, [name]: !prev[name] }));
-  };
-
-  const handleExport = () => {
-    if (!services?.length) return;
-    const formatted = formatServicesForExport(services); // Use 'services' directly as 'filteredServices' is not defined
-    exportToExcel(formatted, `Viajes_${accountId ? 'Cuenta' + accountId : 'Todos'}`);
-    addToast('Archivo Excel descargado', 'success');
   };
 
   const handleInputChange = (e) => {
@@ -242,22 +235,15 @@ function Services() {
             </p>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
-            <button
-              onClick={handleExport}
-              disabled={!services?.length}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-slate-100 text-slate-500 hover:bg-orange-50 hover:text-[#f58d2f] hover:border-[#f58d2f]/30 rounded-2xl font-bold transition-all disabled:opacity-50"
-              title="Exportar viajes"
-            >
-              <DownloadCloud size={18} />
-              <span className="hidden sm:inline">Exportar</span>
-            </button>
-            <button
+            <Button
+              variant="primary"
+              size="md"
+              icon={Plus}
               onClick={() => handleOpenModal()}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-6 py-3.5 font-bold text-white shadow-xl shadow-orange-500/30 hover:-translate-y-0.5 hover:shadow-orange-500/50 transition-all border-none"
+              className="flex-1 lg:flex-none"
             >
-              <Plus className="h-5 w-5" />
               Registrar Viaje
-            </button>
+            </Button>
           </div>
         </div>
 
@@ -390,16 +376,17 @@ function Services() {
                               </div>
                               <div className="flex-1 h-[1px] bg-slate-100/50 group-hover:bg-orange-100 transition-colors"></div>
                               <div className="flex items-center gap-4">
-                                <button 
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  icon={Plus}
                                   onClick={(e) => { e.stopPropagation(); handleOpenModal(accountServices[0]?.service_account_id); }}
-                                  className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-[#f58d2f] rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#f58d2f] hover:text-white transition-all border border-orange-100/50"
                                 >
-                                  <Plus size={12} />
-                                  <span>Registrar</span>
-                                </button>
+                                  Registrar
+                                </Button>
                                 <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
                                   <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{accountServices.length} viajes</span>
-                                  <Wallet size={16} className="text-orange-200" />
+                                  <Mountain size={16} className="text-orange-200" />
                                 </div>
                               </div>
                             </button>
@@ -438,14 +425,20 @@ function Services() {
                             </td>
                             <td className="px-8 py-6">
                               <div className="flex justify-center gap-2">
-                                <div className="tooltip-wrapper">
-                                  <button onClick={() => handleOpenModal(s)} className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={16} /></button>
-                                  <span className="tooltip-text">Editar</span>
-                                </div>
-                                <div className="tooltip-wrapper">
-                                  <button onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
-                                  <span className="tooltip-text">Eliminar</span>
-                                </div>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  icon={Edit2}
+                                  className="hover:text-blue-500"
+                                  onClick={() => handleOpenModal(s)} 
+                                />
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  icon={Trash2}
+                                  className="hover:text-red-500"
+                                  onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} 
+                                />
                               </div>
                             </td>
                           </tr>
@@ -501,29 +494,51 @@ function Services() {
                     </div>
                     <Wallet size={12} className="text-[#f58d2f]" />
                     <span className="font-black text-slate-600 text-xs uppercase tracking-tight flex-1 text-left">{accountName}</span>
-                    <button 
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      icon={Plus}
+                      className="!p-1.5 !rounded-lg"
                       onClick={(e) => { e.stopPropagation(); handleOpenModal(accountServices[0]?.service_account_id); }}
-                      className="p-1.5 bg-orange-50 text-[#f58d2f] rounded-lg border border-orange-100"
-                    >
-                      <Plus size={12} />
-                    </button>
+                    />
                     <span className="text-[9px] font-black text-slate-400">{accountServices.length} vjs</span>
                   </button>
                   {openAccounts[accountName] && accountServices.map(s => (
-                    <div key={s.id} className="flex items-center justify-between px-5 py-3 pl-12 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <div className="h-7 w-7 rounded-lg bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0">
-                          <Mountain size={13} />
+                    <div key={s.id} className="flex flex-col px-5 py-4 pl-9 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors gap-3">
+                      <div className="flex items-center justify-between gap-3">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0">
+                            <Mountain size={14} />
+                          </div>
+                          <div className="min-w-0">
+                            <p className="font-black text-slate-800 text-[11px] uppercase tracking-tight truncate">{getMaterialName(s)}</p>
+                            <span className="text-[9px] font-bold text-slate-400">{s.service_date}</span>
+                          </div>
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-black text-slate-800 text-xs uppercase truncate">{getMaterialName(s)}</p>
-                          <p className="text-[10px] text-slate-400">{s.service_date} · {s.quantity} vjs · {formatCurrency(s.price)}</p>
+                        <div className="flex items-center gap-1.5">
+                           <Button 
+                             variant="ghost" 
+                             size="icon" 
+                             icon={Edit2}
+                             className="!p-2 hover:text-blue-500"
+                             onClick={() => handleOpenModal(s)} 
+                           />
+                           <Button 
+                             variant="ghost" 
+                             size="icon" 
+                             icon={Trash2}
+                             className="!p-2 hover:text-red-500"
+                             onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} 
+                           />
                         </div>
                       </div>
-                      <div className="flex items-center gap-1 flex-shrink-0 ml-2">
-                        <span className="text-xs font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">{formatCurrency(s.total_amount)}</span>
-                        <button onClick={() => handleOpenModal(s)} className="p-1.5 text-slate-300 hover:text-blue-500 transition-colors"><Edit2 size={13} /></button>
-                        <button onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} className="p-1.5 text-slate-300 hover:text-red-500 transition-colors"><Trash2 size={13} /></button>
+                      
+                      <div className="flex items-center justify-between pl-10">
+                        <div className="flex flex-col">
+                           <span className="text-[11px] font-black text-slate-700">{s.quantity} Viajes</span>
+                           <span className="text-[9px] text-slate-400 font-bold italic">c/u {formatCurrency(s.price)}</span>
+                        </div>
+                        <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-xl border border-emerald-100 shadow-sm">{formatCurrency(s.total_amount)}</span>
                       </div>
                     </div>
                   ))}

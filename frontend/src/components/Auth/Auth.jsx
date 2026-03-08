@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import api from "../../api/axiosConfig";
 import logoVolco from "../../assets/logo_new.png";
+import Button from "../UI/Button";
 
 function Auth({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);
@@ -76,7 +77,6 @@ function Auth({ onLoginSuccess }) {
   const inputClass = "w-full rounded-2xl bg-white/50 border-2 border-slate-100 pl-12 pr-4 py-3.5 text-slate-700 placeholder:text-slate-400 input-fancy font-medium text-sm";
   const labelClass = "text-[11px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center";
   const iconClass = "absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#f58d2f] transition-colors";
-  const buttonClass = "group relative inline-flex items-center justify-center gap-2 w-full max-w-[240px] rounded-xl border border-orange-600/20 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-10 py-3.5 text-sm font-bold text-white shadow-[0_8px_16px_-4px_rgba(245,141,47,0.4)] transition-all duration-300 hover:scale-[1.02] hover:shadow-[0_12px_20px_-4px_rgba(245,141,47,0.5)] active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none";
 
   const Required = () => <span className="text-red-500 ml-1" title="Obligatorio">*</span>;
 
@@ -125,9 +125,15 @@ function Auth({ onLoginSuccess }) {
               </div>
 
               <div className="flex justify-center pt-4">
-                <button type="submit" disabled={loading} className={buttonClass}>
-                  {loading ? <Loader2 className="animate-spin" /> : <><LogIn size={18} /> <span>Entrar</span></>}
-                </button>
+                <Button 
+                  type="submit" 
+                  isLoading={loading} 
+                  icon={LogIn}
+                  className="max-w-[240px]"
+                  size="lg"
+                >
+                  Entrar
+                </Button>
               </div>
             </form>
           ) : (
@@ -188,9 +194,15 @@ function Auth({ onLoginSuccess }) {
               </div>
 
               <div className="flex justify-center pt-6">
-                <button type="submit" disabled={loading} className={buttonClass}>
-                  {loading ? <Loader2 className="animate-spin" /> : <><UserPlus size={18} /> <span>Registrarme</span></>}
-                </button>
+                <Button 
+                  type="submit" 
+                  isLoading={loading} 
+                  icon={UserPlus}
+                  className="max-w-[240px]"
+                  size="lg"
+                >
+                  Registrarme
+                </Button>
               </div>
             </form>
           )}

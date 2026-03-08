@@ -4,16 +4,16 @@ import {
   Search, Plus, ChevronDown, Calendar, Trash2, Edit2,
   Receipt, Truck, X, Check, Filter, ArrowLeft,
   Loader2, AlertTriangle, CheckCircle, Type, FileText,
-  DollarSign, Info, ChevronRight, Briefcase, Palette, Wallet, DownloadCloud
+  DollarSign, Info, ChevronRight, Briefcase, Palette, Wallet
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import PdfModal from '../components/Modals/PdfModal';
 import AccountFormModal from '../components/Modals/AccountFormModal';
+import Button from '../components/UI/Button';
 import { useToast } from '../hooks/useToast';
 import { fetchClients, fetchAccounts, fetchInvoices, fetchServices, fetchMaterials, QK } from '../api/queries';
-import { exportToExcel, formatAccountsForExport } from '../utils/exportUtils';
 
 const Accounts = () => {
   const navigate = useNavigate();
@@ -60,12 +60,6 @@ const Accounts = () => {
     if (clientId) setSelectedClient(clientId.toString());
   }, [clientId]);
 
-  const handleExport = () => {
-    if (!allAccounts?.length) return; // Changed from `accounts?.length` to `allAccounts?.length` to match available data
-    const formatted = formatAccountsForExport(filteredAccounts);
-    exportToExcel(formatted, `Cuentas_${clientId ? 'Cliente' + clientId : 'Todas'}`);
-    addToast('Archivo Excel descargado', 'success');
-  };
 
   // --- UTILIDAD: FORMATEAR MONEDA ---
   const formatCurrency = (value) => {
@@ -234,21 +228,15 @@ const Accounts = () => {
             </h1>
           </div>
           <div className="flex flex-col sm:flex-row gap-3 ml-auto w-full lg:w-auto">
-            <button
-              onClick={handleExport}
-              disabled={!allAccounts?.length}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-slate-100 text-slate-500 hover:bg-orange-50 hover:text-[#f58d2f] hover:border-[#f58d2f]/30 rounded-2xl font-bold transition-all disabled:opacity-50"
-            >
-              <DownloadCloud size={18} />
-              <span className="hidden sm:inline">Exportar</span>
-            </button>
-            <button
+            <Button
+              variant="primary"
+              size="md"
+              icon={Plus}
               onClick={() => handleOpenModal()}
-              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] text-white rounded-2xl font-bold shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5 transition-all"
+              className="flex-1 lg:flex-none"
             >
-              <Plus size={20} />
-              <span>Nueva Cuenta</span>
-            </button>
+              Nueva Cuenta
+            </Button>
           </div>
         </header>
 
@@ -256,16 +244,15 @@ const Accounts = () => {
         <div className="flex flex-col gap-6">
           <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full max-w-3xl overflow-x-auto">
             {['Todas', 'Pendientes', 'Facturadas', 'Sin Movimientos'].map(tab => (
-              <button
+              <Button
                 key={tab}
+                variant={activeTab === tab ? 'primary' : 'ghost'}
+                size="sm"
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 min-w-[140px] py-3 px-4 rounded-xl text-xs font-black uppercase tracking-widest transition-all ${activeTab === tab
-                  ? 'bg-white text-[#f58d2f] shadow-sm'
-                  : 'text-slate-400 hover:text-slate-600'
-                  }`}
+                className={`flex-1 min-w-[140px] !rounded-xl ${activeTab === tab ? '' : 'text-slate-400'}`}
               >
                 {tab}
-              </button>
+              </Button>
             ))}
           </div>
 
@@ -444,42 +431,50 @@ const Accounts = () => {
                             </td>
                             <td className="px-8 py-6">
                               <div className="flex justify-center items-center gap-1.5">
-                                <button onClick={() => navigate(`/cuentas/${account.id}/servicios`)} className="flex flex-col items-center p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all">
-                                  <Truck size={18} />
-                                  <span className="text-[8px] font-bold uppercase mt-1">Viajes</span>
-                                </button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  icon={Truck}
+                                  className="hover:text-blue-500"
+                                  onClick={() => navigate(`/cuentas/${account.id}/servicios`)} 
+                                />
 
-                                <button
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  icon={hasInvoice ? Receipt : FileText}
+                                  isLoading={loadingId === account.id}
+                                  isDisabled={!hasServices && !hasInvoice}
+                                  className={hasInvoice ? 'text-emerald-500 hover:bg-emerald-50' : 'hover:text-orange-500'}
                                   onClick={() => handleInvoiceAction(account)}
-                                  disabled={loadingId === account.id || (!hasServices && !hasInvoice)}
-                                  className={`flex flex-col items-center p-2 rounded-xl transition-all ${hasInvoice
-                                    ? 'text-emerald-500 hover:bg-emerald-50'
-                                    : !hasServices
-                                      ? 'text-slate-200 cursor-not-allowed'
-                                      : 'text-slate-400 hover:text-orange-500 hover:bg-orange-50'
-                                    }`}
                                   title={!hasServices && !hasInvoice ? "Debe registrar viajes para facturar" : hasInvoice ? "Ver PDF" : "Generar factura"}
-                                >
-                                  {loadingId === account.id
-                                    ? <Loader2 size={18} className="animate-spin" />
-                                    : hasInvoice ? <Receipt size={18} /> : <FileText size={18} />}
-                                  <span className="text-[8px] font-bold uppercase mt-1">{hasInvoice ? 'Ver' : 'Factura'}</span>
-                                </button>
+                                />
 
-                                <button onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} className="flex flex-col items-center p-2 text-slate-400 hover:text-[#f58d2f] hover:bg-orange-50 rounded-xl transition-all">
-                                  <Palette size={18} />
-                                  <span className="text-[8px] font-bold uppercase mt-1">Personalizar</span>
-                                </button>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  icon={Palette}
+                                  className="hover:text-[#f58d2f]"
+                                  onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} 
+                                />
 
                                 <div className="w-px h-6 bg-slate-100 mx-1"></div>
-                                <div className="tooltip-wrapper">
-                                  <button onClick={() => handleOpenModal(account)} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"><Edit2 size={16} /></button>
-                                  <span className="tooltip-text">Editar</span>
-                                </div>
-                                <div className="tooltip-wrapper">
-                                  <button onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={16} /></button>
-                                  <span className="tooltip-text">Eliminar</span>
-                                </div>
+                                
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  icon={Edit2}
+                                  className="hover:text-amber-500"
+                                  onClick={() => handleOpenModal(account)} 
+                                />
+                                
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  icon={Trash2}
+                                  className="hover:text-red-500"
+                                  onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} 
+                                />
                               </div>
                             </td>
                           </tr>
@@ -507,66 +502,104 @@ const Accounts = () => {
       </div>
 
       {/* Cards — solo móvil */}
-      <div className="md:hidden space-y-6 mt-2">
+      <div className="md:hidden space-y-4 mt-2">
         {loading ? (
           [1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-5 animate-pulse space-y-3">
+            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse ml-4 space-y-3">
               <div className="h-4 bg-slate-100 rounded-lg w-1/2" />
               <div className="h-3 bg-slate-100 rounded w-full" />
-              <div className="h-3 bg-slate-100 rounded w-2/3" />
             </div>
           ))
         ) : Object.keys(groupedAccounts).length > 0 ? (
           Object.entries(groupedAccounts).map(([clientName, accounts]) => (
-            <div key={clientName} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
-              {/* Header cliente — toggle */}
+            <div key={clientName} className="space-y-2">
+              {/* Header cliente — Flat modern style */}
               <button
                 onClick={() => toggleClient(clientName)}
-                className="w-full flex items-center gap-3 px-5 py-4 bg-slate-50 border-b border-slate-100"
+                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all duration-300 ${
+                  openClients[clientName] 
+                    ? 'bg-white border-[#f58d2f]/20 shadow-sm' 
+                    : 'bg-slate-50/50 border-transparent hover:bg-slate-50'
+                }`}
               >
-                <div className={`p-1 rounded-lg transition-all ${openClients[clientName] ? 'bg-orange-100 text-[#f58d2f]' : 'bg-slate-200 text-slate-500'}`}>
-                  {openClients[clientName] ? <ChevronDown size={15} /> : <ChevronRight size={15} />}
+                <div className={`p-1.5 rounded-xl transition-all ${openClients[clientName] ? 'bg-orange-100 text-[#f58d2f] rotate-90' : 'bg-slate-200 text-slate-400'}`}>
+                  <ChevronRight size={14} />
                 </div>
-                <Briefcase size={15} className="text-[#f58d2f]" />
-                <span className="font-black text-slate-800 text-sm uppercase tracking-tight flex-1 text-left">{clientName}</span>
-                <span className="text-[10px] font-black text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
-                  {accounts.length} cuentas
+                <div className="flex-1 text-left min-w-0">
+                   <span className="text-[13px] font-black text-slate-800 tracking-tight block truncate uppercase">{clientName}</span>
+                </div>
+                <span className="text-[9px] font-black text-slate-400 bg-white px-2.5 py-1 rounded-lg border border-slate-100 uppercase tracking-tighter">
+                  {accounts.length}
                 </span>
               </button>
 
               {/* Cuentas — solo cuando está abierto */}
               {openClients[clientName] && (
-                <div className="divide-y divide-slate-50">
+                <div className="pl-4 space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
                   {accounts.map(account => {
                     const hasInvoice = invoices.some(i => i.service_account_id === account.id);
                     const hasServices = services.some(s => s.service_account_id === account.id);
                     const accountServices = services.filter(s => s.service_account_id === account.id);
                     const totalValue = accountServices.reduce((sum, s) => sum + (parseFloat(s.price) * s.quantity || 0), 0);
                     return (
-                      <div key={account.id} className="p-4 hover:bg-slate-50/50 transition-colors animate-in slide-in-from-top-1 duration-150">
-                        <div className="flex items-start justify-between gap-2 mb-2">
-                          <div>
-                            <p className="font-black text-slate-900 text-sm leading-tight">{account.description}</p>
-                            <p className="text-[10px] text-slate-400 font-medium mt-0.5">{account.start_date} → {account.end_date}</p>
+                      <div key={account.id} className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white p-4 shadow-sm group">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="min-w-0">
+                            <p className="font-black text-slate-900 text-[13px] leading-tight group-hover:text-[#f58d2f] transition-colors">{account.description}</p>
+                            <div className="flex items-center gap-1.5 text-slate-400 text-[9px] font-bold mt-1 uppercase tracking-tighter">
+                               <Calendar size={10} className="text-[#f58d2f]" />
+                               {account.start_date} — {account.end_date}
+                            </div>
                           </div>
-                          <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 rounded-full text-[9px] font-black uppercase border ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
-                            {hasInvoice ? <CheckCircle size={9} /> : null}{hasInvoice ? 'Facturado' : 'Pendiente'}
+                          <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[8px] font-black uppercase border shadow-sm ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-[#f58d2f] border-orange-100'}`}>
+                            {hasInvoice ? <CheckCircle size={9} /> : <div className="h-1.5 w-1.5 rounded-full bg-[#f58d2f] animate-pulse" />}
+                            {hasInvoice ? 'Facturado' : 'Pendiente'}
                           </span>
                         </div>
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm font-black text-slate-800">{formatCurrency(totalValue)}</span>
-                          <div className="flex items-center gap-1">
-                            <button onClick={() => navigate(`/cuentas/${account.id}/servicios`)} className="p-2 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Truck size={15} /></button>
-                            <button
+                        
+                        <div className="flex items-center justify-between pt-3 border-t border-slate-50">
+                          <div className="flex flex-col">
+                             <span className="text-[8px] font-bold text-slate-400 uppercase tracking-widest">Cartera Actual</span>
+                             <span className="text-sm font-black text-slate-800">{formatCurrency(totalValue)}</span>
+                          </div>
+                          <div className="flex items-center gap-0.5">
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              icon={Truck}
+                              className="!p-2 hover:text-blue-500"
+                              onClick={() => navigate(`/cuentas/${account.id}/servicios`)} 
+                            />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              icon={hasInvoice ? Receipt : FileText}
+                              isLoading={loadingId === account.id}
+                              isDisabled={!hasServices && !hasInvoice}
+                              className={`!p-2 ${hasInvoice ? 'text-emerald-500' : 'hover:text-orange-500'}`}
                               onClick={() => handleInvoiceAction(account)}
-                              disabled={loadingId === account.id || (!hasServices && !hasInvoice)}
-                              className={`p-2 rounded-xl transition-all ${hasInvoice ? 'text-emerald-500 hover:bg-emerald-50' : !hasServices ? 'text-slate-200 cursor-not-allowed' : 'text-slate-400 hover:text-orange-500 hover:bg-orange-50'}`}
-                            >
-                              {loadingId === account.id ? <Loader2 size={15} className="animate-spin" /> : hasInvoice ? <Receipt size={15} /> : <FileText size={15} />}
-                            </button>
-                            <button onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} className="p-2 text-slate-400 hover:text-[#f58d2f] hover:bg-orange-50 rounded-xl transition-all"><Palette size={15} /></button>
-                            <button onClick={() => handleOpenModal(account)} className="p-2 text-slate-400 hover:text-amber-500 hover:bg-amber-50 rounded-xl transition-all"><Edit2 size={15} /></button>
-                            <button onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={15} /></button>
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              icon={Palette}
+                              className="!p-2 hover:text-[#f58d2f]"
+                              onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} 
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              icon={Edit2}
+                              className="!p-2 hover:text-amber-500"
+                              onClick={() => handleOpenModal(account)} 
+                            />
+                            <Button 
+                              variant="ghost" 
+                              size="icon" 
+                              icon={Trash2}
+                              className="!p-2 hover:text-red-500"
+                              onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} 
+                            />
                           </div>
                         </div>
                       </div>
@@ -578,8 +611,8 @@ const Accounts = () => {
           ))
         ) : (
           <div className="bg-white rounded-[2rem] border border-slate-100 p-12 text-center">
-            <Wallet size={40} className="mx-auto mb-3 text-slate-200" />
-            <p className="text-slate-400 font-bold text-sm">No se encontraron cuentas.</p>
+            <Wallet size={32} className="mx-auto mb-3 text-slate-100" />
+            <p className="text-slate-400 font-bold text-xs">No se encontraron cuentas.</p>
           </div>
         )}
       </div>
