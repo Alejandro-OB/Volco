@@ -174,7 +174,7 @@ function InvoiceCustomizationForm() {
                   {accountId && <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-100">Cuenta Específica</span>}
                   {!accountId && <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-purple-100">Global</span>}
                 </div>
-                <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Branding</h1>
+                <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Personalización</h1>
                 <p className="text-slate-500 font-medium mt-1">
                   {accountId ? 'Estás personalizando el diseño exclusivo para una cuenta en particular. Esto sobreescribirá el Global solo para esta cuenta.' : 'Personaliza la apariencia y datos de tus facturas para todo el sistema.'}
                 </p>

@@ -164,7 +164,7 @@ function Navbar() {
                 <div className="p-2 rounded-lg bg-slate-100 group-hover:bg-white transition-colors">
                   <FileText size={18} />
                 </div>
-                <span>Configurar Factura</span>
+                <span>Personalización</span>
               </button>
 
               <div className="h-[1px] bg-slate-100 mx-4 my-2"></div>

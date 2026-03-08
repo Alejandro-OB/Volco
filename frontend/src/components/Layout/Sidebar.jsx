@@ -169,7 +169,7 @@ function Sidebar({ onLogout }) {
               <div className="p-1.5 rounded-lg bg-white shadow-sm border border-slate-100 text-slate-400 group-hover:text-[#f58d2f] group-hover:border-orange-200 transition-colors">
                 <FileText size={18} strokeWidth={2.5} />
               </div>
-              <span>Configurar Factura</span>
+              <span>Personalización</span>
             </button>
           </div>
 
