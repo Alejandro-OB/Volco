@@ -7,6 +7,8 @@ from app.core.exceptions import NotFoundException
 from app.models.providers import Provider
 from app.services.invoice_customization import invoice_customization_service
 from app.utils.pdf_generator import render_pdf_from_template
+from app.utils.excel_generator import render_excel_from_invoice
+from app.utils.word_generator import render_word_from_invoice
 
 class InvoiceService:
     @staticmethod
@@ -72,5 +74,61 @@ class InvoiceService:
 
         pdf_bytes = render_pdf_from_template(template_name="invoice_template.html", context=context, page_size=page_size)
         return pdf_bytes
+
+    @staticmethod
+    def generate_excel(session: Session, invoice_id: int, provider: Provider) -> bytes:
+        invoice = invoice_repository.get(session, invoice_id)
+        if not invoice:
+            raise NotFoundException(detail="Invoice not found")
+            
+        services = invoice.service_account.services
+        services = sorted(services, key=lambda s: s.service_date)
+        
+        try:
+            customization = invoice_customization_service.get_customization_for_provider_account(
+                session, provider_id=provider.id, account_id=invoice.service_account_id
+            )
+        except NotFoundException:
+            customization = None
+
+        total = sum((s.total_amount for s in services if s.total_amount is not None), 0)
+
+        # Use the high-fidelity excel generator
+        excel_bytes = render_excel_from_invoice(
+            invoice=invoice, 
+            services=services, 
+            total=total, 
+            provider=provider, 
+            customization=customization
+        )
+        return excel_bytes
+
+    @staticmethod
+    def generate_word(session: Session, invoice_id: int, provider: Provider) -> bytes:
+        invoice = invoice_repository.get(session, invoice_id)
+        if not invoice:
+            raise NotFoundException(detail="Invoice not found")
+            
+        services = invoice.service_account.services
+        services = sorted(services, key=lambda s: s.service_date)
+        
+        try:
+            customization = invoice_customization_service.get_customization_for_provider_account(
+                session, provider_id=provider.id, account_id=invoice.service_account_id
+            )
+        except NotFoundException:
+            customization = None
+
+        total = sum((s.total_amount for s in services if s.total_amount is not None), 0)
+
+        # Use the high-fidelity word generator
+        word_bytes = render_word_from_invoice(
+            invoice=invoice, 
+            services=services, 
+            total=total, 
+            provider=provider, 
+            customization=customization
+        )
+        return word_bytes
 
 invoice_service = InvoiceService()

@@ -22,7 +22,7 @@ const ServiceFormModal = ({
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={onClose}></div>
+      <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={onClose}></div>
       <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-10">
           <div className="flex justify-between items-start mb-8">

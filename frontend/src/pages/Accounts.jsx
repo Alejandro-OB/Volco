@@ -50,9 +50,10 @@ const Accounts = () => {
 
   // --- MODALES DE APOYO ---
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
+  const [selectedId, setSelectedId] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
+  const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
 
   // sync clientId URL param
   useEffect(() => {
@@ -211,6 +212,7 @@ const Accounts = () => {
       const resBlob = await api.get(`invoices/${currentInvoice.id}/pdf/`, { responseType: 'blob' });
       const url = URL.createObjectURL(new Blob([resBlob.data], { type: 'application/pdf' }));
       setPdfUrl(url);
+      setSelectedInvoiceId(currentInvoice.id);
       setShowPdfModal(true);
 
     } catch (err) {
@@ -533,7 +535,7 @@ const Accounts = () => {
         onSubmit={handleSaveAccount}
       />
       <ConfirmModal show={showConfirmModal} onClose={() => setShowConfirmModal(false)} onConfirm={handleConfirmDelete} title="¿Eliminar cuenta?" message="Esta acción eliminará todos los registros asociados." />
-      <PdfModal show={showPdfModal} onClose={() => setShowPdfModal(false)} pdfUrl={pdfUrl} />
+      <PdfModal show={showPdfModal} onClose={() => setShowPdfModal(false)} pdfUrl={pdfUrl} invoiceId={selectedInvoiceId} />
     </div>
   );
 };

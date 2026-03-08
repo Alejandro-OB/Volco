@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     libffi-dev \
     libglib2.0-0 \
     libgobject-2.0-0 \
+    libgl1 \
     shared-mime-info \
     fonts-dejavu-core \
     && apt-get clean \

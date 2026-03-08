@@ -26,3 +26,17 @@ def get_invoice_pdf(invoice_id: int, session: SessionDep, provider: Provider = D
     return Response(content=pdf_bytes, media_type="application/pdf", headers={
         "Content-Disposition": f"inline; filename=invoice_{invoice_id}.pdf"
     })
+
+@router.get("/invoices/{invoice_id}/excel/")
+def get_invoice_excel(invoice_id: int, session: SessionDep, provider: Provider = Depends(get_provider_current)):
+    excel_bytes = invoice_service.generate_excel(session, invoice_id, provider)
+    return Response(content=excel_bytes, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={
+        "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.xlsx"
+    })
+
+@router.get("/invoices/{invoice_id}/word/")
+def get_invoice_word(invoice_id: int, session: SessionDep, provider: Provider = Depends(get_provider_current)):
+    word_bytes = invoice_service.generate_word(session, invoice_id, provider)
+    return Response(content=word_bytes, media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document", headers={
+        "Content-Disposition": f"attachment; filename=invoice_{invoice_id}.docx"
+    })

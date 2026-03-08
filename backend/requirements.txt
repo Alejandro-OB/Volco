@@ -15,3 +15,6 @@ passlib[bcrypt]
 passlib[argon2]
 fastapi-mail==1.5.8
 sib-api-v3-sdk==7.6.0
+openpyxl==3.1.5
+pdf2docx==0.5.11
+requests==2.32.5
