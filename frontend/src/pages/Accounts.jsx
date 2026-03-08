@@ -4,14 +4,16 @@ import {
   Search, Plus, ChevronDown, Calendar, Trash2, Edit2,
   Receipt, Truck, X, Check, Filter, ArrowLeft,
   Loader2, AlertTriangle, CheckCircle, Type, FileText,
-  DollarSign, Info, ChevronRight, Briefcase, Palette, Wallet
+  DollarSign, Info, ChevronRight, Briefcase, Palette, Wallet, DownloadCloud
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import PdfModal from '../components/Modals/PdfModal';
+import AccountFormModal from '../components/Modals/AccountFormModal';
 import { useToast } from '../hooks/useToast';
 import { fetchClients, fetchAccounts, fetchInvoices, fetchServices, fetchMaterials, QK } from '../api/queries';
+import { exportToExcel, formatAccountsForExport } from '../utils/exportUtils';
 
 const Accounts = () => {
   const navigate = useNavigate();
@@ -52,12 +54,17 @@ const Accounts = () => {
   const [pdfUrl, setPdfUrl] = useState(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
 
-  const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
-
   // sync clientId URL param
   useEffect(() => {
     if (clientId) setSelectedClient(clientId.toString());
   }, [clientId]);
+
+  const handleExport = () => {
+    if (!allAccounts?.length) return; // Changed from `accounts?.length` to `allAccounts?.length` to match available data
+    const formatted = formatAccountsForExport(filteredAccounts);
+    exportToExcel(formatted, `Cuentas_${clientId ? 'Cliente' + clientId : 'Todas'}`);
+    addToast('Archivo Excel descargado', 'success');
+  };
 
   // --- UTILIDAD: FORMATEAR MONEDA ---
   const formatCurrency = (value) => {
@@ -127,7 +134,14 @@ const Accounts = () => {
     setIsModalOpen(true);
   };
 
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
+  };
+
   const handleSaveAccount = async () => {
+    if (loadingAction) return;
     const errors = {};
     if (!formData.description?.trim()) errors.description = 'La descripción de la cuenta es obligatoria';
     if (!formData.client_id) errors.client_id = 'Selecciona un cliente';
@@ -145,7 +159,11 @@ const Accounts = () => {
         await api.post('service-accounts/', formData);
         addToast('Cuenta aperturada con éxito.', 'success');
       }
-      queryClient.invalidateQueries({ queryKey: QK.accounts });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QK.accounts }),
+        queryClient.invalidateQueries({ queryKey: QK.clients }),
+        queryClient.invalidateQueries({ queryKey: ['services'] })
+      ]);
       setIsModalOpen(false);
     } catch (err) {
       addToast('Error al guardar la cuenta.', 'error');
@@ -157,7 +175,11 @@ const Accounts = () => {
   const handleConfirmDelete = async () => {
     try {
       await api.delete(`service-accounts/${deleteId}/`);
-      queryClient.invalidateQueries({ queryKey: QK.accounts });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QK.accounts }),
+        queryClient.invalidateQueries({ queryKey: QK.clients }),
+        queryClient.invalidateQueries({ queryKey: ['services'] })
+      ]);
       setShowConfirmModal(false);
       addToast('Cuenta eliminada.', 'success');
     } catch {
@@ -181,7 +203,7 @@ const Accounts = () => {
 
         const res = await api.post('invoices/', { service_account_id: account.id });
         currentInvoice = res.data;
-        queryClient.invalidateQueries({ queryKey: QK.invoices });
+        await queryClient.invalidateQueries({ queryKey: QK.invoices });
         addToast('Factura generada con éxito.', 'success');
       }
 
@@ -203,22 +225,29 @@ const Accounts = () => {
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
       <div className="max-w-7xl mx-auto space-y-10">
 
-        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-          <div className="space-y-4">
-            <div>
-              <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
-                Control de Cuentas <span className="text-[#f58d2f]">.</span>
-              </h1>
-            </div>
+        <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div className="space-y-1">
+            <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
+              Control de Cuentas <span className="text-[#f58d2f]">.</span>
+            </h1>
           </div>
-
-          <button
-            onClick={() => handleOpenModal()}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-100 hover:-translate-y-1 transition-all border-none active:scale-95"
-          >
-            <Plus className="h-5 w-5" />
-            Registrar Cuenta
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 ml-auto w-full lg:w-auto">
+            <button
+              onClick={handleExport}
+              disabled={!allAccounts?.length}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-slate-100 text-slate-500 hover:bg-orange-50 hover:text-[#f58d2f] hover:border-[#f58d2f]/30 rounded-2xl font-bold transition-all disabled:opacity-50"
+            >
+              <DownloadCloud size={18} />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] text-white rounded-2xl font-bold shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5 transition-all"
+            >
+              <Plus size={20} />
+              <span>Nueva Cuenta</span>
+            </button>
+          </div>
         </header>
 
         {/* Filtros */}
@@ -491,102 +520,18 @@ const Accounts = () => {
       </div>
 
 
-      {/* --- MODAL DE CREACIÓN / EDICIÓN --- */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-10">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-3xl font-black text-[#1a202c]">
-                    {editingAccount ? 'Editar Cuenta' : 'Nueva Cuenta'}
-                  </h2>
-                </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-2xl transition-colors text-slate-300">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre de la Cuenta <Required /></label>
-                    <div className="relative">
-                      <Type className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      <input
-                        type="text"
-                        placeholder="Ej: Obra Norte Fase 1"
-                        className={`w-full pl-12 pr-5 py-4 bg-slate-50 border-2 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-bold text-slate-700 ${fieldErrors.description ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30'
-                          }`}
-                        value={formData.description}
-                        onChange={(e) => { setFormData({ ...formData, description: e.target.value }); if (fieldErrors.description) setFieldErrors(prev => ({ ...prev, description: '' })); }}
-                        required
-                      />
-                      {fieldErrors.description && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.description}</p>}
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Cliente Titular <Required /></label>
-                    <div className="relative">
-                      <select
-                        className={`w-full pl-5 pr-10 py-4 bg-slate-50 border-2 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-bold text-slate-700 appearance-none cursor-pointer ${fieldErrors.client_id ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30'
-                          }`}
-                        value={formData.client_id}
-                        onChange={(e) => { setFormData({ ...formData, client_id: e.target.value }); if (fieldErrors.client_id) setFieldErrors(prev => ({ ...prev, client_id: '' })); }}
-                        disabled={!!clientId && !editingAccount}
-                      >
-                        <option value="">Seleccione...</option>
-                        {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                      </select>
-                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                      {fieldErrors.client_id && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.client_id}</p>}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fecha de Inicio <Required /></label>
-                    <input
-                      type="date"
-                      className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
-                      value={formData.start_date}
-                      onChange={(e) => setFormData({ ...formData, start_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fecha de Fin <Required /></label>
-                    <input
-                      type="date"
-                      className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
-                      value={formData.end_date}
-                      onChange={(e) => setFormData({ ...formData, end_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <div className="mt-10 flex gap-4">
-                <button onClick={() => setIsModalOpen(false)} className="flex-1 px-6 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all text-[11px] uppercase tracking-widest">
-                  Cancelar
-                </button>
-                <button
-                  onClick={handleSaveAccount}
-                  disabled={loadingAction || !formData.client_id || !formData.description}
-                  className="flex-1 px-6 py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 hover:brightness-110 disabled:opacity-50 transition-all text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 border-none"
-                >
-                  {loadingAction ? <Loader2 className="animate-spin" size={18} /> : (editingAccount ? <Check size={18} /> : <Plus size={18} />)}
-                  {editingAccount ? 'Guardar Cambios' : 'Abrir Cuenta'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
+      <AccountFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        isEditing={editingAccount !== null}
+        formData={formData}
+        fieldErrors={fieldErrors}
+        isSubmitting={loadingAction}
+        clients={clients}
+        clientIdUrlParam={clientId}
+        onInputChange={handleInputChange}
+        onSubmit={handleSaveAccount}
+      />
       <ConfirmModal show={showConfirmModal} onClose={() => setShowConfirmModal(false)} onConfirm={handleConfirmDelete} title="¿Eliminar cuenta?" message="Esta acción eliminará todos los registros asociados." />
       <PdfModal show={showPdfModal} onClose={() => setShowPdfModal(false)} pdfUrl={pdfUrl} />
     </div>

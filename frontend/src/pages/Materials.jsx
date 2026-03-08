@@ -58,6 +58,7 @@ const Materials = () => {
 
   const handleSave = async (e) => {
     e.preventDefault();
+    if (saving) return;
     const errors = {};
     if (!formData.name.trim()) errors.name = 'El nombre del material es obligatorio';
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
@@ -70,7 +71,7 @@ const Materials = () => {
         await api.post('/materials/', formData);
         addToast('Material registrado.', 'success');
       }
-      queryClient.invalidateQueries({ queryKey: QK.materials });
+      await queryClient.invalidateQueries({ queryKey: QK.materials });
       setIsModalOpen(false);
     } catch (err) {
       addToast('Error al procesar la solicitud', 'error');
@@ -82,7 +83,7 @@ const Materials = () => {
   const handleDelete = async () => {
     try {
       await api.delete(`/materials/${selectedId}/`);
-      queryClient.invalidateQueries({ queryKey: QK.materials });
+      await queryClient.invalidateQueries({ queryKey: QK.materials });
       setConfirmOpen(false);
       addToast('Material eliminado.', 'success');
     } catch (err) {
@@ -205,7 +206,7 @@ const Materials = () => {
       {/* MODAL CRUD */}
       {isModalOpen && (
         <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
+          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
           <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
             <form onSubmit={handleSave} className="p-10">
               <div className="flex justify-between items-start mb-8">

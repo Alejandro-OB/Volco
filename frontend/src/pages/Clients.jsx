@@ -1,15 +1,16 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Plus, Search, Edit2, Trash2,
-  User, Phone, MapPin,
-  Mail, AlertTriangle, CheckCircle, Wallet, Hash, Users, X, Save, Loader2
+  Search, Plus, Filter, ArrowUpDown, MoreHorizontal,
+  MapPin, Phone, Mail, FileText, ChevronRight, Settings, Trash2, Edit2, ShieldAlert, Check, X, User, Save, Loader2, DownloadCloud, Hash, Wallet, Users
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
+import ClientFormModal from '../components/Modals/ClientFormModal';
 import { useToast } from '../hooks/useToast';
 import { fetchClients, QK } from '../api/queries';
+import { exportToExcel, formatClientsForExport } from '../utils/exportUtils';
 
 const Clients = () => {
   const navigate = useNavigate();
@@ -39,8 +40,12 @@ const Clients = () => {
     phone_number: '',
   });
 
-  // --- COMPONENTE AUXILIAR PARA CAMPOS OBLIGATORIOS ---
-  const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
+  const handleExport = () => {
+    if (!clients?.length) return;
+    const formatted = formatClientsForExport(filteredClients);
+    exportToExcel(formatted, 'Clientes');
+    addToast('Archivo Excel descargado', 'success');
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -48,7 +53,7 @@ const Clients = () => {
     if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
   };
 
-  const handleOpenAddModal = () => {
+  const handleAddNew = () => {
     setFormData({ name: '', email: '', address: '', phone_number: '' });
     setSelectedId(null);
     setIsEditing(false);
@@ -69,6 +74,7 @@ const Clients = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (isSubmitting) return;
     const errors = {};
     if (!formData.name.trim()) errors.name = 'El nombre es obligatorio';
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
@@ -84,7 +90,11 @@ const Clients = () => {
         await api.post('clients/', cleanData);
         addToast('Cliente registrado con éxito.', 'success');
       }
-      queryClient.invalidateQueries({ queryKey: QK.clients });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QK.clients }),
+        queryClient.invalidateQueries({ queryKey: QK.accounts }),
+        queryClient.invalidateQueries({ queryKey: ['services'] })
+      ]);
       setIsModalOpen(false);
     } catch (err) {
       addToast('Error al procesar la solicitud.', 'error');
@@ -96,7 +106,11 @@ const Clients = () => {
   const handleConfirmDelete = async () => {
     try {
       await api.delete(`clients/${selectedId}/`);
-      queryClient.invalidateQueries({ queryKey: QK.clients });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: QK.clients }),
+        queryClient.invalidateQueries({ queryKey: QK.accounts }),
+        queryClient.invalidateQueries({ queryKey: ['services'] })
+      ]);
       setShowDeleteModal(false);
       addToast('Cliente eliminado correctamente.', 'success');
     } catch {
@@ -124,14 +138,24 @@ const Clients = () => {
           <div className="space-y-1">
             <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">Directorio de Clientes <span className="text-[#f58d2f]">.</span> </h1>
           </div>
-
-          <button
-            onClick={handleOpenAddModal}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-200 transition-all hover:-translate-y-1 active:scale-95 border-none"
-          >
-            <Plus className="h-5 w-5" />
-            Registrar Cliente
-          </button>
+          <div className="flex gap-3 ml-auto w-full md:w-auto">
+            <button
+              onClick={handleExport}
+              disabled={!clients?.length}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3.5 bg-white text-slate-500 hover:text-[#f58d2f] hover:bg-orange-50 border-2 border-slate-100 rounded-2xl font-bold transition-all text-xs"
+              title="Exportar a Excel"
+            >
+              <DownloadCloud size={18} />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+            <button
+              onClick={handleAddNew}
+              className="flex-1 md:flex-none flex items-center justify-center gap-2 px-5 py-3.5 bg-[#f58d2f] text-white rounded-2xl font-bold shadow-lg shadow-orange-500/30 hover:shadow-orange-500/50 hover:-translate-y-0.5 transition-all text-xs"
+            >
+              <Plus size={18} />
+              Nuevo Cliente
+            </button>
+          </div>
         </div>
 
         {/* Filtros */}
@@ -301,110 +325,16 @@ const Clients = () => {
         </div>
       </main>
 
-      {/* MODAL PARA AGREGAR / EDITAR CLIENTE */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-10">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tighter">
-                    {isEditing ? 'Editar Cliente' : 'Nuevo Cliente'}
-                  </h2>
-                </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-xl transition-colors">
-                  <X className="w-5 h-5 text-slate-400" />
-                </button>
-              </div>
-
-              <form onSubmit={handleSubmit} className="space-y-5">
-                <div className="space-y-1.5">
-                  {/* AGREGADO: Required aquí */}
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center">
-                    Razón Social / Nombre <Required />
-                  </label>
-                  <div className="relative group">
-                    <User size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
-                    <input
-                      name="name"
-                      required
-                      value={formData.name}
-                      onChange={handleInputChange}
-                      className={`w-full bg-slate-50 border-2 rounded-2xl pl-12 pr-4 py-4 outline-none transition-all text-sm font-bold text-slate-700 shadow-inner ${fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30 focus:bg-white'
-                        }`}
-                      placeholder="Ej. Juan Pérez o Empresa S.A."
-                    />
-                    {fieldErrors.name && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.name}</p>}
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
-                    <div className="relative group">
-                      <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
-                      <input
-                        name="email"
-                        type="email"
-                        value={formData.email}
-                        onChange={handleInputChange}
-                        className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700 shadow-inner"
-                        placeholder="correo@ejemplo.com"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono</label>
-                    <div className="relative group">
-                      <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
-                      <input
-                        name="phone_number"
-                        value={formData.phone_number}
-                        onChange={handleInputChange}
-                        className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700 shadow-inner"
-                        placeholder="+57 300..."
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Dirección de Oficina</label>
-                  <div className="relative group">
-                    <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
-                    <input
-                      name="address"
-                      value={formData.address}
-                      onChange={handleInputChange}
-                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700 shadow-inner"
-                      placeholder="Calle 123 #45-67..."
-                    />
-                  </div>
-                </div>
-
-                <div className="mt-10 flex gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="flex-1 px-6 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all text-[11px] uppercase tracking-[0.2em]"
-                  >
-                    Cancelar
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting || !formData.name.trim()}
-                    className="flex-1 px-6 py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 hover:brightness-110 transition-all text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 border-none disabled:opacity-50"
-                  >
-                    {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
-                    {isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Registrar')}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
+      <ClientFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        isEditing={isEditing}
+        formData={formData}
+        fieldErrors={fieldErrors}
+        isSubmitting={isSubmitting}
+        onInputChange={handleInputChange}
+        onSubmit={handleSubmit}
+      />
 
       <ConfirmModal
         show={showDeleteModal}

@@ -58,6 +58,10 @@ api.interceptors.response.use(
         } catch (err) {
           console.error('Refresh token inválido o expirado.');
           localStorage.clear();
+          
+          // Emitir evento global para mostrar el Toast
+          window.dispatchEvent(new Event('tokenExpired'));
+          
           if (window.location.pathname !== '/login') {
             window.location.href = '/login';
           }

@@ -1,15 +1,17 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import {
-  Plus, Edit2, Trash2, Calendar, ChevronDown, ChevronRight, X, Check,
-  Hash, Wallet, Mountain, Package, AlertTriangle, CheckCircle,
-  DollarSign, Briefcase
+  Search, Plus, Filter, MoreHorizontal, FileText, ChevronRight,
+  MapPin, Calendar, Clock, Edit2, Trash2, CheckCircle, Save,
+  X, Check, DollarSign, ExternalLink, RefreshCw, Layers, Inbox, Loader2, DownloadCloud, ChevronDown, Briefcase, Wallet, Mountain
 } from 'lucide-react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
+import ServiceFormModal from '../components/Modals/ServiceFormModal';
 import { useToast } from '../hooks/useToast';
 import { fetchClients, fetchAccounts, fetchMaterials, fetchServices, QK } from '../api/queries';
+import { exportToExcel, formatServicesForExport } from '../utils/exportUtils';
 
 function Services() {
   const navigate = useNavigate();
@@ -30,6 +32,7 @@ function Services() {
 
   // --- ESTADOS DE UI ---
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [targetId, setTargetId] = useState(null);
   const [showCustomMaterial, setShowCustomMaterial] = useState(false);
@@ -52,8 +55,6 @@ function Services() {
     custom_material: '', quantity: '', price: '',
     service_date: new Date().toISOString().split('T')[0]
   });
-
-  const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
 
   // Expandir acordeón automáticamente si venimos con accountId en la URL
   useEffect(() => {
@@ -100,6 +101,13 @@ function Services() {
     setOpenAccounts(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
+  const handleExport = () => {
+    if (!services?.length) return;
+    const formatted = formatServicesForExport(services); // Use 'services' directly as 'filteredServices' is not defined
+    exportToExcel(formatted, `Viajes_${accountId ? 'Cuenta' + accountId : 'Todos'}`);
+    addToast('Archivo Excel descargado', 'success');
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'material_id') {
@@ -140,6 +148,8 @@ function Services() {
   };
 
   const handleSave = async () => {
+    if (isSubmitting) return;
+    setIsSubmitting(true);
     const payload = {
       ...formData,
       service_account_id: Number(formData.service_account_id),
@@ -163,16 +173,24 @@ function Services() {
         }));
         setShowCustomMaterial(false);
       }
-      queryClient.invalidateQueries({ queryKey: QK.services(accountId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['services'] }),
+        queryClient.invalidateQueries({ queryKey: QK.accounts })
+      ]);
     } catch (err) {
       addToast('Error al guardar.', 'error');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleDelete = async () => {
     try {
       await api.delete(`services/${targetId}/`);
-      queryClient.invalidateQueries({ queryKey: QK.services(accountId) });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['services'] }),
+        queryClient.invalidateQueries({ queryKey: QK.accounts })
+      ]);
       setShowDeleteModal(false);
       addToast('Eliminado con éxito.', 'success');
     } catch (err) { addToast('Error al eliminar.', 'error'); }
@@ -219,9 +237,24 @@ function Services() {
               {accountId ? `Filtrado por: ${getAccountName(Number(accountId))}` : ''}
             </p>
           </div>
-          <button onClick={() => handleOpenModal()} className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-200 transition-all hover:-translate-y-1 active:scale-95 border-none">
-            <Plus size={20} /> Registrar Servicio
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
+            <button
+              onClick={handleExport}
+              disabled={!services?.length}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 px-6 py-3.5 bg-white border-2 border-slate-100 text-slate-500 hover:bg-orange-50 hover:text-[#f58d2f] hover:border-[#f58d2f]/30 rounded-2xl font-bold transition-all disabled:opacity-50"
+              title="Exportar viajes"
+            >
+              <DownloadCloud size={18} />
+              <span className="hidden sm:inline">Exportar</span>
+            </button>
+            <button
+              onClick={handleOpenModal}
+              className="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-6 py-3.5 font-bold text-white shadow-xl shadow-orange-500/30 hover:-translate-y-0.5 hover:shadow-orange-500/50 transition-all border-none"
+            >
+              <Plus className="h-5 w-5" />
+              Registrar Viaje
+            </button>
+          </div>
         </div>
 
         {/* SEARCH BAR */}
@@ -421,97 +454,21 @@ function Services() {
         </div>
       </div>
 
-      {/* MODAL */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
-            <div className="p-10">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-3xl font-black text-slate-900 tracking-tight">{formData.id ? 'Editar' : 'Nuevo'} Viaje</h2>
-                </div>
-                <button onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-2xl text-slate-300 transition-colors"><X size={24} /></button>
-              </div>
-
-              <div className="space-y-5">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Cuenta <Required /></label>
-                  <select name="service_account_id" value={formData.service_account_id} onChange={handleInputChange} className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-[#f58d2f]/30 text-sm font-bold text-slate-700 appearance-none">
-                    <option value="">Seleccionar cuenta...</option>
-                    {accounts.map(acc => <option key={acc.id} value={acc.id}>{acc.description}</option>)}
-                  </select>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Material <Required /></label>
-                  <select name="material_id" value={showCustomMaterial ? 'otro' : formData.material_id} onChange={handleInputChange} className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:border-[#f58d2f]/30 text-sm font-bold text-slate-700 appearance-none">
-                    <option value="">Seleccionar material...</option>
-                    {materials.map(mat => <option key={mat.id} value={mat.id}>{mat.name.toUpperCase()}</option>)}
-                    <option value="otro">+ ESPECIFICAR OTRO</option>
-                  </select>
-                </div>
-
-                {showCustomMaterial && (
-                  <input type="text" name="custom_material" value={formData.custom_material} onChange={handleInputChange} className="w-full px-5 py-4 bg-slate-50 border-2 border-orange-100 rounded-2xl text-sm font-bold" placeholder="Nombre del material..." />
-                )}
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Cantidad <Required /></label>
-                    <div className="relative">
-                      <input type="number"
-                        name="quantity"
-                        value={formData.quantity}
-                        onChange={handleInputChange}
-                        placeholder="0"
-                        required
-                        className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold"
-                      />
-                    </div>
-                  </div>
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Precio Unitario <Required /></label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                      <input type="number"
-                        name="price"
-                        value={formData.price}
-                        onChange={handleInputChange}
-                        placeholder="0.00"
-                        required
-                        className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 items-center">
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fecha <Required /></label>
-                    <input type="date" name="service_date" value={formData.service_date} onChange={handleInputChange} className="w-full px-5 py-4 bg-slate-50 border-none rounded-2xl text-sm font-bold" />
-                  </div>
-                  {formData.quantity > 0 && formData.price > 0 && (
-                    <div className="bg-orange-50 p-4 rounded-2xl border border-orange-100">
-                      <p className="text-[9px] font-black text-[#f58d2f] uppercase">Subtotal</p>
-                      <p className="text-lg font-black text-slate-800">{formatCurrency(formData.quantity * formData.price)}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <div className="mt-10 flex gap-4">
-                <button onClick={() => setIsModalOpen(false)} className="flex-1 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 uppercase text-[11px] tracking-widest">Cerrar</button>
-                <button onClick={handleSave}
-                  disabled={!canSubmit}
-                  className={`flex-[1.5] py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 uppercase text-[11px] tracking-widest ${!canSubmit ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                  {formData.id ? 'Guardar Cambios' : 'Confirmar Registro'}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <ServiceFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        isEditing={!!formData.id}
+        formData={formData}
+        isSubmitting={isSubmitting}
+        materials={materials}
+        accounts={accounts}
+        accountIdUrlParam={accountId}
+        showCustomMaterial={showCustomMaterial}
+        onInputChange={handleInputChange}
+        onSubmit={handleSave}
+        canSubmit={canSubmit}
+        formatCurrency={formatCurrency}
+      />
 
       <ConfirmModal
         show={showDeleteModal}

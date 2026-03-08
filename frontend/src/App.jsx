@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css'
@@ -12,7 +12,8 @@ import InvoiceCustomizationForm from './pages/InvoiceCustomizationForm'
 import EditProvider from './pages/EditProvider'
 import ForgotPassword from './components/Auth/ForgotPassword'
 import ResetPassword from './components/Auth/ResetPassword'
-import { ToastProvider } from './hooks/useToast'
+import Dashboard from './pages/Dashboard';
+import { useToast } from './hooks/useToast.jsx'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -26,23 +27,37 @@ const queryClient = new QueryClient({
 function App() {
 
   const [token, setToken] = useState(localStorage.getItem('access_token'));
+  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('access_token'));
+  const addToast = useToast();
 
   // función que se pasa al Login
-  const handleLoginSuccess = (access, refresh) => {
-    localStorage.setItem('access_token', access);
-    localStorage.setItem('refresh_token', refresh);
-    setToken(access);
+  const handleLoginSuccess = (newToken) => {
+    localStorage.setItem('access_token', newToken);
+    setToken(newToken);
+    setIsLoggedIn(true);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
+    localStorage.clear();
     setToken(null);
+    setIsLoggedIn(false);
   };
+
+  // Escuchar evento de expiración de token de axiosConfig
+  useEffect(() => {
+    const onTokenExpired = () => {
+      if (isLoggedIn) {
+        addToast('Tu sesión ha expirado por seguridad. Ingresa nuevamente.', 'error');
+        handleLogout();
+      }
+    };
+
+    window.addEventListener('tokenExpired', onTokenExpired);
+    return () => window.removeEventListener('tokenExpired', onTokenExpired);
+  }, [isLoggedIn, addToast]);
 
   return (
     <QueryClientProvider client={queryClient}>
-      <ToastProvider>
         <Router>
           {token && <Sidebar onLogout={handleLogout} />}
           {/* Main Content Layout Container */}
@@ -58,7 +73,7 @@ function App() {
             {/* Main scrollable area */}
             <main className={`flex-1 flex flex-col min-w-0 ${token ? 'pt-[80px] md:pt-6 px-4 md:px-8 pb-8' : ''}`}>
               <Routes>
-                <Route path="/" element={<Navigate to={token ? '/clientes' : '/login'} />} />
+                <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" />} />
                 <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
                 <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
@@ -92,7 +107,6 @@ function App() {
             </main>
           </div>
         </Router>
-      </ToastProvider>
     </QueryClientProvider>
   );
 }

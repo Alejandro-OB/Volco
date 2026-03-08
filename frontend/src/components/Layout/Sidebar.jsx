@@ -4,7 +4,7 @@ import { decodeToken } from '../../utils/decodeToken';
 import logoVolco from '../../assets/logo.webp';
 import {
   Users, Wallet, Truck, FileText, Mountain,
-  UserCircle, Menu, X, LogOut, ChevronDown, Settings, CreditCard, ChevronRight
+  UserCircle, Menu, X, LogOut, ChevronDown, Settings, CreditCard, ChevronRight, LayoutDashboard
 } from 'lucide-react';
 
 function Sidebar({ onLogout }) {
@@ -44,6 +44,7 @@ function Sidebar({ onLogout }) {
   if (!isLoggedIn) return null;
 
   const navLinks = [
+    { to: '/', label: 'Panel', icon: LayoutDashboard },
     { to: '/clientes', label: 'Clientes', icon: Users, end: true },
     { to: '/cuentas', label: 'Cuentas', icon: Wallet, end: true, extraActive: !!matchCuentas },
     { to: '/servicios', label: 'Servicios', icon: Truck, extraActive: !!matchServicios },
@@ -72,7 +73,7 @@ function Sidebar({ onLogout }) {
       {/* Mobile Menu Overlay */}
       {mobileMenuOpen && (
         <div
-          className="md:hidden fixed inset-0 bg-slate-900/40 backdrop-blur-sm z-50 transition-opacity"
+          className="md:hidden fixed inset-0 bg-slate-900/20 backdrop-blur-sm z-50 transition-opacity"
           onClick={() => setMobileMenuOpen(false)}
         />
       )}
