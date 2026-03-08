@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { X, Download, Maximize2, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import api from '../../api/axiosConfig';
 
@@ -42,7 +43,7 @@ function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
     }
   };
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[3000] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={(e) => e.target === e.currentTarget && onClose()}
@@ -142,6 +143,8 @@ function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 export default PdfModal;

@@ -172,102 +172,110 @@ const Clients = () => {
           </div>
         </div>
 
-        {/* Tabla — solo desktop */}
-        <div className="hidden md:block bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Cliente</th>
-                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Identificador</th>
-                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Contacto</th>
-                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">Dirección</th>
-                  <th className="px-8 py-5 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em] text-center">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  [1, 2, 3, 4].map((i) => (
-                    <tr key={i} className="border-b border-slate-50">
-                      <td className="px-8 py-5"><div className="flex items-center gap-3"><div className="skeleton h-10 w-10 rounded-2xl flex-shrink-0" /><div className="skeleton h-4 w-36" /></div></td>
-                      <td className="px-8 py-5"><div className="skeleton h-4 w-20" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-4 w-28" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-4 w-32" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-6 w-20 mx-auto" /></td>
-                    </tr>
-                  ))
-                ) : filteredClients.length > 0 ? (
-                  filteredClients.map((client) => (
-                    <tr key={client.id} className="hover:bg-slate-50/80 transition-all group">
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-2xl bg-orange-50 flex items-center justify-center text-[#f58d2f] font-bold text-lg group-hover:scale-110 transition-transform shadow-sm">
-                            {(client.name || "U").charAt(0)}
-                          </div>
-                          <div>
-                            <p className="font-bold text-[#1a202c] text-sm group-hover:text-[#f58d2f] transition-colors">{client.name}</p>
-                            <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Cliente Registrado</span>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex items-center gap-2 text-slate-600 font-bold text-sm bg-slate-100 w-fit px-3 py-1.5 rounded-lg">
-                          <Hash size={14} className="text-slate-400" />
-                          {client.id}
-                        </div>
-                      </td>
-                      <td className="px-8 py-6">
-                        <div className="flex flex-col gap-1">
-                          <div className="flex items-center gap-2 text-slate-700 font-bold text-sm">
-                            <Phone size={14} className="text-[#f58d2f]" />
-                            {client.phone_number || 'N/A'}
-                          </div>
-                          <div className="flex items-center gap-2 text-slate-400 text-[11px] font-medium">
-                            <Mail size={12} />
-                            {client.email || 'Sin correo'}
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-sm text-slate-500 italic">
-                        <div className="flex items-center gap-2">
-                          <MapPin size={14} className="flex-shrink-0 text-slate-300" />
-                          <span className="truncate max-w-[200px]">{client.address || 'Sin dirección'}</span>
-                        </div>
-                      </td>
-                      <td className="px-8 py-6 text-center">
-                        <div className="flex justify-center items-center gap-1">
-                          <div className="tooltip-wrapper">
-                            <button onClick={() => navigate(`/clientes/${client.id}/cuentas`)} className="p-2.5 text-slate-400 hover:text-green-500 hover:bg-green-50 rounded-xl transition-all"><Wallet size={18} /></button>
-                            <span className="tooltip-text">Ver Cuentas</span>
-                          </div>
-                          <div className="tooltip-wrapper">
-                            <button onClick={() => handleOpenEditModal(client)} className="p-2.5 text-slate-400 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={18} /></button>
-                            <span className="tooltip-text">Editar</span>
-                          </div>
-                          <div className="tooltip-wrapper">
-                            <button onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={18} /></button>
-                            <span className="tooltip-text">Eliminar</span>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan="5" className="px-8 py-20 text-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
-                          <Users size={36} className="text-slate-200" />
-                        </div>
-                        <p className="text-slate-700 font-bold text-base">No se encontraron clientes</p>
-                        <p className="text-slate-400 text-sm">Crea el primer cliente usando el botón superior</p>
-                      </div>
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* Directorio de Clientes - Compact Premium Grid */}
+        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            [1, 2, 3, 4, 5, 6].map((i) => (
+              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-6 animate-pulse space-y-4">
+                <div className="flex items-center gap-4">
+                  <div className="h-14 w-14 rounded-2xl bg-slate-50 flex-shrink-0" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-4 bg-slate-50 rounded-lg w-3/4" />
+                    <div className="h-3 bg-slate-50 rounded-lg w-1/2" />
+                  </div>
+                </div>
+                <div className="h-10 bg-slate-50 rounded-xl w-full" />
+              </div>
+            ))
+          ) : filteredClients.length > 0 ? (
+            filteredClients.map((client) => (
+              <div 
+                key={client.id} 
+                className="group relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white hover:border-[#f58d2f]/20 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col p-6 animate-in zoom-in-95 duration-500"
+              >
+                {/* Header: Avatar + Identity */}
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="relative flex-shrink-0">
+                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 flex items-center justify-center text-[#f58d2f] font-black text-2xl shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
+                      {(client.name || "U").charAt(0)}
+                    </div>
+                    <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
+                  </div>
+                  <div className="min-w-0">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ID-{client.id}</span>
+                      <span className="h-1 w-1 rounded-full bg-emerald-400" />
+                    </div>
+                    <h3 className="text-lg font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-colors truncate">
+                      {client.name}
+                    </h3>
+                  </div>
+                </div>
+
+                {/* Info Content */}
+                <div className="space-y-3 mb-6 flex-1">
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f] transition-colors">
+                      <Phone size={14} />
+                    </div>
+                    <span className="text-xs font-bold">{client.phone_number || 'No asignado'}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-500">
+                    <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f] transition-colors">
+                      <Mail size={14} />
+                    </div>
+                    <span className="text-xs font-bold truncate max-w-[180px]">{client.email || 'Sin correo'}</span>
+                  </div>
+                  <div className="flex items-center gap-3 text-slate-400 italic mt-1 pl-1">
+                    <MapPin size={12} className="flex-shrink-0" />
+                    <span className="text-[10px] font-medium truncate">{client.address || 'Sin dirección registrada'}</span>
+                  </div>
+                </div>
+
+                {/* Footer Actions */}
+                <div className="flex items-center gap-2 pt-4 border-t border-slate-50/50">
+                  <button 
+                    onClick={() => navigate(`/clientes/${client.id}/cuentas`)} 
+                    className="flex-1 flex items-center justify-center gap-2 py-3 bg-emerald-50 text-emerald-600 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-emerald-500 hover:text-white transition-all shadow-sm"
+                  >
+                    <Wallet size={14} />
+                    <span>Cuentas</span>
+                  </button>
+                  
+                  <div className="flex gap-1">
+                    <button 
+                      onClick={() => handleOpenEditModal(client)} 
+                      className="p-3 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"
+                    >
+                      <Edit2 size={16} />
+                    </button>
+                    <button 
+                      onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} 
+                      className="p-3 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Subtle Background Icon */}
+                <Users size={80} className="absolute -bottom-4 -right-4 text-slate-900/[0.02] -rotate-12 pointer-events-none" />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full bg-white rounded-[3rem] border border-slate-100 p-24 text-center shadow-sm">
+              <div className="flex flex-col items-center gap-6">
+                <div className="h-24 w-24 rounded-[2.5rem] bg-slate-50 flex items-center justify-center text-slate-200">
+                  <Users size={48} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900">Directorio Vacío</h3>
+                  <p className="text-slate-400 text-sm">Comienza agregando tu primer cliente.</p>
+                </div>
+                <button onClick={handleAddNew} className="px-8 py-3.5 bg-[#f58d2f] text-white rounded-2xl font-bold shadow-xl shadow-orange-500/20">Agregar Cliente</button>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Cards — solo móvil */}

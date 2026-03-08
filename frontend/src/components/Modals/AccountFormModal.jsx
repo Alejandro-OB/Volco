@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { Type, ChevronDown, Check, Plus, X, Loader2 } from 'lucide-react';
 
 const AccountFormModal = ({
@@ -17,8 +18,8 @@ const AccountFormModal = ({
 
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
 
-  return (
-    <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+  const modalContent = (
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-md" onClick={onClose}></div>
       <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-xl overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-10">
@@ -115,6 +116,8 @@ const AccountFormModal = ({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default AccountFormModal;

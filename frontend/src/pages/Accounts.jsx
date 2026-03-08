@@ -50,7 +50,7 @@ const Accounts = () => {
 
   // --- MODALES DE APOYO ---
   const [showConfirmModal, setShowConfirmModal] = useState(false);
-  const [selectedId, setSelectedId] = useState(null);
+  const [deleteId, setDeleteId] = useState(null);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [showPdfModal, setShowPdfModal] = useState(false);
   const [selectedInvoiceId, setSelectedInvoiceId] = useState(null);
@@ -302,15 +302,6 @@ const Accounts = () => {
         <div className="hidden md:block bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-slate-100 overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Identificación de Cuenta</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest">Periodo</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Valor Total</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Estado</th>
-                  <th className="px-8 py-5 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Acciones</th>
-                </tr>
-              </thead>
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   [1, 2, 3, 4, 5].map(i => (
@@ -325,20 +316,89 @@ const Accounts = () => {
                 ) : Object.keys(groupedAccounts).length > 0 ? (
                   Object.entries(groupedAccounts).map(([clientName, clientAccounts]) => (
                     <React.Fragment key={clientName}>
-                      <tr className="bg-slate-50/80 sticky top-0 z-10 backdrop-blur-sm">
-                        <td colSpan="5" className="px-8 py-4">
-                          <button onClick={() => toggleClient(clientName)} className="flex items-center gap-4 w-full group">
-                            <div className={`p-1 rounded-lg transition-all ${!openClients[clientName] ? 'bg-orange-100 text-[#f58d2f]' : 'bg-slate-200 text-slate-500'}`}>
-                              {openClients[clientName] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                            </div>
-                            <Briefcase size={18} className="text-[#f58d2f]" />
-                            <span className="text-sm font-black text-slate-800 uppercase tracking-tighter">{clientName}</span>
-                            <div className="h-[1px] flex-1 bg-slate-200 group-hover:bg-orange-200 transition-colors"></div>
-                            <span className="text-[10px] font-black text-slate-400 uppercase bg-white px-3 py-1 rounded-full border border-slate-100">{clientAccounts.length} cuentas</span>
-                          </button>
+                      <tr className="bg-transparent sticky top-0 z-10">
+                        <td colSpan="5" className="px-4 py-6">
+                          {(() => {
+                            const clientTotal = clientAccounts.reduce((sum, acc) => {
+                              const accServices = services.filter(s => s.service_account_id === acc.id);
+                              return sum + accServices.reduce((sSum, s) => sSum + (Number(s.price) * Number(s.quantity)), 0);
+                            }, 0);
+
+                            return (
+                              <button 
+                                onClick={() => toggleClient(clientName)} 
+                                className={`group w-full relative overflow-hidden transition-all duration-500 rounded-[2rem] border ${
+                                  openClients[clientName] 
+                                    ? 'bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border-[#f58d2f]/20 scale-[1.01]' 
+                                    : 'bg-white/80 backdrop-blur-xl border-white hover:bg-white hover:shadow-xl'
+                                }`}
+                              >
+                                <div className="p-6 md:grid md:grid-cols-[40%_1fr_1fr_auto] items-center gap-6 text-left">
+                                  {/* Icon & Label */}
+                                  <div className="flex items-center gap-4">
+                                    <div className={`w-14 h-14 flex-shrink-0 flex items-center justify-center rounded-2xl shadow-lg transition-all duration-300 ${
+                                      openClients[clientName] 
+                                        ? 'bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] text-white rotate-3 translate-x-1' 
+                                        : 'bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f]'
+                                    }`}>
+                                      <Briefcase size={26} />
+                                    </div>
+                                    <div className="min-w-0 pr-4">
+                                      <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
+                                        openClients[clientName] ? 'text-[#f58d2f]' : 'text-slate-400'
+                                      }`}>
+                                        Cliente Asociado
+                                      </span>
+                                      <h3 className="text-lg font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-all truncate">
+                                        {clientName}
+                                      </h3>
+                                    </div>
+                                  </div>
+
+                                  {/* Summary Stats - Aligned */}
+                                  <div className="flex justify-start md:justify-center">
+                                    <div className="px-6 py-2.5 bg-slate-50 rounded-2xl border border-slate-100/50 flex flex-col items-center min-w-[120px]">
+                                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cuentas</span>
+                                      <span className="text-base font-black text-slate-700">{clientAccounts.length}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex justify-start md:justify-center">
+                                    <div className="px-6 py-2.5 bg-[#1b4332]/5 rounded-2xl border border-[#1b4332]/10 flex flex-col items-center min-w-[180px]">
+                                      <span className="text-[10px] font-bold text-[#1b4332]/60 uppercase tracking-widest">Cartera Total</span>
+                                      <span className="text-base font-black text-[#1b4332]">{formatCurrency(clientTotal)}</span>
+                                    </div>
+                                  </div>
+
+                                  {/* Action Indicator */}
+                                  <div className="flex items-center justify-end">
+                                    <div className={`w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 group-hover:bg-orange-50 transition-all ${
+                                      openClients[clientName] ? 'rotate-180 bg-orange-100 text-[#f58d2f]' : 'text-slate-400'
+                                    }`}>
+                                      <ChevronDown size={22} />
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Bottom Glow Line */}
+                                {openClients[clientName] && (
+                                  <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#f58d2f]/40 to-transparent" />
+                                )}
+                              </button>
+                            );
+                          })()}
                         </td>
                       </tr>
-                      {openClients[clientName] && clientAccounts.map((account) => {
+                      {openClients[clientName] && (
+                        <tr className="bg-slate-50/50">
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Identificación de Cuenta</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Periodo</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right border-b border-slate-100">Valor Total</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-100">Estado</th>
+                          <th className="px-8 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center border-b border-slate-100">Acciones</th>
+                        </tr>
+                      )}
+                      {openClients[clientName] && clientAccounts.map((account, index) => {
                         const hasInvoice = invoices.some(i => i.service_account_id === account.id);
 
                         // Cálculo de total acumulado
@@ -347,7 +407,10 @@ const Accounts = () => {
                         const totalValue = accountServices.reduce((sum, s) => sum + (Number(s.price) * Number(s.quantity)), 0);
 
                         return (
-                          <tr key={account.id} className="hover:bg-slate-50/50 transition-all group animate-in slide-in-from-top-1 duration-200">
+                          <tr 
+                            key={account.id} 
+                            className={`transition-all group animate-in slide-in-from-top-1 duration-200 ${index % 2 === 1 ? 'bg-slate-50/30' : 'bg-white'}`}
+                          >
                             <td className="px-8 py-6">
                               <div className="space-y-1">
                                 <p className="font-black text-[#1a202c] text-sm group-hover:text-[#f58d2f] transition-colors">
@@ -366,11 +429,11 @@ const Accounts = () => {
                             </td>
                             <td className="px-8 py-6 text-center">
                               <div className="flex flex-col items-center gap-1">
-                                <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase border ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-amber-50 text-amber-600 border-amber-100'}`}>
+                                <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-black uppercase border shadow-sm ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-100/50 text-[#f58d2f] border-orange-200'}`}>
                                   {hasInvoice
                                     ? <CheckCircle size={10} />
-                                    : <span className="w-2 h-2 rounded-full bg-amber-400 pulse-dot" />}
-                                  {hasInvoice ? 'Facturado' : 'Pendiente'}
+                                    : <div className="w-1.5 h-1.5 rounded-full bg-[#f58d2f] animate-pulse" />}
+                                  {hasInvoice ? 'Facturado' : 'Abono Pendiente'}
                                 </span>
                                 {!hasInvoice && !hasServices && (
                                   <div className="flex items-center gap-1 text-[9px] text-orange-500 font-bold animate-pulse">

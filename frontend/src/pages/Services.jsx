@@ -124,7 +124,11 @@ function Services() {
     }
   };
 
-  const handleOpenModal = (service = null) => {
+  const handleOpenModal = (data = null) => {
+    // Si 'data' es un evento (onClick={handleOpenModal}), lo ignoramos
+    const service = (data && data.id && !data.nativeEvent) ? data : null;
+    const preAccountId = (typeof data === 'number' || typeof data === 'string') ? data : null;
+
     if (service) {
       const isCustom = !!service.custom_material;
       setShowCustomMaterial(isCustom);
@@ -139,7 +143,7 @@ function Services() {
       setShowCustomMaterial(false);
       setFormData({
         id: null,
-        service_account_id: accountId || '', // Si venimos de una cuenta, la pre-seleccionamos
+        service_account_id: preAccountId || accountId || '', // Pre-selección inteligente
         material_id: '', custom_material: '', quantity: '', price: '',
         service_date: new Date().toISOString().split('T')[0]
       });
@@ -248,7 +252,7 @@ function Services() {
               <span className="hidden sm:inline">Exportar</span>
             </button>
             <button
-              onClick={handleOpenModal}
+              onClick={() => handleOpenModal()}
               className="flex-1 lg:flex-none flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-6 py-3.5 font-bold text-white shadow-xl shadow-orange-500/30 hover:-translate-y-0.5 hover:shadow-orange-500/50 transition-all border-none"
             >
               <Plus className="h-5 w-5" />
@@ -275,15 +279,6 @@ function Services() {
         <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
           <div className="overflow-x-auto">
             <table className="w-full text-left">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100 text-[11px] font-black text-slate-400 uppercase tracking-[0.2em]">
-                  <th className="px-8 py-6">Material</th>
-                  <th className="px-8 py-6 text-center">Fecha</th>
-                  <th className="px-8 py-6 text-center">Cantidad</th>
-                  <th className="px-8 py-6 text-right">Total</th>
-                  <th className="px-8 py-6 text-center">Acciones</th>
-                </tr>
-              </thead>
               <tbody className="divide-y divide-slate-50">
                 {loading ? (
                   [1, 2, 3].map(i => (
@@ -309,37 +304,116 @@ function Services() {
                   </tr>
                 ) : Object.entries(groupedData).map(([clientName, clientAccounts]) => (
                   <React.Fragment key={clientName}>
-                    {/* ENCABEZADO CLIENTE */}
-                    <tr className="bg-slate-100/90 sticky top-0 z-20 backdrop-blur-sm shadow-sm border-b border-slate-200">
-                      <td colSpan="5" className="px-8 py-5">
-                        <button onClick={() => toggleClient(clientName)} className="flex items-center gap-4 w-full group">
-                          <div className={`p-1 rounded-lg transition-all ${!openClients[clientName] ? 'bg-orange-100 text-[#f58d2f]' : 'bg-slate-300 text-slate-600'}`}>
-                            {openClients[clientName] ? <ChevronDown size={18} /> : <ChevronRight size={18} />}
-                          </div>
-                          <Briefcase size={20} className="text-[#f58d2f]" />
-                          <span className="text-base font-black text-slate-900 uppercase tracking-tighter">{clientName}</span>
-                          <div className="h-[2px] flex-1 bg-slate-300 group-hover:bg-orange-300 transition-colors"></div>
-                          <span className="text-[11px] font-black text-slate-500 uppercase bg-white px-3 py-1 rounded-full border border-slate-200 shadow-sm">{Object.keys(clientAccounts).length} Cuentas</span>
-                        </button>
+                    {/* ENCABEZADO CLIENTE - PREMIUM CARD */}
+                    <tr className="bg-transparent sticky top-0 z-20">
+                      <td colSpan="5" className="px-4 py-6">
+                        {(() => {
+                          const clientTotal = Object.values(clientAccounts).reduce((sum, accSvcs) => 
+                            sum + accSvcs.reduce((sSum, s) => sSum + (Number(s.price) * Number(s.quantity)), 0), 0);
+
+                          return (
+                            <button 
+                              onClick={() => toggleClient(clientName)} 
+                              className={`group w-full relative overflow-hidden transition-all duration-500 rounded-[2rem] border ${
+                                openClients[clientName] 
+                                  ? 'bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border-[#f58d2f]/20 scale-[1.01]' 
+                                  : 'bg-white/80 backdrop-blur-xl border-white hover:bg-white hover:shadow-xl'
+                              }`}
+                            >
+                              <div className="p-6 md:grid md:grid-cols-[40%_1fr_1fr_auto] items-center gap-6 text-left">
+                                <div className="flex items-center gap-4">
+                                  <div className={`w-14 h-14 flex-shrink-0 flex items-center justify-center rounded-2xl shadow-lg transition-all duration-300 ${
+                                    openClients[clientName] 
+                                      ? 'bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] text-white rotate-3 translate-x-1' 
+                                      : 'bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f]'
+                                  }`}>
+                                    <Briefcase size={26} />
+                                  </div>
+                                  <div className="min-w-0 pr-4">
+                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
+                                      openClients[clientName] ? 'text-[#f58d2f]' : 'text-slate-400'
+                                    }`}>
+                                      Cliente Asociado
+                                    </span>
+                                    <h3 className="text-lg font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-all truncate">
+                                      {clientName}
+                                    </h3>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-start md:justify-center">
+                                  <div className="px-6 py-2.5 bg-slate-50 rounded-2xl border border-slate-100/50 flex flex-col items-center min-w-[120px]">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cuentas</span>
+                                    <span className="text-base font-black text-slate-700">{Object.keys(clientAccounts).length}</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex justify-start md:justify-center">
+                                  <div className="px-6 py-2.5 bg-[#1b4332]/5 rounded-2xl border border-[#1b4332]/10 flex flex-col items-center min-w-[180px]">
+                                    <span className="text-[10px] font-bold text-[#1b4332]/60 uppercase tracking-widest">Cartera Total</span>
+                                    <span className="text-base font-black text-[#1b4332]">{formatCurrency(clientTotal)}</span>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-end">
+                                  <div className={`w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 group-hover:bg-orange-50 transition-all ${
+                                    openClients[clientName] ? 'rotate-180 bg-orange-100 text-[#f58d2f]' : 'text-slate-400'
+                                  }`}>
+                                    <ChevronDown size={22} />
+                                  </div>
+                                </div>
+                              </div>
+                              {openClients[clientName] && (
+                                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#f58d2f]/40 to-transparent" />
+                              )}
+                            </button>
+                          );
+                        })()}
                       </td>
                     </tr>
 
                     {/* ACORDEON DE CUENTAS POR CLIENTE */}
                     {openClients[clientName] && Object.entries(clientAccounts).map(([accountName, accountServices]) => (
                       <React.Fragment key={accountName}>
-                        <tr className="bg-slate-50/80 sticky top-[72px] z-10 backdrop-blur-sm border-b border-slate-100">
-                          <td colSpan="5" className="px-8 py-4 pl-14">
-                            <button onClick={() => toggleAccount(accountName)} className="flex items-center gap-4 w-full group">
-                              <div className={`p-1 rounded-lg transition-all ${!openAccounts[accountName] ? 'bg-orange-50 text-[#f58d2f]' : 'bg-slate-200 text-slate-400'}`}>
-                                {openAccounts[accountName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                        <tr className="bg-white/50 sticky top-[95px] z-10 backdrop-blur-sm border-b border-slate-100">
+                          <td colSpan="5" className="px-8 py-4 pl-12">
+                            <button 
+                              onClick={() => toggleAccount(accountName)} 
+                              className={`flex items-center gap-4 w-full p-3 rounded-2xl transition-all group ${openAccounts[accountName] ? 'bg-white shadow-sm ring-1 ring-slate-100' : 'hover:bg-white'}`}
+                            >
+                              <div className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${openAccounts[accountName] ? 'bg-orange-100 text-[#f58d2f]' : 'bg-slate-100 text-slate-400'}`}>
+                                {openAccounts[accountName] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
                               </div>
-                              <Wallet size={16} className="text-[#f58d2f]" />
-                              <span className="text-sm font-black text-slate-700 uppercase tracking-tighter">{accountName}</span>
-                              <div className="h-[1px] flex-1 bg-slate-200 group-hover:bg-orange-200 transition-colors"></div>
-                              <span className="text-[10px] font-black text-slate-400 uppercase bg-white px-3 py-1 rounded-full border border-slate-100">{accountServices.length} vjs</span>
+                              <div className="flex flex-col items-start translate-y-[-1px]">
+                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">Cuenta de Servicio</span>
+                                <span className="text-sm font-black text-slate-700 tracking-tight">{accountName}</span>
+                              </div>
+                              <div className="flex-1 h-[1px] bg-slate-100/50 group-hover:bg-orange-100 transition-colors"></div>
+                              <div className="flex items-center gap-4">
+                                <button 
+                                  onClick={(e) => { e.stopPropagation(); handleOpenModal(accountServices[0]?.service_account_id); }}
+                                  className="flex items-center gap-2 px-4 py-2 bg-orange-50 text-[#f58d2f] rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-[#f58d2f] hover:text-white transition-all border border-orange-100/50"
+                                >
+                                  <Plus size={12} />
+                                  <span>Registrar</span>
+                                </button>
+                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
+                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{accountServices.length} viajes</span>
+                                  <Wallet size={16} className="text-orange-200" />
+                                </div>
+                              </div>
                             </button>
                           </td>
                         </tr>
+                        {openAccounts[accountName] && (
+                          <tr className="bg-slate-50/30">
+                            <th className="px-8 py-3 pl-20 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Material</th>
+                            <th className="px-8 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Fecha</th>
+                            <th className="px-8 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Cantidad / Precio</th>
+                            <th className="px-8 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Total</th>
+                            <th className="px-8 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Acciones</th>
+                          </tr>
+                        )}
                         {openAccounts[accountName] && accountServices.map((s) => (
                           <tr key={s.id} className="hover:bg-slate-50/30 transition-all group animate-in slide-in-from-top-1 duration-200">
                             <td className="px-8 py-6 pl-20">
@@ -356,7 +430,7 @@ function Services() {
                             <td className="px-8 py-6 text-center">
                               <div className="flex flex-col">
                                 <span className="font-black text-slate-800 text-sm uppercase">{s.quantity} Viajes</span>
-                                <span className="text-[10px] text-slate-400 font-bold italic">@{formatCurrency(s.price)}</span>
+                                <span className="text-[10px] text-slate-400 font-bold italic">c/u {formatCurrency(s.price)}</span>
                               </div>
                             </td>
                             <td className="px-8 py-6 text-right">
@@ -427,6 +501,12 @@ function Services() {
                     </div>
                     <Wallet size={12} className="text-[#f58d2f]" />
                     <span className="font-black text-slate-600 text-xs uppercase tracking-tight flex-1 text-left">{accountName}</span>
+                    <button 
+                      onClick={(e) => { e.stopPropagation(); handleOpenModal(accountServices[0]?.service_account_id); }}
+                      className="p-1.5 bg-orange-50 text-[#f58d2f] rounded-lg border border-orange-100"
+                    >
+                      <Plus size={12} />
+                    </button>
                     <span className="text-[9px] font-black text-slate-400">{accountServices.length} vjs</span>
                   </button>
                   {openAccounts[accountName] && accountServices.map(s => (

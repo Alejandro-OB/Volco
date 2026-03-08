@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { AlertTriangle, X, Info, Trash2 } from 'lucide-react';
 
 function ConfirmModal({
@@ -37,7 +38,7 @@ function ConfirmModal({
 
   const { icon, bg, text, border } = iconConfig[variant];
 
-  return (
+  const modalContent = (
     <div
       className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/50 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={onClose}
@@ -87,6 +88,8 @@ function ConfirmModal({
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 }
 
 export default ConfirmModal;

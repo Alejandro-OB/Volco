@@ -1,4 +1,5 @@
 import React from 'react';
+import { createPortal } from 'react-dom';
 import { DollarSign, X, Check, Plus, Loader2 } from 'lucide-react';
 
 const ServiceFormModal = ({
@@ -20,7 +21,7 @@ const ServiceFormModal = ({
 
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
 
-  return (
+  const modalContent = (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={onClose}></div>
       <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
@@ -123,13 +124,15 @@ const ServiceFormModal = ({
             <button onClick={onSubmit}
               disabled={!canSubmit || isSubmitting}
               className={`flex-[1.5] py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 uppercase text-[11px] tracking-widest ${(!canSubmit || isSubmitting) ? 'opacity-50 cursor-not-allowed' : ''}`}>
-              {isSubmitting ? 'Procesando...' : (isEditing ? 'Guardar Cambios' : 'Confirmar Registro')}
+              {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : (isEditing ? 'Guardar Cambios' : 'Confirmar Registro')}
             </button>
           </div>
         </div>
       </div>
     </div>
   );
+
+  return createPortal(modalContent, document.body);
 };
 
 export default ServiceFormModal;

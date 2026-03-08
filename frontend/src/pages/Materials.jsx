@@ -136,70 +136,81 @@ const Materials = () => {
           />
         </div>
 
-        {/* TABLA DE CONTENIDO */}
-        <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-50/50 border-b border-slate-100">
-                  <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest w-full">Material</th>
-                  <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right whitespace-nowrap">Precio Base</th>
-                  <th className="px-6 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center whitespace-nowrap">Acciones</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  [1, 2, 3, 4].map(i => (
-                    <tr key={i}>
-                      <td className="px-6 py-3"><div className="skeleton h-8 w-3/4" /></td>
-                      <td className="px-6 py-3"><div className="skeleton h-6 w-24 ml-auto" /></td>
-                      <td className="px-6 py-3"><div className="skeleton h-6 w-16 mx-auto" /></td>
-                    </tr>
-                  ))
-                ) : filteredMaterials.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/50 transition-all group border-b border-slate-50">
-                    <td className="px-6 py-3">
-                      <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] group-hover:bg-[#f58d2f] group-hover:text-white transition-all flex-shrink-0">
-                          <Box size={15} />
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-800 text-sm">{m.name}</p>
-                          <p className="text-[10px] text-slate-400 font-mono">MAT-{m.id}</p>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-3 text-right">
-                      <span className="text-sm font-black text-slate-800">{formatCurrency(m.price)}</span>
-                    </td>
-                    <td className="px-6 py-3">
-                      <div className="flex justify-center items-center gap-1">
-                        <div className="tooltip-wrapper">
-                          <button onClick={() => handleOpenModal(m)} className="p-2 text-slate-300 hover:text-blue-500 hover:bg-blue-50 rounded-xl transition-all"><Edit2 size={15} /></button>
-                          <span className="tooltip-text">Editar</span>
-                        </div>
-                        <div className="tooltip-wrapper">
-                          <button onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} className="p-2 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all"><Trash2 size={15} /></button>
-                          <span className="tooltip-text">Eliminar</span>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {!loading && filteredMaterials.length === 0 && (
-              <div className="px-8 py-20 text-center">
-                <div className="flex flex-col items-center gap-3">
-                  <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
-                    <Box size={36} className="text-slate-200" />
+        {/* Catálogo de Materiales - Premium Grid Layer */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {loading ? (
+            [1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-8 animate-pulse space-y-4">
+                <div className="h-16 w-16 rounded-2xl bg-slate-50 mx-auto" />
+                <div className="h-5 bg-slate-50 rounded-lg w-1/2 mx-auto" />
+                <div className="h-4 bg-slate-50 rounded-lg w-1/3 mx-auto" />
+              </div>
+            ))
+          ) : filteredMaterials.length > 0 ? (
+            filteredMaterials.map((m) => (
+              <div 
+                key={m.id} 
+                className="group relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white hover:border-[#f58d2f]/20 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col items-center text-center p-8 animate-in zoom-in-95 duration-500"
+              >
+                {/* Visual Icon Section */}
+                <div className="relative mb-6">
+                  <div className="h-20 w-20 rounded-[2.25rem] bg-gradient-to-br from-orange-50 to-white border border-orange-100 flex items-center justify-center text-[#f58d2f] shadow-sm group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500">
+                    <Box size={32} />
                   </div>
-                  <p className="text-slate-700 font-bold text-base">Sin materiales registrados</p>
-                  <p className="text-slate-400 text-sm">Agrega materiales para usarlos en los servicios</p>
+                  <div className="absolute -top-2 -right-2 px-3 py-1 bg-white border border-slate-100 rounded-full shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-widest">
+                    #{m.id}
+                  </div>
+                </div>
+
+                {/* Info Section */}
+                <div className="flex-1 space-y-1 mb-6">
+                  <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-colors uppercase">
+                    {m.name}
+                  </h3>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Material Suministrado</p>
+                </div>
+
+                {/* Price Hero Section */}
+                <div className="w-full bg-slate-50 rounded-3xl p-5 border border-slate-100/50 group-hover:bg-orange-50/50 transition-colors">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Precio Base por Viaje</span>
+                  <div className="text-2xl font-black text-slate-900 tracking-tight">
+                    {formatCurrency(m.price)}
+                  </div>
+                </div>
+
+                {/* Action Floating Buttons */}
+                <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
+                  <button 
+                    onClick={() => handleOpenModal(m)} 
+                    className="p-3 bg-white shadow-xl hover:text-blue-500 rounded-2xl border border-slate-100 transition-all"
+                  >
+                    <Edit2 size={16} />
+                  </button>
+                  <button 
+                    onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
+                    className="p-3 bg-white shadow-xl hover:text-red-500 rounded-2xl border border-slate-100 transition-all"
+                  >
+                    <Trash2 size={16} />
+                  </button>
+                </div>
+
+                {/* Bottom Glow Line */}
+                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#f58d2f]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+              </div>
+            ))
+          ) : (
+            <div className="col-span-full py-20 bg-white rounded-[3rem] border border-slate-100 text-center shadow-sm">
+              <div className="flex flex-col items-center gap-6">
+                <div className="h-24 w-24 rounded-[2.5rem] bg-slate-50 flex items-center justify-center text-slate-200">
+                  <Box size={48} />
+                </div>
+                <div className="space-y-1">
+                  <h3 className="text-xl font-black text-slate-900">Catálogo Vacío</h3>
+                  <p className="text-slate-400 text-sm max-w-xs mx-auto">Agrega materiales con sus precios base para poder registrarlos en los viajes de servicios.</p>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
       </div>
 
