@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { NavLink, useNavigate, useLocation, useMatch } from 'react-router-dom';
 import { decodeToken } from '../../utils/decodeToken';
-import logoVolco from '../../assets/logo.webp';
+import logoVolco from '../../assets/logo_new.png';
 import {
   Users, Wallet, Truck, FileText, Mountain,
   UserCircle, Menu, X, LogOut, ChevronDown, Settings, CreditCard, ChevronRight, LayoutDashboard
@@ -97,7 +97,7 @@ function Sidebar({ onLogout }) {
           <img
             src={logoVolco}
             alt="Volco"
-            className="h-14 w-auto object-contain cursor-pointer transition-transform hover:scale-[1.03] duration-300"
+            className="h-20 w-auto object-contain cursor-pointer transition-transform hover:scale-[1.03] duration-300"
             onClick={() => navigate('/clientes')}
           />
           <div className="flex flex-col items-center mt-1">

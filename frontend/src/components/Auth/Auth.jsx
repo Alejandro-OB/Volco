@@ -14,7 +14,7 @@ import {
   EyeOff
 } from "lucide-react";
 import api from "../../api/axiosConfig";
-import logoVolco from "../../assets/logo.webp";
+import logoVolco from "../../assets/logo_new.png";
 
 function Auth({ onLoginSuccess }) {
   const [isLogin, setIsLogin] = useState(true);

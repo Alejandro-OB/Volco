@@ -141,14 +141,19 @@ function InvoiceCustomizationForm() {
   };
 
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#f8fafc] flex flex-col items-center justify-center">
-        <Loader2 className="w-10 h-10 animate-spin text-[#f58d2f] mb-4" />
-        <p className="text-slate-400 font-black text-[10px] uppercase tracking-widest">Sincronizando Branding...</p>
-      </div>
-    );
-  }
+  const SkeletonTitle = () => (
+    <div className="flex items-center gap-3">
+      <div className="h-11 w-11 bg-slate-100 rounded-2xl animate-pulse" />
+      <div className="h-6 w-48 bg-slate-200 rounded-lg animate-pulse" />
+    </div>
+  );
+
+  const SkeletonInput = () => (
+    <div className="space-y-2">
+      <div className="h-3 w-24 bg-slate-100 rounded-full animate-pulse ml-1" />
+      <div className="h-14 bg-slate-50 rounded-2xl animate-pulse" />
+    </div>
+  );
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12">
@@ -156,27 +161,37 @@ function InvoiceCustomizationForm() {
 
         {/* ENCABEZADO */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          <div className="space-y-4">
-            <div>
-              <div className="flex items-center gap-3 mb-2">
-                {accountId && <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-100">Cuenta Específica</span>}
-                {!accountId && <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-purple-100">Global</span>}
+          <div className="space-y-4 flex-1">
+            {loading ? (
+              <div className="space-y-4">
+                <div className="h-4 w-20 bg-slate-100 rounded-full animate-pulse" />
+                <div className="h-12 w-64 bg-slate-200 rounded-2xl animate-pulse" />
+                <div className="h-4 w-full max-w-md bg-slate-50 rounded-lg animate-pulse" />
               </div>
-              <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Branding</h1>
-              <p className="text-slate-500 font-medium mt-1">
-                {accountId ? 'Estás personalizando el diseño exclusivo para una cuenta en particular. Esto sobreescribirá el Global solo para esta cuenta.' : 'Personaliza la apariencia y datos de tus facturas para todo el sistema.'}
-              </p>
-            </div>
+            ) : (
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  {accountId && <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-100">Cuenta Específica</span>}
+                  {!accountId && <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-purple-100">Global</span>}
+                </div>
+                <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Branding</h1>
+                <p className="text-slate-500 font-medium mt-1">
+                  {accountId ? 'Estás personalizando el diseño exclusivo para una cuenta en particular. Esto sobreescribirá el Global solo para esta cuenta.' : 'Personaliza la apariencia y datos de tus facturas para todo el sistema.'}
+                </p>
+              </div>
+            )}
           </div>
 
-          <button
-            onClick={handleSubmit}
-            disabled={saving}
-            className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-200 transition-all hover:-translate-y-1 active:scale-95 border-none"
-          >
-            {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-            {saving ? 'Guardando...' : 'Guardar Cambios'}
-          </button>
+          {!loading && (
+            <button
+              onClick={handleSubmit}
+              disabled={saving}
+              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-200 transition-all hover:-translate-y-1 active:scale-95 border-none"
+            >
+              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
+              {saving ? 'Guardando...' : 'Guardar Cambios'}
+            </button>
+          )}
         </div>
 
 
@@ -187,50 +202,74 @@ function InvoiceCustomizationForm() {
 
             {/* SECCIÓN IMÁGENES */}
             <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100">
-              <SectionTitle icon={<ImageIcon size={20} />} title="Identidad Visual" />
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
-                <ImageUploader
-                  label="Logo de la Empresa"
-                  name="logo"
-                  preview={custom.logo_preview || custom.logo_url}
-                  onChange={handleFileChange}
-                />
-                <ImageUploader
-                  label="Firma Autorizada"
-                  name="signature"
-                  preview={custom.signature_preview || custom.signature_url}
-                  onChange={handleFileChange}
-                />
-              </div>
+              {loading ? (
+                <div className="space-y-8">
+                  <SkeletonTitle />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                    <div className="h-48 bg-slate-50 rounded-[2.5rem] animate-pulse" />
+                    <div className="h-48 bg-slate-50 rounded-[2.5rem] animate-pulse" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <SectionTitle icon={<ImageIcon size={20} />} title="Identidad Visual" />
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-8">
+                    <ImageUploader
+                      label="Logo de la Empresa"
+                      name="logo"
+                      preview={custom.logo_preview || custom.logo_url}
+                      onChange={handleFileChange}
+                    />
+                    <ImageUploader
+                      label="Firma Autorizada"
+                      name="signature"
+                      preview={custom.signature_preview || custom.signature_url}
+                      onChange={handleFileChange}
+                    />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* SECCIÓN TEXTOS */}
             <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100">
-              <SectionTitle icon={<FileText size={20} />} title="Contenido de Factura" />
-              <div className="space-y-6 mt-8">
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Encabezado de Servicios</label>
-                  <textarea
-                    name="service_text"
-                    value={custom.service_text || ''}
-                    onChange={handleChange}
-                    rows={3}
-                    className="w-full bg-slate-50 border-2 border-transparent rounded-[2rem] px-8 py-6 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
-                    placeholder="Escribe la descripción general de tus servicios..."
-                  />
+              {loading ? (
+                <div className="space-y-8">
+                  <SkeletonTitle />
+                  <div className="space-y-6 mt-8">
+                    <div className="h-32 bg-slate-50 rounded-[2rem] animate-pulse" />
+                    <div className="h-32 bg-slate-50 rounded-[2rem] animate-pulse" />
+                  </div>
                 </div>
-                <div className="space-y-2">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mensaje de Pie de Página</label>
-                  <textarea
-                    name="footer_message"
-                    value={custom.footer_message || ''}
-                    onChange={handleChange}
-                    rows={3}
-                    className="w-full bg-slate-50 border-2 border-transparent rounded-[2rem] px-8 py-6 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
-                    placeholder="Términos, condiciones o mensajes de agradecimiento..."
-                  />
-                </div>
-              </div>
+              ) : (
+                <>
+                  <SectionTitle icon={<FileText size={20} />} title="Contenido de Factura" />
+                  <div className="space-y-6 mt-8">
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Encabezado de Servicios</label>
+                      <textarea
+                        name="service_text"
+                        value={custom.service_text || ''}
+                        onChange={handleChange}
+                        rows={3}
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-[2rem] px-8 py-6 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
+                        placeholder="Escribe la descripción general de tus servicios..."
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mensaje de Pie de Página</label>
+                      <textarea
+                        name="footer_message"
+                        value={custom.footer_message || ''}
+                        onChange={handleChange}
+                        rows={3}
+                        className="w-full bg-slate-50 border-2 border-transparent rounded-[2rem] px-8 py-6 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
+                        placeholder="Términos, condiciones o mensajes de agradecimiento..."
+                      />
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
@@ -239,37 +278,67 @@ function InvoiceCustomizationForm() {
 
             {/* DATOS BANCARIOS */}
             <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100">
-              <SectionTitle icon={<CreditCard size={20} />} title="Datos de Pago" />
-              <div className="space-y-4 mt-8">
-                <SidebarInput label="Nombre del Banco" name="provider_bank" value={custom.provider_bank} onChange={handleChange} />
-                <SidebarInput label="Tipo de Cuenta" name="provider_type_account" value={custom.provider_type_account} onChange={handleChange} />
-                <SidebarInput label="Número de Cuenta" name="provider_number_account" value={custom.provider_number_account} onChange={handleChange} />
-              </div>
+              {loading ? (
+                <div className="space-y-8">
+                  <SkeletonTitle />
+                  <div className="space-y-4 mt-8">
+                    {[1, 2, 3].map(i => <SkeletonInput key={i} />)}
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <SectionTitle icon={<CreditCard size={20} />} title="Datos de Pago" />
+                  <div className="space-y-4 mt-8">
+                    <SidebarInput label="Nombre del Banco" name="provider_bank" value={custom.provider_bank} onChange={handleChange} />
+                    <SidebarInput label="Tipo de Cuenta" name="provider_type_account" value={custom.provider_type_account} onChange={handleChange} />
+                    <SidebarInput label="Número de Cuenta" name="provider_number_account" value={custom.provider_number_account} onChange={handleChange} />
+                  </div>
+                </>
+              )}
             </div>
 
             {/* CONFIGURACIÓN DE DISEÑO */}
             <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100">
-              <SectionTitle icon={<Layout size={20} />} title="Ajustes de Diseño" />
-              <div className="mt-8 space-y-4">
-                <ToggleItem label="Mostrar Logo" name="include_logo" checked={custom.include_logo} onChange={handleChange} />
-                <ToggleItem label="Mostrar Firma" name="include_signature" checked={custom.include_signature} onChange={handleChange} />
-                <ToggleItem label="Información Bancaria" name="include_bank_info" checked={custom.include_bank_info} onChange={handleChange} />
-                <ToggleItem label="Pie de Página" name="include_footer" checked={custom.include_footer} onChange={handleChange} />
-
-                <div className="pt-6 mt-4 border-t border-slate-50">
-                  <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tamaño de Hoja</label>
-                  <select
-                    name="page_size"
-                    value={custom.page_size || 'A4'}
-                    onChange={handleChange}
-                    className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-black text-slate-700 appearance-none cursor-pointer"
-                  >
-                    <option value="A4">A4 (Estándar)</option>
-                    <option value="Letter">Carta (8.5" x 11")</option>
-                    <option value="Legal">Oficio</option>
-                  </select>
+              {loading ? (
+                <div className="space-y-8">
+                  <SkeletonTitle />
+                  <div className="mt-8 space-y-6">
+                    {[1, 2, 3, 4].map(i => (
+                      <div key={i} className="flex justify-between items-center">
+                        <div className="h-4 w-32 bg-slate-100 rounded-lg animate-pulse" />
+                        <div className="h-6 w-11 bg-slate-200 rounded-full animate-pulse" />
+                      </div>
+                    ))}
+                    <div className="pt-6 border-t border-slate-50">
+                      <div className="h-14 bg-slate-50 rounded-2xl animate-pulse" />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ) : (
+                <>
+                  <SectionTitle icon={<Layout size={20} />} title="Ajustes de Diseño" />
+                  <div className="mt-8 space-y-4">
+                    <ToggleItem label="Mostrar Logo" name="include_logo" checked={custom.include_logo} onChange={handleChange} />
+                    <ToggleItem label="Mostrar Firma" name="include_signature" checked={custom.include_signature} onChange={handleChange} />
+                    <ToggleItem label="Información Bancaria" name="include_bank_info" checked={custom.include_bank_info} onChange={handleChange} />
+                    <ToggleItem label="Pie de Página" name="include_footer" checked={custom.include_footer} onChange={handleChange} />
+
+                    <div className="pt-6 mt-4 border-t border-slate-50">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tamaño de Hoja</label>
+                      <select
+                        name="page_size"
+                        value={custom.page_size || 'A4'}
+                        onChange={handleChange}
+                        className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-black text-slate-700 appearance-none cursor-pointer"
+                      >
+                        <option value="A4">A4 (Estándar)</option>
+                        <option value="Letter">Carta (8.5" x 11")</option>
+                        <option value="Legal">Oficio</option>
+                      </select>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
           </div>
