@@ -7,9 +7,14 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import Button from '../components/UI/Button';
+import EmptyState from '../components/UI/EmptyState';
+import SkeletonList from '../components/UI/SkeletonList';
+import Pagination from '../components/UI/Pagination';
+import QueryError from '../components/UI/QueryError';
 import ConfirmModal from '../components/Modals/ConfirmModal';
 import ClientFormModal from '../components/Modals/ClientFormModal';
 import { useToast } from '../hooks/useToast';
+import { extractError } from '../utils/extractError';
 import { fetchClients, QK } from '../api/queries';
 
 const Clients = () => {
@@ -18,15 +23,52 @@ const Clients = () => {
   const addToast = useToast();
 
   // --- CACHÉ: clientes ---
-  const { data: clients = [], isLoading: loading } = useQuery({
+  const { data: clients = [], isLoading: loading, isError, error, refetch } = useQuery({
     queryKey: QK.clients,
     queryFn: fetchClients,
+  });
+
+  // --- PAGINACIÓN ---
+  const [page, setPage] = useState(1);
+  const perPage = 9;
+
+  // --- MUTACIONES OPTIMISTAS ---
+  const createMutation = useMutation({
+    mutationFn: (data) => api.post('clients/', data).then(r => r.data),
+    onSuccess: () => { addToast('Cliente registrado con éxito.', 'success'); setIsModalOpen(false); },
+    onError: (err) => addToast(extractError(err), 'error'),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: QK.clients }); setPage(1); },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, ...data }) => api.patch(`clients/${id}/`, data).then(r => r.data),
+    onMutate: async ({ id, ...data }) => {
+      await queryClient.cancelQueries({ queryKey: QK.clients });
+      const prev = queryClient.getQueryData(QK.clients);
+      queryClient.setQueryData(QK.clients, old => old?.map(c => c.id === id ? { ...c, ...data } : c));
+      return { prev };
+    },
+    onSuccess: () => { addToast('Cliente actualizado con éxito.', 'success'); setIsModalOpen(false); },
+    onError: (err, vars, ctx) => { queryClient.setQueryData(QK.clients, ctx?.prev); addToast(extractError(err), 'error'); },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QK.clients }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`clients/${id}/`),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: QK.clients });
+      const prev = queryClient.getQueryData(QK.clients);
+      queryClient.setQueryData(QK.clients, old => old?.filter(c => c.id !== id));
+      return { prev };
+    },
+    onSuccess: () => addToast('Cliente eliminado correctamente.', 'success'),
+    onError: (err, id, ctx) => { queryClient.setQueryData(QK.clients, ctx?.prev); addToast(extractError(err), 'error'); },
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: QK.clients }); setShowDeleteModal(false); },
   });
 
   // --- ESTADOS DE UI ---
   const [searchTerm, setSearchTerm] = useState("");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
@@ -65,50 +107,26 @@ const Clients = () => {
     setIsModalOpen(true);
   };
 
-  const handleSubmit = async (e) => {
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
+  const handleSubmit = (e) => {
     e.preventDefault();
-    if (isSubmitting) return;
+    if (isMutating) return;
     const errors = {};
     if (!formData.name.trim()) errors.name = 'El nombre es obligatorio';
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
-    setIsSubmitting(true);
-    try {
-      const cleanData = Object.fromEntries(
-        Object.entries(formData).map(([k, v]) => [k, v?.trim() || null])
-      );
-      if (isEditing) {
-        await api.patch(`clients/${selectedId}/`, cleanData);
-        addToast('Cliente actualizado con éxito.', 'success');
-      } else {
-        await api.post('clients/', cleanData);
-        addToast('Cliente registrado con éxito.', 'success');
-      }
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: QK.clients }),
-        queryClient.invalidateQueries({ queryKey: QK.accounts }),
-        queryClient.invalidateQueries({ queryKey: ['services'] })
-      ]);
-      setIsModalOpen(false);
-    } catch (err) {
-      addToast('Error al procesar la solicitud.', 'error');
-    } finally {
-      setIsSubmitting(false);
+    const cleanData = Object.fromEntries(
+      Object.entries(formData).map(([k, v]) => [k, v?.trim() || null])
+    );
+    if (isEditing) {
+      updateMutation.mutate({ id: selectedId, ...cleanData });
+    } else {
+      createMutation.mutate(cleanData);
     }
   };
 
-  const handleConfirmDelete = async () => {
-    try {
-      await api.delete(`clients/${selectedId}/`);
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: QK.clients }),
-        queryClient.invalidateQueries({ queryKey: QK.accounts }),
-        queryClient.invalidateQueries({ queryKey: ['services'] })
-      ]);
-      setShowDeleteModal(false);
-      addToast('Cliente eliminado correctamente.', 'success');
-    } catch {
-      addToast('Error al eliminar el cliente.', 'error');
-    }
+  const handleConfirmDelete = () => {
+    deleteMutation.mutate(selectedId);
   };
 
   const filteredClients = useMemo(() => {
@@ -121,6 +139,12 @@ const Clients = () => {
         phone.includes(searchTerm);
     });
   }, [searchTerm, clients]);
+
+  const pageCount = Math.max(1, Math.ceil(filteredClients.length / perPage));
+  const paginatedClients = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredClients.slice(start, start + perPage);
+  }, [filteredClients, page, perPage]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
@@ -158,28 +182,20 @@ const Clients = () => {
           </div>
         </div>
 
-        {/* Directorio de Clientes - Compact Premium Grid */}
+        {isError ? (
+          <QueryError message={extractError(error)} onRetry={() => { setPage(1); refetch(); }} />
+        ) : (
+        <>
+        {/* Directorio de Clientes - Desktop Grid */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            [1, 2, 3, 4, 5, 6].map((i) => (
-              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-6 animate-pulse space-y-4">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 rounded-2xl bg-slate-50 flex-shrink-0" />
-                  <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-slate-50 rounded-lg w-3/4" />
-                    <div className="h-3 bg-slate-50 rounded-lg w-1/2" />
-                  </div>
-                </div>
-                <div className="h-10 bg-slate-50 rounded-xl w-full" />
-              </div>
-            ))
-          ) : filteredClients.length > 0 ? (
-            filteredClients.map((client) => (
+            <SkeletonList desktop count={6} />
+          ) : paginatedClients.length > 0 ? (
+            paginatedClients.map((client) => (
               <div 
                 key={client.id} 
                 className="group relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white hover:border-[#f58d2f]/20 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col p-6 animate-in zoom-in-95 duration-500"
               >
-                {/* Header: Avatar + Identity */}
                 <div className="flex items-center gap-4 mb-6">
                   <div className="relative flex-shrink-0">
                     <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 flex items-center justify-center text-[#f58d2f] font-black text-2xl shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
@@ -198,7 +214,6 @@ const Clients = () => {
                   </div>
                 </div>
 
-                {/* Info Content */}
                 <div className="space-y-3 mb-6 flex-1">
                   <div className="flex items-center gap-3 text-slate-500">
                     <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f] transition-colors">
@@ -214,75 +229,32 @@ const Clients = () => {
                   </div>
                   <div className="flex items-center gap-3 text-slate-400 italic mt-1 pl-1">
                     <MapPin size={12} className="flex-shrink-0" />
-                    <span className="text-[10px] font-medium truncate">{client.address || 'Sin dirección registrada'}</span>
+                    <span className="text-body-sm font-medium truncate">{client.address || 'Sin dirección registrada'}</span>
                   </div>
                 </div>
 
-                {/* Footer Actions */}
                 <div className="flex items-center gap-2 pt-4 border-t border-slate-50/50">
-                  <Button
-                    variant="success"
-                    size="sm"
-                    icon={Wallet}
-                    onClick={() => navigate(`/clientes/${client.id}/cuentas`)}
-                    className="flex-1"
-                  >
-                    <span>Cuentas</span>
-                  </Button>
-                  
+                  <Button variant="success" size="sm" icon={Wallet} onClick={() => navigate(`/clientes/${client.id}/cuentas`)} className="flex-1"><span>Cuentas</span></Button>
                   <div className="flex gap-1">
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      icon={Edit2}
-                      onClick={() => handleOpenEditModal(client)} 
-                    />
-                    <Button 
-                      variant="ghost" 
-                      size="icon" 
-                      icon={Trash2}
-                      className="hover:text-red-500 hover:bg-red-50"
-                      onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} 
-                    />
+                    <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" onClick={() => handleOpenEditModal(client)} />
+                    <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
                   </div>
                 </div>
 
-                {/* Subtle Background Icon */}
                 <Users size={80} className="absolute -bottom-4 -right-4 text-slate-900/[0.02] -rotate-12 pointer-events-none" />
               </div>
             ))
           ) : (
-            <div className="col-span-full bg-white rounded-[3rem] border border-slate-100 p-24 text-center shadow-sm">
-              <div className="flex flex-col items-center gap-6">
-                <div className="h-24 w-24 rounded-[2.5rem] bg-slate-50 flex items-center justify-center text-slate-200">
-                  <Users size={48} />
-                </div>
-                <div className="space-y-1">
-                  <h3 className="text-xl font-black text-slate-900">Directorio Vacío</h3>
-                  <p className="text-slate-400 text-sm">Comienza agregando tu primer cliente.</p>
-                </div>
-                <Button 
-                  variant="primary" 
-                  size="md" 
-                  onClick={handleAddNew}
-                >
-                  Agregar Cliente
-                </Button>
-              </div>
-            </div>
+            <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
           )}
         </div>
+        {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}
 
         {/* Cards — solo móvil */}
         <div className="md:hidden space-y-3">
           {loading ? (
-            [1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 space-y-3">
-                <div className="flex items-center gap-3"><div className="skeleton h-10 w-10 rounded-xl" /><div className="skeleton h-4 w-40" /></div>
-                <div className="skeleton h-3 w-full opacity-50" />
-              </div>
-            ))
-          ) : filteredClients.length > 0 ? filteredClients.map(client => (
+            <SkeletonList rows={3} />
+          ) : paginatedClients.length > 0 ? paginatedClients.map(client => (
             <div key={client.id} className="bg-white/80 backdrop-blur-xl rounded-[1.75rem] border border-white p-4 shadow-sm flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3 min-w-0">
@@ -291,52 +263,42 @@ const Clients = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="font-black text-slate-900 text-[13px] tracking-tight leading-tight truncate">{client.name}</p>
-                    <div className="flex items-center gap-1 text-slate-400 text-[9px] font-bold tracking-widest uppercase">
-                      ID-{client.id}
-                    </div>
+                    <div className="flex items-center gap-1 text-slate-400 text-[9px] font-bold tracking-widest uppercase">ID-{client.id}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    icon={Wallet}
-                    className="hover:text-green-500 hover:bg-green-50"
-                    onClick={() => navigate(`/clientes/${client.id}/cuentas`)} 
-                    title="Ver Cuentas"
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    icon={Edit2}
-                    className="hover:text-blue-500 hover:bg-blue-50"
-                    onClick={() => handleOpenEditModal(client)} 
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    icon={Trash2}
-                    className="hover:text-red-500 hover:bg-red-50"
-                    onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} 
-                  />
+                  <Button variant="ghost" size="icon" icon={Wallet} aria-label="Ver cuentas" className="hover:text-green-500 hover:bg-green-50" onClick={() => navigate(`/clientes/${client.id}/cuentas`)} title="Ver Cuentas" />
+                  <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" className="hover:text-blue-500 hover:bg-blue-50" onClick={() => handleOpenEditModal(client)} />
+                  <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
                 </div>
               </div>
-
-              <div className="grid grid-cols-2 gap-3 pl-1 border-tl-slate-50">
-                {(client.phone_number) && (
+              <div className="grid grid-cols-2 gap-3 pl-1">
+                {client.phone_number && (
                   <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold">
+                    <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]"><Phone size={10} /></div>
+                    <span className="truncate">{client.phone_number}</span>
+                  </div>
+                )}
+                {client.email && (
+                  <div className="flex items-center gap-2 text-slate-500 text-body-sm font-bold">
                     <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]">
                        <Phone size={10} />
                     </div>
                     <span className="truncate">{client.phone_number}</span>
                   </div>
                 )}
-                {(client.email) && (
-                  <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold">
+                {client.email && (
+                  <div className="flex items-center gap-2 text-slate-500 text-body-sm font-bold">
                     <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]">
                        <Mail size={10} />
                     </div>
                     <span className="truncate">{client.email}</span>
+                  </div>
+                )}
+                {client.address && (
+                  <div className="col-span-2 flex items-center gap-2 text-slate-400 text-[10px] font-medium italic">
+                    <MapPin size={9} className="flex-shrink-0" />
+                    <span className="truncate">{client.address}</span>
                   </div>
                 )}
                 {client.address && (
@@ -348,12 +310,11 @@ const Clients = () => {
               </div>
             </div>
           )) : (
-            <div className="bg-white rounded-[2rem] border border-slate-100 p-12 text-center">
-              <Users size={32} className="mx-auto mb-3 text-slate-100" />
-              <p className="text-slate-400 font-bold text-xs">No se encontraron clientes</p>
-            </div>
+            <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
           )}
         </div>
+        </>
+        )}
       </main>
 
       <ClientFormModal
@@ -362,7 +323,7 @@ const Clients = () => {
         isEditing={isEditing}
         formData={formData}
         fieldErrors={fieldErrors}
-        isSubmitting={isSubmitting}
+        isSubmitting={isMutating}
         onInputChange={handleInputChange}
         onSubmit={handleSubmit}
       />

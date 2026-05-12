@@ -55,7 +55,16 @@ const Dashboard = () => {
 
     const monthlyChartData = Object.values(monthlyDataMap).reverse();
 
-    return { totalRevenue, totalClients, activeAccounts, totalTrips, monthlyChartData };
+    const currentMonth = monthlyChartData[monthlyChartData.length - 1];
+    const prevMonth = monthlyChartData[monthlyChartData.length - 2];
+    const revenueTrend = currentMonth && prevMonth && prevMonth.ingresos > 0
+      ? `${((currentMonth.ingresos - prevMonth.ingresos) / prevMonth.ingresos * 100).toFixed(0)}%`
+      : null;
+    const tripsTrend = currentMonth && prevMonth && prevMonth.viajes > 0
+      ? `${((currentMonth.viajes - prevMonth.viajes) / prevMonth.viajes * 100).toFixed(0)}%`
+      : null;
+
+    return { totalRevenue, totalClients, activeAccounts, totalTrips, monthlyChartData, revenueTrend, tripsTrend };
   }, [clients, accounts, services]);
 
   const formatCurrency = (value) => 
@@ -117,7 +126,7 @@ const Dashboard = () => {
         )}
       </div>
       <div>
-        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
+        <p className="text-body-sm font-bold text-slate-400 uppercase tracking-widest mb-1">{title}</p>
         <h3 className="text-3xl font-black text-slate-800 tracking-tight">{value}</h3>
       </div>
     </div>
@@ -131,7 +140,7 @@ const Dashboard = () => {
         <div>
           <div className="inline-flex items-center gap-2 mb-3 bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-100">
             <Activity className="w-4 h-4 text-[#f58d2f]" />
-            <span className="text-[10px] uppercase tracking-widest font-bold text-slate-500">Resumen General</span>
+            <span className="text-body-sm uppercase tracking-widest font-bold text-slate-500">Resumen General</span>
           </div>
           <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
             Panel de Control <span className="text-[#f58d2f]">.</span>
@@ -146,14 +155,14 @@ const Dashboard = () => {
           value={formatCurrency(metrics.totalRevenue)} 
           icon={DollarSign} 
           color="bg-emerald-50 text-emerald-500"
-          trend="+12%"
+          trend={metrics.revenueTrend}
         />
         <StatCard 
           title="Viajes Realizados" 
           value={metrics.totalTrips.toLocaleString()} 
           icon={Truck} 
           color="bg-orange-50 text-[#f58d2f]"
-          trend="+5%"
+          trend={metrics.tripsTrend}
         />
         <StatCard 
           title="Cuentas Activas" 
@@ -177,7 +186,7 @@ const Dashboard = () => {
           <div className="flex justify-between items-center mb-6">
             <div>
               <h3 className="text-lg font-black text-slate-800">Evolución de Ingresos</h3>
-              <p className="text-xs font-bold text-slate-400">Últimos 6 meses</p>
+              <p className="text-body-sm font-bold text-slate-400">Últimos 6 meses</p>
             </div>
             <div className="p-2 bg-slate-50 rounded-xl"><TrendingUp size={20} className="text-slate-400" /></div>
           </div>

@@ -1,38 +1,68 @@
-import React, { useState, useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
-import { useNavigate } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
-import Button from '../components/UI/Button';
+import MaterialFormModal from '../components/Modals/MaterialFormModal';
+import EmptyState from '../components/UI/EmptyState';
+import SkeletonList from '../components/UI/SkeletonList';
+import Pagination from '../components/UI/Pagination';
+import QueryError from '../components/UI/QueryError';
+import { extractError } from '../utils/extractError';
 import { fetchMaterials, QK } from '../api/queries';
-import {
-  Plus,
-  Edit2,
-  Trash2,
-  Box,
-  X,
-  Check,
-  DollarSign,
-  ArrowLeft,
-  Loader2,
-  AlertTriangle,
-  Search
-} from 'lucide-react';
+import { Plus, Edit2, Trash2, Box, Search } from 'lucide-react';
 
 const Materials = () => {
   const queryClient = useQueryClient();
   const addToast = useToast();
-  const navigate = useNavigate();
 
   // --- CACHÉ: materiales ---
-  const { data: materials = [], isLoading: loading } = useQuery({
+  const { data: materials = [], isLoading: loading, isError, error, refetch } = useQuery({
     queryKey: QK.materials,
     queryFn: fetchMaterials,
   });
 
+  // --- PAGINACIÓN ---
+  const [page, setPage] = useState(1);
+  const perPage = 9;
+
+  // --- MUTACIONES OPTIMISTAS ---
+  const createMutation = useMutation({
+    mutationFn: (data) => api.post('/materials/', data).then(r => r.data),
+    onSuccess: () => { addToast('Material registrado.', 'success'); setIsModalOpen(false); },
+    onError: (err) => addToast(extractError(err), 'error'),
+    onSettled: () => { queryClient.invalidateQueries({ queryKey: QK.materials }); setPage(1); },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, ...data }) => api.patch(`/materials/${id}/`, data).then(r => r.data),
+    onMutate: async ({ id, ...data }) => {
+      await queryClient.cancelQueries({ queryKey: QK.materials });
+      const prev = queryClient.getQueryData(QK.materials);
+      queryClient.setQueryData(QK.materials, old => old?.map(m => m.id === id ? { ...m, ...data } : m));
+      return { prev };
+    },
+    onSuccess: () => { addToast('Material actualizado.', 'success'); setIsModalOpen(false); },
+    onError: (err, vars, ctx) => { queryClient.setQueryData(QK.materials, ctx?.prev); addToast(extractError(err), 'error'); },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QK.materials }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id) => api.delete(`/materials/${id}/`),
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: QK.materials });
+      const prev = queryClient.getQueryData(QK.materials);
+      queryClient.setQueryData(QK.materials, old => old?.filter(m => m.id !== id));
+      return { prev };
+    },
+    onSuccess: () => { addToast('Material eliminado.', 'success'); setConfirmOpen(false); },
+    onError: (err, id, ctx) => { queryClient.setQueryData(QK.materials, ctx?.prev); addToast(extractError(err), 'error'); },
+    onSettled: () => queryClient.invalidateQueries({ queryKey: QK.materials }),
+  });
+
+  const isMutating = createMutation.isPending || updateMutation.isPending || deleteMutation.isPending;
+
   // --- ESTADOS DE UI ---
-  const [saving, setSaving] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [selectedId, setSelectedId] = useState(null);
@@ -43,9 +73,12 @@ const Materials = () => {
   const [formData, setFormData] = useState({ name: '', price: '' });
   const [fieldErrors, setFieldErrors] = useState({});
 
-  const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
+  const handleFieldChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+    if (fieldErrors[name]) setFieldErrors(prev => ({ ...prev, [name]: '' }));
+  };
 
-  // --- HANDLERS ---
   const handleOpenModal = (material = null) => {
     if (material) {
       setEditingMaterial(material);
@@ -57,39 +90,21 @@ const Materials = () => {
     setIsModalOpen(true);
   };
 
-  const handleSave = async (e) => {
+  const handleSave = (e) => {
     e.preventDefault();
-    if (saving) return;
+    if (isMutating) return;
     const errors = {};
     if (!formData.name.trim()) errors.name = 'El nombre del material es obligatorio';
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
-    setSaving(true);
-    try {
-      if (editingMaterial) {
-        await api.patch(`/materials/${editingMaterial.id}/`, formData);
-        addToast('Material actualizado.', 'success');
-      } else {
-        await api.post('/materials/', formData);
-        addToast('Material registrado.', 'success');
-      }
-      await queryClient.invalidateQueries({ queryKey: QK.materials });
-      setIsModalOpen(false);
-    } catch (err) {
-      addToast('Error al procesar la solicitud', 'error');
-    } finally {
-      setSaving(false);
+    if (editingMaterial) {
+      updateMutation.mutate({ id: editingMaterial.id, ...formData });
+    } else {
+      createMutation.mutate(formData);
     }
   };
 
-  const handleDelete = async () => {
-    try {
-      await api.delete(`/materials/${selectedId}/`);
-      await queryClient.invalidateQueries({ queryKey: QK.materials });
-      setConfirmOpen(false);
-      addToast('Material eliminado.', 'success');
-    } catch (err) {
-      addToast('No se pudo eliminar el material.', 'error');
-    }
+  const handleDelete = () => {
+    deleteMutation.mutate(selectedId);
   };
 
   const formatCurrency = (val) =>
@@ -99,10 +114,15 @@ const Materials = () => {
       maximumFractionDigits: 0
     }).format(val);
 
-  // Filtrado simple para la UI
   const filteredMaterials = materials.filter(m =>
     m.name.toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  const pageCount = Math.max(1, Math.ceil(filteredMaterials.length / perPage));
+  const paginatedMaterials = useMemo(() => {
+    const start = (page - 1) * perPage;
+    return filteredMaterials.slice(start, start + perPage);
+  }, [filteredMaterials, page, perPage]);
 
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
@@ -138,17 +158,16 @@ const Materials = () => {
           />
         </div>
 
+        {isError ? (
+          <QueryError message={extractError(error)} onRetry={() => { setPage(1); refetch(); }} />
+        ) : (
+        <>
         {/* Catálogo de Materiales - Desktop Grid */}
         <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
           {loading ? (
-            [1, 2, 3, 4, 5, 6].map(i => (
-              <div key={i} className="bg-white rounded-[2rem] border border-slate-100 p-8 animate-pulse space-y-4">
-                <div className="h-16 w-16 rounded-2xl bg-slate-50 mx-auto" />
-                <div className="h-5 bg-slate-50 rounded-lg w-1/2 mx-auto" />
-              </div>
-            ))
-          ) : filteredMaterials.length > 0 ? (
-            filteredMaterials.map((m) => (
+            <SkeletonList desktop count={6} />
+          ) : paginatedMaterials.length > 0 ? (
+            paginatedMaterials.map((m) => (
               <div 
                 key={m.id} 
                 className="group relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white hover:border-[#f58d2f]/20 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col items-center text-center p-8 animate-in zoom-in-95 duration-500"
@@ -168,7 +187,7 @@ const Materials = () => {
                   <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-colors uppercase">
                     {m.name}
                   </h3>
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Material Suministrado</p>
+                  <p className="text-body-sm font-black text-slate-400 uppercase tracking-[0.2em]">Material Suministrado</p>
                 </div>
 
                 {/* Price Hero Section */}
@@ -184,6 +203,7 @@ const Materials = () => {
                     variant="secondary" 
                     size="icon" 
                     icon={Edit2}
+                    aria-label="Editar material"
                     className="!p-3 border-transparent shadow-xl"
                     onClick={() => handleOpenModal(m)} 
                   />
@@ -191,6 +211,7 @@ const Materials = () => {
                     variant="secondary" 
                     size="icon" 
                     icon={Trash2}
+                    aria-label="Eliminar material"
                     className="!p-3 border-transparent shadow-xl hover:text-red-500"
                     onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
                   />
@@ -202,18 +223,14 @@ const Materials = () => {
             ))
           ) : null}
         </div>
+        {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}
 
         {/* Catálogo de Materiales — Mobile List */}
         <div className="md:hidden space-y-3">
           {loading ? (
-             [1, 2, 3].map(i => (
-              <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse flex items-center gap-4">
-                <div className="h-10 w-10 rounded-xl bg-slate-50" />
-                <div className="flex-1 space-y-2"><div className="h-4 bg-slate-50 rounded w-1/2" /><div className="h-3 bg-slate-50 rounded w-1/3" /></div>
-              </div>
-            ))
-          ) : filteredMaterials.length > 0 ? (
-            filteredMaterials.map((m) => (
+            <SkeletonList rows={3} />
+          ) : paginatedMaterials.length > 0 ? (
+            paginatedMaterials.map((m) => (
               <div key={m.id} className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white p-4 shadow-sm flex items-center justify-between group">
                 <div className="flex items-center gap-4 min-w-0">
                   <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0 shadow-sm">
@@ -232,6 +249,7 @@ const Materials = () => {
                     variant="ghost" 
                     size="icon" 
                     icon={Edit2}
+                    aria-label="Editar material"
                     className="hover:text-blue-500"
                     onClick={() => handleOpenModal(m)} 
                   />
@@ -239,6 +257,7 @@ const Materials = () => {
                     variant="ghost" 
                     size="icon" 
                     icon={Trash2}
+                    aria-label="Eliminar material"
                     className="hover:text-red-500"
                     onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
                   />
@@ -246,91 +265,23 @@ const Materials = () => {
               </div>
             ))
           ) : (
-            <div className="bg-white rounded-[2rem] border border-slate-100 p-12 text-center">
-               <Box size={32} className="mx-auto mb-3 text-slate-100" />
-               <p className="text-slate-400 font-bold text-xs">No se encontraron materiales</p>
-            </div>
+            <EmptyState icon={Box} title="Sin resultados" description="No se encontraron materiales" />
           )}
         </div>
+        </>
+        )}
       </div>
 
-      {/* MODAL CRUD */}
-      {isModalOpen && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900/20 backdrop-blur-md" onClick={() => setIsModalOpen(false)}></div>
-          <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-            <form onSubmit={handleSave} className="p-10">
-              <div className="flex justify-between items-start mb-8">
-                <div>
-                  <h2 className="text-3xl font-black text-[#1a202c]">
-                    {editingMaterial ? 'Editar Material' : 'Nuevo Material'}
-                  </h2>
-                </div>
-                <button type="button" onClick={() => setIsModalOpen(false)} className="p-2 hover:bg-slate-100 rounded-2xl transition-colors text-slate-300">
-                  <X size={24} />
-                </button>
-              </div>
-
-              <div className="space-y-6">
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center">Nombre del Material <Required /></label>
-                  <div className="relative">
-                    <Box className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input
-                      type="text"
-                      value={formData.name}
-                      onChange={e => { setFormData({ ...formData, name: e.target.value }); if (fieldErrors.name) setFieldErrors({}); }}
-                      placeholder="Ej: Arena"
-                      required
-                      className={`w-full bg-slate-50 border-2 rounded-2xl pl-12 pr-5 py-4 outline-none transition-all text-sm font-bold text-slate-700 ${fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30 focus:bg-white'
-                        }`}
-                    />
-                    {fieldErrors.name && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.name}</p>}
-                  </div>
-                </div>
-
-                <div className="space-y-1.5">
-                  <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Precio Base (COP)</label>
-                  <div className="relative">
-                    <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
-                    <input
-                      type="number"
-                      value={formData.price}
-                      onChange={e => setFormData({ ...formData, price: e.target.value })}
-                      placeholder="0.00"
-                      className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
-                    />
-                  </div>
-                </div>
-
-
-              </div>
-
-              <div className="mt-12 flex gap-4">
-                <Button
-                  variant="secondary"
-                  size="md"
-                  fullWidth
-                  onClick={() => setIsModalOpen(false)}
-                >
-                  Cancelar
-                </Button>
-                <Button
-                  type="submit"
-                  variant="primary"
-                  size="md"
-                  fullWidth
-                  isLoading={saving}
-                  isDisabled={!formData.name.trim()}
-                  icon={editingMaterial ? Check : Plus}
-                >
-                  {editingMaterial ? 'Actualizar' : 'Crear Material'}
-                </Button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <MaterialFormModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        isEditing={!!editingMaterial}
+        formData={formData}
+        fieldErrors={fieldErrors}
+        isSubmitting={isMutating}
+        onFieldChange={handleFieldChange}
+        onSubmit={handleSave}
+      />
 
       {/* MODAL DE CONFIRMACIÓN PARA ELIMINAR */}
       <ConfirmModal

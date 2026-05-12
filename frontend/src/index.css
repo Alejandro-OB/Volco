@@ -95,6 +95,21 @@ body {
   border-top-color: #1a202c;
 }
 
+/* ── Short bounce animation for auth alerts ───────────────── */
+@keyframes bounceShort {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-bounce-short {
+  animation: bounceShort 0.4s ease-in-out 2;
+}
+
+/* ── Accessibility: ensure readable body text ─────────────── */
+.text-body-sm {
+  font-size: 0.75rem; /* 12px — replaces text-[10px] for body content */
+  line-height: 1.25;
+}
+
 /* ── Smooth focus ring for inputs ─────────────────────────── */
 .input-fancy {
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../api/axiosConfig';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useToast } from '../hooks/useToast';
+import { extractError } from '../utils/extractError';
 import {
   Save,
   ArrowLeft,
@@ -61,7 +62,7 @@ function InvoiceCustomizationForm() {
         }
       })
       .finally(() => setLoading(false));
-  }, [accountId]);
+  }, [accountId, addToast]);
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -133,8 +134,8 @@ function InvoiceCustomizationForm() {
       if (res.data) setCustom(res.data);
 
       addToast('Configuración guardada exitosamente.', 'success');
-    } catch {
-      addToast('Error al guardar la configuración.', 'error');
+    } catch (err) {
+      addToast(extractError(err), 'error');
     } finally {
       setSaving(false);
     }

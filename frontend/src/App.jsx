@@ -1,19 +1,20 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, lazy, Suspense } from 'react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import './App.css'
-import Clients from './pages/Clients'
-import Materials from './pages/Materials'
-import Accounts from './pages/Accounts'
 import Sidebar from './components/Layout/Sidebar.jsx';
-import Auth from './components/Auth/Auth.jsx';
-import Services from './pages/Services'
-import InvoiceCustomizationForm from './pages/InvoiceCustomizationForm'
-import EditProvider from './pages/EditProvider'
-import ForgotPassword from './components/Auth/ForgotPassword'
-import ResetPassword from './components/Auth/ResetPassword'
-import Dashboard from './pages/Dashboard';
 import { useToast } from './hooks/useToast.jsx'
+
+const Clients = lazy(() => import('./pages/Clients'));
+const Materials = lazy(() => import('./pages/Materials'));
+const Accounts = lazy(() => import('./pages/Accounts'));
+const Auth = lazy(() => import('./components/Auth/Auth.jsx'));
+const Services = lazy(() => import('./pages/Services'));
+const InvoiceCustomizationForm = lazy(() => import('./pages/InvoiceCustomizationForm'));
+const EditProvider = lazy(() => import('./pages/EditProvider'));
+const ForgotPassword = lazy(() => import('./components/Auth/ForgotPassword'));
+const ResetPassword = lazy(() => import('./components/Auth/ResetPassword'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -75,14 +76,22 @@ function App() {
             
             {/* Main scrollable area */}
             <main className={`flex-1 flex flex-col min-w-0 ${token ? 'pt-[80px] md:pt-6 px-4 md:px-8 pb-8' : ''}`}>
+              <Suspense fallback={
+                <div className="flex items-center justify-center min-h-[60vh]">
+                  <div className="flex flex-col items-center gap-4">
+                    <div className="w-10 h-10 border-4 border-[#f58d2f]/30 border-t-[#f58d2f] rounded-full animate-spin" />
+                    <span className="text-sm font-bold text-slate-400">Cargando...</span>
+                  </div>
+                </div>
+              }>
               <Routes>
                 <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" />} />
-                <Route path="/login" element={<Auth onLoginSuccess={handleLoginSuccess} />} />
+                <Route path="/login" element={token ? <Navigate to="/" /> : <Auth onLoginSuccess={handleLoginSuccess} />} />
                 <Route path="/clientes" element={token ? <Clients /> : <Navigate to="/login" />} />
                 <Route path="/servicios" element={token ? <Services /> : <Navigate to="/login" />} />
                 <Route path="/materiales" element={token ? <Materials /> : <Navigate to="/login" />} />
                 <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
-                <Route path="/register" element={<Auth />} />
+                <Route path="/register" element={token ? <Navigate to="/" /> : <Auth />} />
 
                 <Route
                   path="/clientes/:clientId/cuentas"
@@ -107,6 +116,7 @@ function App() {
                 <Route path="/olvido-contraseña" element={<ForgotPassword />} />
                 <Route path="/reset-password" element={<ResetPassword />} />
               </Routes>
+              </Suspense>
             </main>
           </div>
         </Router>

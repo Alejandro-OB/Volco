@@ -54,7 +54,6 @@ function Auth({ onLoginSuccess }) {
       formData.append("password", loginData.password);
       const res = await api.post("token/", formData);
       onLoginSuccess(res.data.access_token, res.data.refresh_token);
-      navigate("/clientes");
     } catch (err) {
       setError(err.response?.status === 401 ? "Usuario o contraseña incorrectos." : "Error de conexión.");
     } finally { setLoading(false); }

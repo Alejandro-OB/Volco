@@ -12,7 +12,10 @@ import ConfirmModal from '../components/Modals/ConfirmModal';
 import PdfModal from '../components/Modals/PdfModal';
 import AccountFormModal from '../components/Modals/AccountFormModal';
 import Button from '../components/UI/Button';
+import EmptyState from '../components/UI/EmptyState';
 import { useToast } from '../hooks/useToast';
+import { extractError } from '../utils/extractError';
+import Breadcrumb from '../components/Layout/Breadcrumb';
 import { fetchClients, fetchAccounts, fetchInvoices, fetchServices, fetchMaterials, QK } from '../api/queries';
 
 const Accounts = () => {
@@ -161,7 +164,7 @@ const Accounts = () => {
       ]);
       setIsModalOpen(false);
     } catch (err) {
-      addToast('Error al guardar la cuenta.', 'error');
+      addToast(extractError(err), 'error');
     } finally {
       setLoadingAction(false);
     }
@@ -177,8 +180,8 @@ const Accounts = () => {
       ]);
       setShowConfirmModal(false);
       addToast('Cuenta eliminada.', 'success');
-    } catch {
-      addToast('Error al eliminar.', 'error');
+    } catch (err) {
+      addToast(extractError(err), 'error');
     }
   };
 
@@ -210,7 +213,7 @@ const Accounts = () => {
       setShowPdfModal(true);
 
     } catch (err) {
-      addToast('Error al visualizar u obtener la factura.', 'error');
+      addToast(extractError(err), 'error');
     } finally {
       setLoadingId(null);
     }
@@ -220,6 +223,8 @@ const Accounts = () => {
   return (
     <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
       <div className="max-w-7xl mx-auto space-y-10">
+
+        {clientId && <Breadcrumb />}
 
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="space-y-1">
@@ -435,6 +440,7 @@ const Accounts = () => {
                                   variant="ghost" 
                                   size="icon" 
                                   icon={Truck}
+                                  aria-label="Ver servicios"
                                   className="hover:text-blue-500"
                                   onClick={() => navigate(`/cuentas/${account.id}/servicios`)} 
                                 />
@@ -443,6 +449,7 @@ const Accounts = () => {
                                   variant="ghost"
                                   size="icon"
                                   icon={hasInvoice ? Receipt : FileText}
+                                  aria-label={hasInvoice ? "Ver factura" : "Generar factura"}
                                   isLoading={loadingId === account.id}
                                   isDisabled={!hasServices && !hasInvoice}
                                   className={hasInvoice ? 'text-emerald-500 hover:bg-emerald-50' : 'hover:text-orange-500'}
@@ -454,6 +461,7 @@ const Accounts = () => {
                                   variant="ghost" 
                                   size="icon" 
                                   icon={Palette}
+                                  aria-label="Personalizar factura"
                                   className="hover:text-[#f58d2f]"
                                   onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} 
                                 />
@@ -464,6 +472,7 @@ const Accounts = () => {
                                   variant="ghost" 
                                   size="icon" 
                                   icon={Edit2}
+                                  aria-label="Editar cuenta"
                                   className="hover:text-amber-500"
                                   onClick={() => handleOpenModal(account)} 
                                 />
@@ -472,6 +481,7 @@ const Accounts = () => {
                                   variant="ghost" 
                                   size="icon" 
                                   icon={Trash2}
+                                  aria-label="Eliminar cuenta"
                                   className="hover:text-red-500"
                                   onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} 
                                 />
@@ -485,13 +495,7 @@ const Accounts = () => {
                 ) : (
                   <tr>
                     <td colSpan="5" className="px-8 py-20 text-center">
-                      <div className="flex flex-col items-center gap-3">
-                        <div className="h-20 w-20 rounded-3xl bg-slate-50 flex items-center justify-center mb-1">
-                          <Briefcase size={36} className="text-slate-200" />
-                        </div>
-                        <p className="text-slate-700 font-bold text-base">No se encontraron cuentas</p>
-                        <p className="text-slate-400 text-sm">Registra una nueva cuenta para empezar</p>
-                      </div>
+                      <EmptyState icon={Briefcase} title="No se encontraron cuentas" description="Registra una nueva cuenta para empezar" />
                     </td>
                   </tr>
                 )}
@@ -567,6 +571,7 @@ const Accounts = () => {
                               variant="ghost" 
                               size="icon" 
                               icon={Truck}
+                              aria-label="Ver servicios"
                               className="!p-2 hover:text-blue-500"
                               onClick={() => navigate(`/cuentas/${account.id}/servicios`)} 
                             />
@@ -574,6 +579,7 @@ const Accounts = () => {
                               variant="ghost"
                               size="icon"
                               icon={hasInvoice ? Receipt : FileText}
+                              aria-label={hasInvoice ? "Ver factura" : "Generar factura"}
                               isLoading={loadingId === account.id}
                               isDisabled={!hasServices && !hasInvoice}
                               className={`!p-2 ${hasInvoice ? 'text-emerald-500' : 'hover:text-orange-500'}`}
@@ -583,6 +589,7 @@ const Accounts = () => {
                               variant="ghost" 
                               size="icon" 
                               icon={Palette}
+                              aria-label="Personalizar factura"
                               className="!p-2 hover:text-[#f58d2f]"
                               onClick={() => navigate(`/factura/personalizar?accountId=${account.id}`)} 
                             />
@@ -590,6 +597,7 @@ const Accounts = () => {
                               variant="ghost" 
                               size="icon" 
                               icon={Edit2}
+                              aria-label="Editar cuenta"
                               className="!p-2 hover:text-amber-500"
                               onClick={() => handleOpenModal(account)} 
                             />
@@ -597,6 +605,7 @@ const Accounts = () => {
                               variant="ghost" 
                               size="icon" 
                               icon={Trash2}
+                              aria-label="Eliminar cuenta"
                               className="!p-2 hover:text-red-500"
                               onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} 
                             />
@@ -609,12 +618,9 @@ const Accounts = () => {
               )}
             </div>
           ))
-        ) : (
-          <div className="bg-white rounded-[2rem] border border-slate-100 p-12 text-center">
-            <Wallet size={32} className="mx-auto mb-3 text-slate-100" />
-            <p className="text-slate-400 font-bold text-xs">No se encontraron cuentas.</p>
-          </div>
-        )}
+          ) : (
+            <EmptyState icon={Wallet} title="Sin resultados" description="No se encontraron cuentas." />
+          )}
       </div>
 
 

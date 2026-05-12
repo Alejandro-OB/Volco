@@ -1,6 +1,7 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { User, Mail, Phone, MapPin, X, Save, Loader2 } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 const ClientFormModal = ({ 
   isOpen, 
@@ -12,6 +13,8 @@ const ClientFormModal = ({
   onInputChange, 
   onSubmit 
 }) => {
+  const trapRef = useFocusTrap(isOpen);
+
   if (!isOpen) return null;
 
   const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
@@ -19,7 +22,7 @@ const ClientFormModal = ({
   const modalContent = (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center p-4">
       <div className="fixed inset-0 bg-slate-900/20 backdrop-blur-sm" onClick={onClose}></div>
-      <div className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
+      <div ref={trapRef} className="relative bg-white rounded-[2.5rem] shadow-2xl w-full max-w-lg overflow-hidden animate-in zoom-in-95 duration-200">
         <div className="p-10">
           <div className="flex justify-between items-start mb-8">
             <div>

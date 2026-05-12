@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { AlertTriangle, X, Info, Trash2 } from 'lucide-react';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 function ConfirmModal({
   show,
@@ -11,13 +12,13 @@ function ConfirmModal({
   confirmText = "Eliminar",
   variant = "danger" // 'danger' | 'warning' | 'info'
 }) {
+  const trapRef = useFocusTrap(show);
+
   useEffect(() => {
     if (!show) return;
-    document.body.style.overflow = 'hidden';
     const handleEsc = (e) => { e.key === 'Escape' && onClose(); };
     window.addEventListener('keydown', handleEsc);
     return () => {
-      document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleEsc);
     };
   }, [show, onClose]);
@@ -44,6 +45,7 @@ function ConfirmModal({
       onClick={onClose}
     >
       <div
+        ref={trapRef}
         className="relative bg-white border border-slate-200 w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200"
         onClick={(e) => e.stopPropagation()}
       >

@@ -2,16 +2,16 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Download, Maximize2, FileSpreadsheet, FileText, Loader2 } from 'lucide-react';
 import api from '../../api/axiosConfig';
+import { useFocusTrap } from '../../hooks/useFocusTrap';
 
 function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
+  const trapRef = useFocusTrap(show);
   const [downloading, setDownloading] = useState(null); // 'pdf', 'excel', 'word'
   useEffect(() => {
     if (!show) return;
-    document.body.style.overflow = 'hidden';
     const handleEsc = (e) => e.key === 'Escape' && onClose();
     window.addEventListener('keydown', handleEsc);
     return () => {
-      document.body.style.overflow = 'unset';
       window.removeEventListener('keydown', handleEsc);
     };
   }, [show, onClose]);
@@ -44,7 +44,7 @@ function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
   };
 
   const modalContent = (
-    <div
+    <div ref={trapRef}
       className="fixed inset-0 z-[3000] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
