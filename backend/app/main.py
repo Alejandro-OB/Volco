@@ -26,7 +26,6 @@ class DBExceptionMiddleware(BaseHTTPMiddleware):
         try:
             return await call_next(request)
         except OperationalError:
-            # Error del pool de Supabase
             return JSONResponse(
                 status_code=503,
                 content=ErrorResponse(
@@ -36,7 +35,14 @@ class DBExceptionMiddleware(BaseHTTPMiddleware):
                 ).model_dump()
             )
         except Exception as e:
-            raise e
+            return JSONResponse(
+                status_code=500,
+                content=ErrorResponse(
+                    success=False,
+                    message="Internal Server Error",
+                    details=str(e)
+                ).model_dump()
+            )
 
 app.add_middleware(DBExceptionMiddleware)
 

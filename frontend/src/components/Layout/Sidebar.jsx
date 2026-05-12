@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { NavLink, useNavigate, useLocation, useMatch } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { decodeToken } from '../../utils/decodeToken';
 import logoVolco from '../../assets/logo_new.png';
 import {
@@ -38,16 +38,13 @@ function Sidebar({ onLogout }) {
     }
   };
 
-  const matchCuentas = useMatch('/clientes/:clientId/cuentas');
-  const matchServicios = useMatch('/cuentas/:accountId/servicios');
-
   if (!isLoggedIn) return null;
 
   const navLinks = [
     { to: '/', label: 'Panel', icon: LayoutDashboard },
     { to: '/clientes', label: 'Clientes', icon: Users, end: true },
-    { to: '/cuentas', label: 'Cuentas', icon: Wallet, end: true, extraActive: !!matchCuentas },
-    { to: '/servicios', label: 'Servicios', icon: Truck, extraActive: !!matchServicios },
+    { to: '/cuentas', label: 'Cuentas', icon: Wallet },
+    { to: '/servicios', label: 'Viajes', icon: Truck },
     { to: '/materiales', label: 'Materiales', icon: Mountain },
   ];
 
@@ -101,7 +98,7 @@ function Sidebar({ onLogout }) {
             onClick={() => navigate('/clientes')}
           />
           <div className="flex flex-col items-center mt-1">
-            <span className="text-[9px] font-black tracking-[0.2em] text-slate-400 uppercase mb-0.5">
+            <span className="text-[9px] font-black text-slate-400 mb-0.5">
               Bienvenido
             </span>
             <span className="text-sm font-bold text-slate-700">
@@ -117,33 +114,28 @@ function Sidebar({ onLogout }) {
               key={link.to}
               to={link.to}
               end={link.end}
-              className={({ isActive }) => {
-                const active = isActive || link.extraActive;
-                return `flex items-center justify-between px-4 py-3.5 rounded-2xl text-[15px] font-bold transition-all duration-300 group
+              className={({ isActive }) =>
+                `flex items-center justify-between px-4 py-3.5 rounded-2xl text-[15px] font-bold transition-all duration-300 group
                 ${
-                  active
+                  isActive
                     ? 'bg-orange-50/80 text-[#f58d2f] shadow-sm ring-1 ring-[#f58d2f]/20'
                     : 'text-slate-500 hover:text-slate-900 hover:bg-slate-50'
-                }`;
-              }}
+                }`
+              }
             >
-              {({ isActive }) => {
-                const active = isActive || link.extraActive;
-                return (
-                  <>
-                    <div className="flex items-center gap-3.5">
-                      <link.icon
-                        size={20}
-                        strokeWidth={active ? 2.5 : 2}
-                        className={active ? 'text-[#f58d2f]' : 'text-slate-400 group-hover:text-[#f58d2f] transition-colors'}
-                      />
-                      <span>{link.label}</span>
-                    </div>
-                    {/* Active Indicator Chevron */}
-                    {active && <ChevronRight size={16} className="text-[#f58d2f]/50" />}
-                  </>
-                );
-              }}
+              {({ isActive }) => (
+                <>
+                  <div className="flex items-center gap-3.5">
+                    <link.icon
+                      size={20}
+                      strokeWidth={isActive ? 2.5 : 2}
+                      className={isActive ? 'text-[#f58d2f]' : 'text-slate-400 group-hover:text-[#f58d2f] transition-colors'}
+                    />
+                    <span>{link.label}</span>
+                  </div>
+                  {isActive && <ChevronRight size={16} className="text-[#f58d2f]/50" />}
+                </>
+              )}
             </NavLink>
           ))}
         </nav>

@@ -27,7 +27,7 @@ const Button = ({
   };
 
   const sizes = {
-    sm: 'px-4 py-2 text-[10px] uppercase tracking-widest rounded-xl',
+    sm: 'px-4 py-2 text-[10px] rounded-xl',
     md: 'px-6 py-3 text-sm rounded-2xl',
     lg: 'px-10 py-4 text-base rounded-[1.5rem]',
     icon: 'p-2.5 rounded-xl',

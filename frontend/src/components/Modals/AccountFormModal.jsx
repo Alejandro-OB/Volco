@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
-import { Type, ChevronDown, Check, Plus, X, Loader2 } from 'lucide-react';
+import { Type, Check, Plus, X, Loader2 } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
+import QuickCreateClient from '../UI/QuickCreateClient';
+import Select from '../UI/Select';
+import DatePicker from '../UI/DatePicker';
 
 const AccountFormModal = ({
   isOpen,
@@ -16,6 +19,7 @@ const AccountFormModal = ({
   onSubmit
 }) => {
   const trapRef = useFocusTrap(isOpen);
+  const [showQuickClient, setShowQuickClient] = useState(false);
 
   if (!isOpen) return null;
 
@@ -40,14 +44,14 @@ const AccountFormModal = ({
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Nombre de la Cuenta <Required /></label>
+                <label className="text-xs font-semibold text-slate-500 ml-1">Nombre de la Cuenta <Required /></label>
                 <div className="relative">
                   <Type className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                   <input
                     type="text"
                     name="description"
                     placeholder="Ej: Obra Norte Fase 1"
-                    className={`w-full pl-12 pr-5 py-4 bg-slate-50 border-2 rounded-2xl focus:outline-none focus:bg-white transition-all text-sm font-bold text-slate-700 ${fieldErrors.description ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30'}`}
+                    className={`w-full pl-12 pr-5 py-3 bg-white border rounded-2xl focus:outline-none transition-colors text-sm font-medium text-slate-700 placeholder:text-slate-400 ${fieldErrors.description ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-[#f58d2f]/50'}`}
                     value={formData.description}
                     onChange={onInputChange}
                     required
@@ -56,60 +60,72 @@ const AccountFormModal = ({
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Cliente Titular <Required /></label>
-                <div className="relative">
-                  <select
-                    name="client_id"
-                    className={`w-full pl-5 pr-10 py-4 border-2 rounded-2xl focus:outline-none transition-all text-sm font-bold appearance-none ${fieldErrors.client_id ? 'border-red-300 focus:border-red-400 bg-slate-50 text-slate-700' : 'border-transparent focus:border-[#f58d2f]/30'}
-                      ${!!clientIdUrlParam ? 'bg-slate-100 text-slate-500 cursor-not-allowed opacity-80' : 'bg-slate-50 text-slate-700 cursor-pointer focus:bg-white'}
-                    `}
-                    value={formData.client_id}
-                    onChange={onInputChange}
-                    disabled={!!clientIdUrlParam}
-                  >
-                    <option value="">Seleccione...</option>
-                    {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-                  </select>
-                  <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                  {fieldErrors.client_id && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.client_id}</p>}
+                <div className="flex items-center justify-between ml-1">
+                  <label className="text-xs font-semibold text-slate-500">Cliente Titular <Required /></label>
+                  {!clientIdUrlParam && (
+                    <button
+                      type="button"
+                      onClick={() => setShowQuickClient(v => !v)}
+                      className="flex items-center gap-1 text-[10px] font-bold text-[#f58d2f] hover:text-[#e87a1c] transition-colors"
+                    >
+                      <Plus size={11} />
+                      Nuevo cliente
+                    </button>
+                  )}
                 </div>
+                <Select
+                  name="client_id"
+                  value={formData.client_id}
+                  onChange={onInputChange}
+                  disabled={!!clientIdUrlParam}
+                  className={fieldErrors.client_id ? 'border-red-300 focus:border-red-400' : ''}
+                >
+                  <option value="">Seleccione...</option>
+                  {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </Select>
+                {fieldErrors.client_id && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.client_id}</p>}
+                {showQuickClient && (
+                  <QuickCreateClient
+                    onCreated={(client) => {
+                      onInputChange({ target: { name: 'client_id', value: String(client.id) } });
+                      setShowQuickClient(false);
+                    }}
+                    onCancel={() => setShowQuickClient(false)}
+                  />
+                )}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fecha de Inicio <Required /></label>
-                <input
-                  type="date"
+                <label className="text-xs font-semibold text-slate-500 ml-1">Fecha de Inicio <Required /></label>
+                <DatePicker
                   name="start_date"
-                  className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
                   value={formData.start_date}
                   onChange={onInputChange}
-                  required
+                  placeholder="Inicio de obra"
                 />
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Fecha de Fin <Required /></label>
-                <input
-                  type="date"
+                <label className="text-xs font-semibold text-slate-500 ml-1">Fecha de Fin <Required /></label>
+                <DatePicker
                   name="end_date"
-                  className="w-full px-5 py-4 bg-slate-50 border-2 border-transparent rounded-2xl focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
                   value={formData.end_date}
                   onChange={onInputChange}
-                  required
+                  placeholder="Fin de obra"
                 />
               </div>
             </div>
           </div>
 
           <div className="mt-10 flex gap-4">
-            <button onClick={onClose} className="flex-1 px-6 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all text-[11px] uppercase tracking-widest">
+            <button onClick={onClose} className="flex-1 px-6 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all text-sm">
               Cancelar
             </button>
             <button
               onClick={onSubmit}
               disabled={isSubmitting || !formData.client_id || !formData.description}
-              className="flex-1 px-6 py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 hover:brightness-110 disabled:opacity-50 transition-all text-[11px] uppercase tracking-widest flex items-center justify-center gap-2 border-none"
+              className="flex-1 px-6 py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 hover:brightness-110 disabled:opacity-50 transition-all text-sm flex items-center justify-center gap-2 border-none"
             >
               {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : (isEditing ? <Check size={18} /> : <Plus size={18} />)}
               {isEditing ? 'Guardar Cambios' : 'Abrir Cuenta'}

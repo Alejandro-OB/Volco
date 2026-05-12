@@ -133,12 +133,14 @@ def render_excel_from_invoice(invoice, services, total, provider, customization=
         s_date = s.service_date.strftime('%d/%m/%Y') if hasattr(s.service_date, 'strftime') else str(s.service_date)
         
         if s.custom_material:
-            s_name = f"Viaje de {s.custom_material}"
+            s_name = f"VIAJE DE {s.custom_material.upper()}"
         elif s.material:
-            s_name = f"Viaje de {s.material.name}"
+            s_name = f"VIAJE DE {s.material.name.upper()}"
         else:
-            s_name = "Viaje sin material"
- 
+            s_name = "VIAJE SIN MATERIAL"
+        if s.notes:
+            s_name += f" ({s.notes})"
+
         data = [s_date, s_name, s.quantity, s.price, s.total_amount]
         for col_idx, val in enumerate(data, 1):
             cell = ws.cell(row=row, column=col_idx)

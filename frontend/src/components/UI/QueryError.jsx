@@ -13,7 +13,7 @@ export default function QueryError({ message = 'Error al cargar los datos.', onR
       {onRetry && (
         <button
           onClick={onRetry}
-          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#f58d2f] text-white text-xs font-bold uppercase tracking-widest hover:bg-[#e87a1c] transition-all shadow-md"
+          className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#f58d2f] text-white text-xs font-bold hover:bg-[#e87a1c] transition-all shadow-md"
         >
           <RefreshCw size={14} />
           Reintentar

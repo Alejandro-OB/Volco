@@ -11,6 +11,7 @@ import QueryError from '../components/UI/QueryError';
 import { extractError } from '../utils/extractError';
 import { fetchMaterials, QK } from '../api/queries';
 import { Plus, Edit2, Trash2, Box, Search } from 'lucide-react';
+import Button from '../components/UI/Button';
 
 const Materials = () => {
   const queryClient = useQueryClient();
@@ -96,10 +97,11 @@ const Materials = () => {
     const errors = {};
     if (!formData.name.trim()) errors.name = 'El nombre del material es obligatorio';
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
+    const data = { ...formData, name: formData.name.trim().toUpperCase() };
     if (editingMaterial) {
-      updateMutation.mutate({ id: editingMaterial.id, ...formData });
+      updateMutation.mutate({ id: editingMaterial.id, ...data });
     } else {
-      createMutation.mutate(formData);
+      createMutation.mutate(data);
     }
   };
 
@@ -162,66 +164,59 @@ const Materials = () => {
           <QueryError message={extractError(error)} onRetry={() => { setPage(1); refetch(); }} />
         ) : (
         <>
-        {/* Catálogo de Materiales - Desktop Grid */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Catálogo de Materiales - Tabla */}
+        <div className="hidden md:block bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {loading ? (
-            <SkeletonList desktop count={6} />
+            <div className="divide-y divide-slate-100">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
+                  <div className="h-8 w-8 bg-slate-100 rounded-xl flex-shrink-0" />
+                  <div className="h-3 bg-slate-100 rounded w-40" />
+                  <div className="h-3 bg-slate-100 rounded w-28 ml-auto" />
+                  <div className="h-6 bg-slate-100 rounded-xl w-16" />
+                </div>
+              ))}
+            </div>
           ) : paginatedMaterials.length > 0 ? (
-            paginatedMaterials.map((m) => (
-              <div 
-                key={m.id} 
-                className="group relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white hover:border-[#f58d2f]/20 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col items-center text-center p-8 animate-in zoom-in-95 duration-500"
-              >
-                {/* Visual Icon Section */}
-                <div className="relative mb-6">
-                  <div className="h-20 w-20 rounded-[2.25rem] bg-gradient-to-br from-orange-50 to-white border border-orange-100 flex items-center justify-center text-[#f58d2f] shadow-sm group-hover:scale-110 group-hover:-rotate-6 transition-all duration-500">
-                    <Box size={32} />
-                  </div>
-                  <div className="absolute -top-2 -right-2 px-3 py-1 bg-white border border-slate-100 rounded-full shadow-sm text-[10px] font-black text-slate-400 uppercase tracking-widest">
-                    #{m.id}
-                  </div>
-                </div>
-
-                {/* Info Section */}
-                <div className="flex-1 space-y-1 mb-6">
-                  <h3 className="text-xl font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-colors uppercase">
-                    {m.name}
-                  </h3>
-                  <p className="text-body-sm font-black text-slate-400 uppercase tracking-[0.2em]">Material Suministrado</p>
-                </div>
-
-                {/* Price Hero Section */}
-                <div className="w-full bg-slate-50 rounded-3xl p-5 border border-slate-100/50 group-hover:bg-orange-50/50 transition-colors">
-                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest block mb-1">Precio Base por Viaje</span>
-                  <div className="text-2xl font-black text-slate-900 tracking-tight">
-                    {formatCurrency(m.price)}
-                  </div>
-                </div>
-
-                <div className="absolute top-4 right-4 flex flex-col gap-2 opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300">
-                  <Button 
-                    variant="secondary" 
-                    size="icon" 
-                    icon={Edit2}
-                    aria-label="Editar material"
-                    className="!p-3 border-transparent shadow-xl"
-                    onClick={() => handleOpenModal(m)} 
-                  />
-                  <Button 
-                    variant="secondary" 
-                    size="icon" 
-                    icon={Trash2}
-                    aria-label="Eliminar material"
-                    className="!p-3 border-transparent shadow-xl hover:text-red-500"
-                    onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
-                  />
-                </div>
-
-                {/* Bottom Glow Line */}
-                <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-[#f58d2f]/10 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-              </div>
-            ))
-          ) : null}
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="px-5 py-3 w-10" />
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Material</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Precio base por viaje</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedMaterials.map((m) => (
+                  <tr key={m.id} className="hover:bg-slate-50/60 transition-colors group">
+                    <td className="px-5 py-3.5">
+                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f]">
+                        <Box size={16} />
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <p className="font-bold text-slate-800 text-sm group-hover:text-[#f58d2f] transition-colors">{m.name}</p>
+                      <p className="text-xs text-slate-400 mt-0.5">ID-{m.id}</p>
+                    </td>
+                    <td className="px-5 py-3.5 text-right">
+                      <span className="font-black text-slate-800 text-sm">{formatCurrency(m.price)}</span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center justify-end gap-1">
+                        <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar material" onClick={() => handleOpenModal(m)} />
+                        <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar material" className="hover:text-red-500" onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          ) : (
+            <div className="py-16">
+              <EmptyState icon={Box} title="Sin resultados" description="No se encontraron materiales" />
+            </div>
+          )}
         </div>
         {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}
 
@@ -237,10 +232,10 @@ const Materials = () => {
                     <Box size={20} />
                   </div>
                   <div className="min-w-0">
-                    <h3 className="text-sm font-black text-slate-900 uppercase tracking-tight leading-tight truncate">{m.name}</h3>
+                    <h3 className="text-sm font-black text-slate-900 leading-tight truncate">{m.name}</h3>
                     <div className="flex items-center gap-1.5 mt-0.5">
                       <span className="text-[9px] font-black text-[#f58d2f] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">{formatCurrency(m.price)}</span>
-                      <span className="text-[9px] font-bold text-slate-300 uppercase tracking-tighter">ID-{m.id}</span>
+                      <span className="text-[9px] font-bold text-slate-300">ID-{m.id}</span>
                     </div>
                   </div>
                 </div>

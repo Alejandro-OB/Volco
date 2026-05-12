@@ -54,7 +54,7 @@ function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
         <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
           <div className="flex items-center gap-3">
             <span className="w-2 h-2 rounded-full bg-[#f58d2f]" />
-            <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Vista previa</span>
+            <span className="text-xs font-bold text-slate-500">Vista previa</span>
           </div>
           <div className="flex items-center gap-1">
             <button onClick={openInNewTab} className="p-2 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors" title="Abrir en nueva pestaña">
@@ -87,11 +87,11 @@ function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
 
         {/* Footer Desktop */}
         <div className="flex items-center justify-between px-6 py-3 border-t border-slate-100 bg-white">
-          <span className="text-[10px] font-bold text-slate-300 uppercase tracking-widest">Volco S.A.S</span>
+          <span className="text-[10px] font-bold text-slate-300">Volco S.A.S</span>
           <button 
             onClick={() => downloadFile('pdf')} 
             disabled={!!downloading} 
-            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold uppercase tracking-widest text-white transition-colors ${downloading === 'pdf' ? 'bg-orange-400 cursor-wait' : 'bg-[#f58d2f] hover:bg-[#e87a1c]'}`}
+            className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold text-white transition-colors ${downloading === 'pdf' ? 'bg-orange-400 cursor-wait' : 'bg-[#f58d2f] hover:bg-[#e87a1c]'}`}
           >
             {downloading === 'pdf' ? <Loader2 size={14} className="animate-spin" /> : <Download size={14} />} 
             {downloading === 'pdf' ? 'Procesando...' : 'Descargar'}

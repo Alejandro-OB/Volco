@@ -27,8 +27,13 @@ const queryClient = new QueryClient({
 
 function App() {
 
-  const [token, setToken] = useState(localStorage.getItem('access_token'));
-  const [isLoggedIn, setIsLoggedIn] = useState(!!localStorage.getItem('access_token'));
+  const readToken = () => {
+    const t = localStorage.getItem('access_token');
+    return (t && t !== 'undefined' && t !== 'null') ? t : null;
+  };
+
+  const [token, setToken] = useState(readToken);
+  const [isLoggedIn, setIsLoggedIn] = useState(() => !!readToken());
   const addToast = useToast();
 
   // función que se pasa al Login
@@ -93,15 +98,6 @@ function App() {
                 <Route path="/cuentas" element={token ? <Accounts /> : <Navigate to="/login" />} />
                 <Route path="/register" element={token ? <Navigate to="/" /> : <Auth />} />
 
-                <Route
-                  path="/clientes/:clientId/cuentas"
-                  element={token ? <Accounts /> : <Navigate to="/login" />}
-                />
-
-                <Route
-                  path="/cuentas/:accountId/servicios"
-                  element={token ? <Services /> : <Navigate to="/login" />}
-                />
 
                 <Route
                   path="/factura/personalizar"

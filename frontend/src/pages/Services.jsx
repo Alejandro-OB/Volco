@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, Plus, Filter, MoreHorizontal, FileText, ChevronRight,
-  MapPin, Calendar, Clock, Edit2, Trash2, CheckCircle, Save,
-  X, Check, DollarSign, ExternalLink, RefreshCw, Layers, Inbox, Loader2, ChevronDown, Briefcase, Wallet, Mountain
+  Search, Plus, Edit2, Trash2, X,
+  ChevronDown, ChevronRight, Briefcase, Wallet, Mountain
 } from 'lucide-react';
+import Select from '../components/UI/Select';
+import DatePicker from '../components/UI/DatePicker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
@@ -18,7 +19,8 @@ import { fetchClients, fetchAccounts, fetchMaterials, fetchServices, QK } from '
 
 function Services() {
   const navigate = useNavigate();
-  const { accountId } = useParams();
+  const [searchParams] = useSearchParams();
+  const accountId = searchParams.get('cuenta');
   const queryClient = useQueryClient();
   const addToast = useToast();
 
@@ -42,6 +44,10 @@ function Services() {
   const [openAccounts, setOpenAccounts] = useState({});
   const [openClients, setOpenClients] = useState({});
   const [searchTerm, setSearchTerm] = useState('');
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  const [selectedClient, setSelectedClient] = useState('');
+  const [selectedAccount, setSelectedAccount] = useState('');
 
   // --- FUNCIONES AUXILIARES ---
   const formatCurrency = (v) =>
@@ -51,15 +57,24 @@ function Services() {
     accounts.find(a => a.id === id)?.description || 'Cuenta General';
 
   const getMaterialName = (s) =>
-    s.custom_material || materials.find(m => m.id === s.material_id)?.name || 'Sin material';
+    (s.custom_material || materials.find(m => m.id === s.material_id)?.name || 'Sin material').toUpperCase();
+
+  const accountsForClient = useMemo(() => {
+    if (!selectedClient) return accounts;
+    return accounts.filter(a => a.client_id === Number(selectedClient));
+  }, [accounts, selectedClient]);
+
+  const [priceModified, setPriceModified] = useState(false);
+  const [originalPrice, setOriginalPrice] = useState(null);
 
   const [formData, setFormData] = useState({
     id: null, service_account_id: '', material_id: '',
     custom_material: '', quantity: '', price: '',
-    service_date: new Date().toISOString().split('T')[0]
+    service_date: new Date().toISOString().split('T')[0],
+    notes: '',
   });
 
-  // Expandir acordeón automáticamente si venimos con accountId en la URL
+  // Expandir acordeón automáticamente si venimos con ?cuenta=ID
   useEffect(() => {
     if (accountId && accounts.length > 0 && clients.length > 0) {
       const activeAccount = accounts.find(a => a.id === Number(accountId));
@@ -72,6 +87,13 @@ function Services() {
       }
     }
   }, [accountId, accounts, clients]);
+
+  // Auto-abrir modal si venimos con ?nuevo=1 (ej: desde Dashboard)
+  useEffect(() => {
+    if (searchParams.get('nuevo') === '1') {
+      handleOpenModal();
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const groupedData = useMemo(() => {
     if (!services.length) return {};
@@ -89,12 +111,34 @@ function Services() {
         return acc;
       }
 
+      // Filter by date range
+      if (dateFrom && service.service_date < dateFrom) return acc;
+      if (dateTo && service.service_date > dateTo) return acc;
+
       if (!acc[clientName]) acc[clientName] = {};
       if (!acc[clientName][accountName]) acc[clientName][accountName] = [];
       acc[clientName][accountName].push(service);
       return acc;
     }, {});
-  }, [services, accounts, clients, searchTerm]);
+  }, [services, accounts, clients, searchTerm, dateFrom, dateTo]);
+
+  const filteredServices = useMemo(() => {
+    const term = searchTerm.toLowerCase().trim();
+    return [...services]
+      .sort((a, b) => new Date(b.service_date) - new Date(a.service_date))
+      .filter(s => {
+        const account = accounts.find(a => a.id === s.service_account_id);
+        const client = clients.find(c => c.id === account?.client_id);
+        if (selectedClient && account?.client_id !== Number(selectedClient)) return false;
+        if (selectedAccount && s.service_account_id !== Number(selectedAccount)) return false;
+        const clientName = client?.name?.toLowerCase() || '';
+        const accountName = account?.description?.toLowerCase() || '';
+        if (term && !clientName.includes(term) && !accountName.includes(term)) return false;
+        if (dateFrom && s.service_date < dateFrom) return false;
+        if (dateTo && s.service_date > dateTo) return false;
+        return true;
+      });
+  }, [services, accounts, clients, searchTerm, dateFrom, dateTo, selectedClient, selectedAccount]);
 
   const toggleClient = (name) => {
     setOpenClients(prev => ({ ...prev, [name]: !prev[name] }));
@@ -109,42 +153,91 @@ function Services() {
     if (name === 'material_id') {
       if (value === 'otro') {
         setShowCustomMaterial(true);
+        setPriceModified(false);
+        setOriginalPrice(null);
         setFormData(prev => ({ ...prev, material_id: '', custom_material: '', price: '' }));
       } else {
         setShowCustomMaterial(false);
         const selectedMat = materials.find(m => m.id === Number(value));
-        setFormData(prev => ({ ...prev, material_id: value, custom_material: '', price: selectedMat?.price || '' }));
+        const matPrice = selectedMat?.price ?? '';
+        setOriginalPrice(matPrice);
+        setPriceModified(false);
+        setFormData(prev => ({ ...prev, material_id: value, custom_material: '', price: matPrice }));
       }
+    } else if (name === 'price' && originalPrice !== null && !showCustomMaterial) {
+      setPriceModified(value !== '' && Number(value) !== Number(originalPrice));
+      setFormData(prev => ({ ...prev, [name]: value }));
     } else {
       setFormData(prev => ({ ...prev, [name]: value }));
     }
   };
 
   const handleOpenModal = (data = null) => {
-    // Si 'data' es un evento (onClick={handleOpenModal}), lo ignoramos
     const service = (data && data.id && !data.nativeEvent) ? data : null;
     const preAccountId = (typeof data === 'number' || typeof data === 'string') ? data : null;
+
+    setPriceModified(false);
+    setOriginalPrice(null);
 
     if (service) {
       const isCustom = !!service.custom_material;
       setShowCustomMaterial(isCustom);
+      if (!isCustom && service.material_id) {
+        const mat = materials.find(m => m.id === service.material_id);
+        setOriginalPrice(mat?.price ?? service.price);
+      }
       setFormData({
         id: service.id, service_account_id: service.service_account_id,
         material_id: isCustom ? 'otro' : service.material_id,
         custom_material: service.custom_material || '',
         quantity: service.quantity, price: service.price,
-        service_date: service.service_date
+        service_date: service.service_date,
+        notes: service.notes || '',
       });
     } else {
       setShowCustomMaterial(false);
       setFormData({
         id: null,
-        service_account_id: preAccountId || accountId || '', // Pre-selección inteligente
+        service_account_id: preAccountId || accountId || '',
         material_id: '', custom_material: '', quantity: '', price: '',
-        service_date: new Date().toISOString().split('T')[0]
+        service_date: new Date().toISOString().split('T')[0],
+        notes: '',
       });
     }
     setIsModalOpen(true);
+  };
+
+  const handleUpdateMaterialPrice = async () => {
+    if (!formData.material_id || !formData.price) return;
+    try {
+      await api.patch(`materials/${formData.material_id}/`, { price: Number(formData.price) });
+      queryClient.invalidateQueries({ queryKey: QK.materials });
+      setOriginalPrice(Number(formData.price));
+      setPriceModified(false);
+      addToast('Precio del material actualizado.', 'success');
+    } catch (err) { addToast(extractError(err), 'error'); }
+  };
+
+  const handleDiscardPriceChange = () => {
+    setPriceModified(false);
+    setFormData(prev => ({ ...prev, price: originalPrice }));
+  };
+
+  const handleSaveNewMaterial = async () => {
+    if (!formData.custom_material?.trim()) return;
+    try {
+      const res = await api.post('materials/', {
+        name: formData.custom_material.trim().toUpperCase(),
+        price: formData.price ? Number(formData.price) : 0,
+      });
+      await queryClient.invalidateQueries({ queryKey: QK.materials });
+      const newMat = res.data?.data || res.data;
+      setShowCustomMaterial(false);
+      setOriginalPrice(newMat.price);
+      setPriceModified(false);
+      setFormData(prev => ({ ...prev, material_id: newMat.id, custom_material: '' }));
+      addToast(`Material "${newMat.name}" guardado.`, 'success');
+    } catch (err) { addToast(extractError(err), 'error'); }
   };
 
   const handleSave = async () => {
@@ -156,7 +249,8 @@ function Services() {
       quantity: Number(formData.quantity),
       price: parseFloat(formData.price),
       material_id: showCustomMaterial ? null : Number(formData.material_id),
-      custom_material: showCustomMaterial ? formData.custom_material : null
+      custom_material: showCustomMaterial ? formData.custom_material?.trim().toUpperCase() || null : null,
+      notes: formData.notes?.trim() || null,
     };
 
     try {
@@ -234,7 +328,7 @@ function Services() {
         {/* HEADER */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
-            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Servicios <span className="text-[#f58d2f]">.</span></h1>
+            <h1 className="text-4xl font-black text-slate-900 tracking-tight">Viajes <span className="text-[#f58d2f]">.</span></h1>
             <p className="text-slate-500 font-medium">
               {accountId ? `Filtrado por: ${getAccountName(Number(accountId))}` : ''}
             </p>
@@ -252,205 +346,140 @@ function Services() {
           </div>
         </div>
 
-        {/* SEARCH BAR */}
+        {/* FILTROS */}
         {!accountId && (
-          <div className="relative mb-6 max-w-md">
-            <svg className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" /></svg>
-            <input
-              type="text"
-              placeholder="Buscar por cliente o cuenta..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm input-fancy"
-            />
+          <div className="flex flex-col gap-3 mb-6">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="relative flex-1 min-w-0">
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
+                <input
+                  type="text"
+                  placeholder="Buscar por cliente o cuenta..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors"
+                />
+              </div>
+              <Select
+                value={selectedClient}
+                onChange={(e) => { setSelectedClient(e.target.value); setSelectedAccount(''); }}
+              >
+                <option value="">Todos los clientes</option>
+                {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </Select>
+              <Select
+                value={selectedAccount}
+                onChange={(e) => setSelectedAccount(e.target.value)}
+                disabled={accountsForClient.length === 0}
+              >
+                <option value="">Todas las cuentas</option>
+                {accountsForClient.map(a => <option key={a.id} value={a.id}>{a.description}</option>)}
+              </Select>
+              {(selectedClient || selectedAccount || searchTerm) && (
+                <button
+                  onClick={() => { setSelectedClient(''); setSelectedAccount(''); setSearchTerm(''); }}
+                  className="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors text-sm font-medium whitespace-nowrap"
+                >
+                  Limpiar
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2 items-center flex-wrap">
+              <DatePicker
+                name="dateFrom"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                placeholder="Desde"
+                className="w-44"
+              />
+              <span className="text-slate-300 text-xs">—</span>
+              <DatePicker
+                name="dateTo"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                placeholder="Hasta"
+                className="w-44"
+              />
+              {(dateFrom || dateTo) && (
+                <button
+                  onClick={() => { setDateFrom(''); setDateTo(''); }}
+                  className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
+                  title="Limpiar fechas"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
           </div>
         )}
 
-        {/* Tabla — solo desktop */}
-        <div className="hidden md:block bg-white rounded-[2.5rem] border border-slate-100 overflow-hidden shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <tbody className="divide-y divide-slate-50">
-                {loading ? (
-                  [1, 2, 3].map(i => (
-                    <tr key={i}>
-                      <td className="px-8 py-5"><div className="skeleton h-5 w-2/3" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-5 w-20 mx-auto" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-5 w-12 mx-auto" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-5 w-24 ml-auto" /></td>
-                      <td className="px-8 py-5"><div className="skeleton h-5 w-16 mx-auto" /></td>
-                    </tr>
-                  ))
-                ) : Object.keys(groupedData).length === 0 ? (
-                  <tr>
-                    <td colSpan="5" className="py-20 text-center">
-                      <EmptyState icon={Briefcase} title="Sin movimientos registrados" description="Registra el primer servicio usando el botón superior" />
-                    </td>
-                  </tr>
-                ) : Object.entries(groupedData).map(([clientName, clientAccounts]) => (
-                  <React.Fragment key={clientName}>
-                    {/* ENCABEZADO CLIENTE - PREMIUM CARD */}
-                    <tr className="bg-transparent sticky top-0 z-20">
-                      <td colSpan="5" className="px-4 py-6">
-                        {(() => {
-                          const clientTotal = Object.values(clientAccounts).reduce((sum, accSvcs) => 
-                            sum + accSvcs.reduce((sSum, s) => sSum + (Number(s.price) * Number(s.quantity)), 0), 0);
-
-                          return (
-                            <button 
-                              onClick={() => toggleClient(clientName)} 
-                              className={`group w-full relative overflow-hidden transition-all duration-500 rounded-[2rem] border ${
-                                openClients[clientName] 
-                                  ? 'bg-white shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] border-[#f58d2f]/20 scale-[1.01]' 
-                                  : 'bg-white/80 backdrop-blur-xl border-white hover:bg-white hover:shadow-xl'
-                              }`}
-                            >
-                              <div className="p-6 md:grid md:grid-cols-[40%_1fr_1fr_auto] items-center gap-6 text-left">
-                                <div className="flex items-center gap-4">
-                                  <div className={`w-14 h-14 flex-shrink-0 flex items-center justify-center rounded-2xl shadow-lg transition-all duration-300 ${
-                                    openClients[clientName] 
-                                      ? 'bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] text-white rotate-3 translate-x-1' 
-                                      : 'bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f]'
-                                  }`}>
-                                    <Briefcase size={26} />
-                                  </div>
-                                  <div className="min-w-0 pr-4">
-                                    <span className={`text-[10px] font-black uppercase tracking-[0.2em] transition-colors whitespace-nowrap ${
-                                      openClients[clientName] ? 'text-[#f58d2f]' : 'text-slate-400'
-                                    }`}>
-                                      Cliente Asociado
-                                    </span>
-                                    <h3 className="text-lg font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-all truncate">
-                                      {clientName}
-                                    </h3>
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-start md:justify-center">
-                                  <div className="px-6 py-2.5 bg-slate-50 rounded-2xl border border-slate-100/50 flex flex-col items-center min-w-[120px]">
-                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Cuentas</span>
-                                    <span className="text-base font-black text-slate-700">{Object.keys(clientAccounts).length}</span>
-                                  </div>
-                                </div>
-
-                                <div className="flex justify-start md:justify-center">
-                                  <div className="px-6 py-2.5 bg-[#1b4332]/5 rounded-2xl border border-[#1b4332]/10 flex flex-col items-center min-w-[180px]">
-                                    <span className="text-[10px] font-bold text-[#1b4332]/60 uppercase tracking-widest">Cartera Total</span>
-                                    <span className="text-base font-black text-[#1b4332]">{formatCurrency(clientTotal)}</span>
-                                  </div>
-                                </div>
-
-                                <div className="flex items-center justify-end">
-                                  <div className={`w-12 h-12 flex items-center justify-center rounded-2xl bg-slate-50 group-hover:bg-orange-50 transition-all ${
-                                    openClients[clientName] ? 'rotate-180 bg-orange-100 text-[#f58d2f]' : 'text-slate-400'
-                                  }`}>
-                                    <ChevronDown size={22} />
-                                  </div>
-                                </div>
-                              </div>
-                              {openClients[clientName] && (
-                                <div className="absolute bottom-0 left-0 right-0 h-1.5 bg-gradient-to-r from-transparent via-[#f58d2f]/40 to-transparent" />
-                              )}
-                            </button>
-                          );
-                        })()}
+        {/* Tabla flat — solo desktop */}
+        <div className="hidden md:block bg-white rounded-2xl border border-slate-100 overflow-hidden">
+          {loading ? (
+            <div className="divide-y divide-slate-100">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex items-center gap-4 px-6 py-4 animate-pulse">
+                  <div className="h-3 bg-slate-100 rounded w-20" />
+                  <div className="h-3 bg-slate-100 rounded w-36 ml-2" />
+                  <div className="h-3 bg-slate-100 rounded w-28 ml-2" />
+                  <div className="h-3 bg-slate-100 rounded w-16 ml-auto" />
+                  <div className="h-3 bg-slate-100 rounded w-24" />
+                  <div className="h-6 bg-slate-100 rounded-xl w-14" />
+                </div>
+              ))}
+            </div>
+          ) : filteredServices.length === 0 ? (
+            <div className="py-20">
+              <EmptyState icon={Briefcase} title="Sin movimientos registrados" description="Registra el primer viaje usando el botón superior" />
+            </div>
+          ) : (
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Fecha</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Material</th>
+                  {!accountId && <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cuenta / Cliente</th>}
+                  <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500">Cantidad</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Total</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {filteredServices.map(s => {
+                  const account = accounts.find(a => a.id === s.service_account_id);
+                  const client = clients.find(c => c.id === account?.client_id);
+                  return (
+                    <tr key={s.id} className="hover:bg-slate-50/60 transition-colors group">
+                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-600 whitespace-nowrap">{s.service_date}</td>
+                      <td className="px-5 py-3.5">
+                        <p className="font-bold text-slate-800 text-sm">{getMaterialName(s)}</p>
+                        {s.notes && <p className="text-xs text-slate-400 italic mt-0.5">({s.notes})</p>}
+                      </td>
+                      {!accountId && (
+                        <td className="px-5 py-3.5">
+                          <p className="font-bold text-slate-800 text-sm">{account?.description || '—'}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{client?.name || '—'}</p>
+                        </td>
+                      )}
+                      <td className="px-5 py-3.5 text-center">
+                        <span className="font-bold text-slate-700 text-sm">{s.quantity}</span>
+                        <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(s.price)} c/u</p>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <span className="font-black text-emerald-600 text-sm">{formatCurrency(s.total_amount)}</span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <div className="flex items-center justify-end gap-1">
+                          <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar" className="hover:text-blue-500" onClick={() => handleOpenModal(s)} />
+                          <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar" className="hover:text-red-500" onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} />
+                        </div>
                       </td>
                     </tr>
-
-                    {/* ACORDEON DE CUENTAS POR CLIENTE */}
-                    {openClients[clientName] && Object.entries(clientAccounts).map(([accountName, accountServices]) => (
-                      <React.Fragment key={accountName}>
-                        <tr className="bg-white/50 sticky top-[95px] z-10 backdrop-blur-sm border-b border-slate-100">
-                          <td colSpan="5" className="px-8 py-4 pl-12">
-                            <button 
-                              onClick={() => toggleAccount(accountName)} 
-                              className={`flex items-center gap-4 w-full p-3 rounded-2xl transition-all group ${openAccounts[accountName] ? 'bg-white shadow-sm ring-1 ring-slate-100' : 'hover:bg-white'}`}
-                            >
-                              <div className={`w-8 h-8 flex items-center justify-center rounded-xl transition-all ${openAccounts[accountName] ? 'bg-orange-100 text-[#f58d2f]' : 'bg-slate-100 text-slate-400'}`}>
-                                {openAccounts[accountName] ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
-                              </div>
-                              <div className="flex flex-col items-start translate-y-[-1px]">
-                                <span className="text-[9px] font-black text-slate-300 uppercase tracking-widest leading-none">Cuenta de Servicio</span>
-                                <span className="text-sm font-black text-slate-700 tracking-tight">{accountName}</span>
-                              </div>
-                              <div className="flex-1 h-[1px] bg-slate-100/50 group-hover:bg-orange-100 transition-colors"></div>
-                              <div className="flex items-center gap-4">
-                                <Button
-                                  variant="outline"
-                                  size="sm"
-                                  icon={Plus}
-                                  onClick={(e) => { e.stopPropagation(); handleOpenModal(accountServices[0]?.service_account_id); }}
-                                >
-                                  Registrar
-                                </Button>
-                                <div className="flex items-center gap-2 bg-slate-50 px-3 py-1.5 rounded-lg border border-slate-100">
-                                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{accountServices.length} viajes</span>
-                                  <Mountain size={16} className="text-orange-200" />
-                                </div>
-                              </div>
-                            </button>
-                          </td>
-                        </tr>
-                        {openAccounts[accountName] && (
-                          <tr className="bg-slate-50/30">
-                            <th className="px-8 py-3 pl-20 text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Material</th>
-                            <th className="px-8 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Fecha</th>
-                            <th className="px-8 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Cantidad / Precio</th>
-                            <th className="px-8 py-3 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Total</th>
-                            <th className="px-8 py-3 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest border-b border-slate-100">Acciones</th>
-                          </tr>
-                        )}
-                        {openAccounts[accountName] && accountServices.map((s) => (
-                          <tr key={s.id} className="hover:bg-slate-50/30 transition-all group animate-in slide-in-from-top-1 duration-200">
-                            <td className="px-8 py-6 pl-20">
-                              <div className="flex items-center gap-3">
-                                <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] group-hover:bg-[#f58d2f] group-hover:text-white transition-colors">
-                                  <Mountain size={18} />
-                                </div>
-                                <p className="font-black text-slate-800 text-sm uppercase">{getMaterialName(s)}</p>
-                              </div>
-                            </td>
-                            <td className="px-8 py-6 text-center">
-                              <span className="text-[10px] font-black text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg uppercase">{s.service_date}</span>
-                            </td>
-                            <td className="px-8 py-6 text-center">
-                              <div className="flex flex-col">
-                                <span className="font-black text-slate-800 text-sm uppercase">{s.quantity} Viajes</span>
-                                <span className="text-[10px] text-slate-400 font-bold italic">c/u {formatCurrency(s.price)}</span>
-                              </div>
-                            </td>
-                            <td className="px-8 py-6 text-right">
-                              <span className="px-4 py-2 bg-emerald-50 text-emerald-600 font-black rounded-xl border border-emerald-100 text-sm">{formatCurrency(s.total_amount)}</span>
-                            </td>
-                            <td className="px-8 py-6">
-                              <div className="flex justify-center gap-2">
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  icon={Edit2}
-                                  aria-label="Editar servicio"
-                                  className="hover:text-blue-500"
-                                  onClick={() => handleOpenModal(s)} 
-                                />
-                                <Button 
-                                  variant="ghost" 
-                                  size="icon" 
-                                  icon={Trash2}
-                                  aria-label="Eliminar servicio"
-                                  className="hover:text-red-500"
-                                  onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} 
-                                />
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </React.Fragment>
-                    ))}
-                  </React.Fragment>
-                ))}
+                  );
+                })}
               </tbody>
             </table>
-          </div>
+          )}
         </div>
 
         {/* Acordeón móvil — solo mobile (versión aplanada) */}
@@ -476,7 +505,7 @@ function Services() {
                   {openClients[clientName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 </div>
                 <Briefcase size={15} className="text-[#f58d2f]" />
-                <span className="font-black text-slate-800 text-sm uppercase tracking-tight flex-1 text-left">{clientName}</span>
+                <span className="font-black text-slate-800 text-sm flex-1 text-left">{clientName}</span>
                 <span className="text-[10px] font-black text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
                   {Object.values(clientAccounts).reduce((sum, arr) => sum + arr.length, 0)} viajes
                 </span>
@@ -488,7 +517,7 @@ function Services() {
                   {/* Badge de cuenta como separador */}
                   <div className="flex items-center gap-2 px-5 py-2 bg-slate-50/50 border-b border-slate-50">
                     <Wallet size={11} className="text-[#f58d2f] flex-shrink-0" />
-                    <span className="text-[9px] font-bold text-slate-500 uppercase tracking-tight truncate">{accountName}</span>
+                    <span className="text-[9px] font-bold text-slate-500 truncate">{accountName}</span>
                     <span className="text-[8px] font-black text-slate-400 ml-auto">{accountServices.length} viajes</span>
                     <Button
                       variant="outline"
@@ -506,8 +535,11 @@ function Services() {
                             <Mountain size={12} />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-black text-slate-800 text-[11px] uppercase tracking-tight truncate">{getMaterialName(s)}</p>
-                            <span className="text-[8px] font-bold text-slate-400">{s.service_date}</span>
+                            <p className="font-black text-slate-800 text-[11px] truncate">{getMaterialName(s)}</p>
+                            {s.notes
+                              ? <span className="text-[8px] font-medium text-slate-400 italic truncate">({s.notes})</span>
+                              : <span className="text-[8px] font-bold text-slate-400">{s.service_date}</span>
+                            }
                           </div>
                         </div>
                         <div className="flex items-center gap-0.5 flex-shrink-0">
@@ -517,7 +549,7 @@ function Services() {
                       </div>
                       <div className="flex items-center justify-between pl-9">
                         <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black text-slate-700">{s.quantity} Viajes</span>
+                          <span className="text-[11px] font-black text-slate-700">{s.quantity} viajes</span>
                           <span className="text-[8px] text-slate-400 font-bold italic">c/u {formatCurrency(s.price)}</span>
                         </div>
                         <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">{formatCurrency(s.total_amount)}</span>
@@ -545,6 +577,11 @@ function Services() {
         onSubmit={handleSave}
         canSubmit={canSubmit}
         formatCurrency={formatCurrency}
+        priceModified={priceModified}
+        selectedMaterialName={materials.find(m => m.id === Number(formData.material_id))?.name || ''}
+        onUpdateMaterialPrice={handleUpdateMaterialPrice}
+        onDiscardPriceChange={handleDiscardPriceChange}
+        onSaveNewMaterial={handleSaveNewMaterial}
       />
 
       <ConfirmModal

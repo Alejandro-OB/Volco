@@ -6,6 +6,7 @@ class ServiceBase(SQLModel):
     quantity: int
     price: int
     custom_material: str | None = Field(max_length=50, default=None)
+    notes: str | None = Field(max_length=200, default=None)
 
 class ServiceCreate(ServiceBase):
     material_id: int | None = None
@@ -17,3 +18,4 @@ class ServiceUpdate(SQLModel):
     price: int | None = None
     material_id: int | None = None
     custom_material: str | None = None
+    notes: str | None = None

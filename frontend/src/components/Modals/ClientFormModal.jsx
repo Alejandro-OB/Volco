@@ -3,15 +3,18 @@ import { createPortal } from 'react-dom';
 import { User, Mail, Phone, MapPin, X, Save, Loader2 } from 'lucide-react';
 import { useFocusTrap } from '../../hooks/useFocusTrap';
 
-const ClientFormModal = ({ 
-  isOpen, 
-  onClose, 
-  isEditing, 
-  formData, 
-  fieldErrors, 
-  isSubmitting, 
-  onInputChange, 
-  onSubmit 
+const input = (extra = '') =>
+  `w-full bg-white border rounded-2xl pl-12 pr-4 py-3 outline-none text-sm font-medium text-slate-700 placeholder:text-slate-400 transition-colors ${extra}`;
+
+const ClientFormModal = ({
+  isOpen,
+  onClose,
+  isEditing,
+  formData,
+  fieldErrors,
+  isSubmitting,
+  onInputChange,
+  onSubmit
 }) => {
   const trapRef = useFocusTrap(isOpen);
 
@@ -37,7 +40,7 @@ const ClientFormModal = ({
 
           <form onSubmit={onSubmit} className="space-y-5">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center">
+              <label className="text-xs font-semibold text-slate-500 ml-1 flex items-center">
                 Razón Social / Nombre <Required />
               </label>
               <div className="relative group">
@@ -47,7 +50,7 @@ const ClientFormModal = ({
                   required
                   value={formData.name}
                   onChange={onInputChange}
-                  className={`w-full bg-slate-50 border-2 rounded-2xl pl-12 pr-4 py-4 outline-none transition-all text-sm font-bold text-slate-700 shadow-inner ${fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30 focus:bg-white'}`}
+                  className={input(fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-[#f58d2f]/50')}
                   placeholder="Ej. Juan Pérez o Empresa S.A."
                 />
                 {fieldErrors.name && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.name}</p>}
@@ -56,7 +59,7 @@ const ClientFormModal = ({
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Email</label>
+                <label className="text-xs font-semibold text-slate-500 ml-1">Email</label>
                 <div className="relative group">
                   <Mail size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
                   <input
@@ -64,20 +67,20 @@ const ClientFormModal = ({
                     type="email"
                     value={formData.email}
                     onChange={onInputChange}
-                    className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700 shadow-inner"
+                    className={input('border-slate-200 focus:border-[#f58d2f]/50')}
                     placeholder="correo@ejemplo.com"
                   />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Teléfono</label>
+                <label className="text-xs font-semibold text-slate-500 ml-1">Teléfono</label>
                 <div className="relative group">
                   <Phone size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
                   <input
                     name="phone_number"
                     value={formData.phone_number}
                     onChange={onInputChange}
-                    className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700 shadow-inner"
+                    className={input('border-slate-200 focus:border-[#f58d2f]/50')}
                     placeholder="+57 300..."
                   />
                 </div>
@@ -85,14 +88,14 @@ const ClientFormModal = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Dirección de Oficina</label>
+              <label className="text-xs font-semibold text-slate-500 ml-1">Dirección de Oficina</label>
               <div className="relative group">
                 <MapPin size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300 group-focus-within:text-[#f58d2f] transition-colors" />
                 <input
                   name="address"
                   value={formData.address}
                   onChange={onInputChange}
-                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-4 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700 shadow-inner"
+                  className={input('border-slate-200 focus:border-[#f58d2f]/50')}
                   placeholder="Calle 123 #45-67..."
                 />
               </div>
@@ -102,14 +105,14 @@ const ClientFormModal = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 px-6 py-4 border-2 border-slate-100 rounded-2xl font-black text-slate-400 hover:bg-slate-50 transition-all text-[11px] uppercase tracking-[0.2em]"
+                className="flex-1 px-6 py-3 border border-slate-200 rounded-2xl font-semibold text-slate-400 hover:bg-slate-50 transition-all text-sm"
               >
                 Cancelar
               </button>
               <button
                 type="submit"
                 disabled={isSubmitting || !formData.name.trim()}
-                className="flex-1 px-6 py-4 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-xl shadow-orange-100 hover:brightness-110 transition-all text-[11px] uppercase tracking-[0.2em] flex items-center justify-center gap-2 border-none disabled:opacity-50"
+                className="flex-1 px-6 py-3 bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] rounded-2xl font-black text-white shadow-lg shadow-orange-100 hover:brightness-110 transition-all text-sm flex items-center justify-center gap-2 border-none disabled:opacity-50"
               >
                 {isSubmitting ? <Loader2 className="animate-spin" size={18} /> : <Save size={18} />}
                 {isSubmitting ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Registrar')}

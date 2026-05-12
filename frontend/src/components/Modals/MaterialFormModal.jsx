@@ -38,17 +38,18 @@ const MaterialFormModal = ({
 
           <div className="space-y-6">
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1 flex items-center">Nombre del Material <Required /></label>
+              <label className="text-xs font-semibold text-slate-500 ml-1 flex items-center">Nombre del Material <Required /></label>
               <div className="relative">
                 <Box className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                 <input
                   type="text"
+                  name="name"
                   value={formData.name}
                   onChange={onFieldChange}
                   placeholder="Ej: Arena"
                   required
-                  className={`w-full bg-slate-50 border-2 rounded-2xl pl-12 pr-5 py-4 outline-none transition-all text-sm font-bold text-slate-700 ${
-                    fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-transparent focus:border-[#f58d2f]/30 focus:bg-white'
+                  className={`w-full bg-white border rounded-2xl pl-12 pr-5 py-3 outline-none transition-colors text-sm font-medium text-slate-700 placeholder:text-slate-400 ${
+                    fieldErrors.name ? 'border-red-300 focus:border-red-400' : 'border-slate-200 focus:border-[#f58d2f]/50'
                   }`}
                 />
                 {fieldErrors.name && <p className="text-red-500 text-xs mt-1 ml-1">{fieldErrors.name}</p>}
@@ -56,7 +57,7 @@ const MaterialFormModal = ({
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest ml-1">Precio Base (COP)</label>
+              <label className="text-xs font-semibold text-slate-500 ml-1">Precio Base (COP)</label>
               <div className="relative">
                 <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                 <input
@@ -65,7 +66,7 @@ const MaterialFormModal = ({
                   value={formData.price}
                   onChange={onFieldChange}
                   placeholder="0.00"
-                  className="w-full bg-slate-50 border-2 border-transparent rounded-2xl pl-12 pr-5 py-4 outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all text-sm font-bold text-slate-700"
+                  className="w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-5 py-3 outline-none focus:border-[#f58d2f]/50 transition-colors text-sm font-medium text-slate-700 placeholder:text-slate-400"
                 />
               </div>
             </div>

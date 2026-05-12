@@ -174,12 +174,14 @@ def render_word_from_invoice(invoice, services, total, provider, customization=N
         s_date = s.service_date.strftime('%d/%m/%Y') if hasattr(s.service_date, 'strftime') else str(s.service_date)
         
         if s.custom_material:
-            s_name = f"Viaje de {s.custom_material}"
+            s_name = f"VIAJE DE {s.custom_material.upper()}"
         elif s.material:
-            s_name = f"Viaje de {s.material.name}"
+            s_name = f"VIAJE DE {s.material.name.upper()}"
         else:
-            s_name = "Viaje sin material"
-            
+            s_name = "VIAJE SIN MATERIAL"
+        if s.notes:
+            s_name += f" ({s.notes})"
+
         row_cells[0].text = s_date
         row_cells[1].text = s_name
         row_cells[2].text = str(s.quantity)

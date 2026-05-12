@@ -75,13 +75,13 @@ function ConfirmModal({
         <div className="flex gap-3 px-8 pb-8">
           <button
             onClick={onClose}
-            className="flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-all"
+            className="flex-1 py-3 rounded-xl text-xs font-black text-slate-400 hover:text-slate-600 bg-slate-50 hover:bg-slate-100 border border-slate-100 transition-all"
           >
             Cancelar
           </button>
           <button
             onClick={onConfirm}
-            className={`flex-1 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all active:scale-95 ${confirmButtonConfig[variant]}`}
+            className={`flex-1 py-3 rounded-xl text-xs font-black transition-all active:scale-95 ${confirmButtonConfig[variant]}`}
           >
             {confirmText}
           </button>

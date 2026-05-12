@@ -17,6 +17,7 @@ import {
   X,
   Check
 } from 'lucide-react';
+import Select from '../components/UI/Select';
 
 function InvoiceCustomizationForm() {
   const [searchParams] = useSearchParams();
@@ -172,8 +173,8 @@ function InvoiceCustomizationForm() {
             ) : (
               <div>
                 <div className="flex items-center gap-3 mb-2">
-                  {accountId && <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-blue-100">Cuenta Específica</span>}
-                  {!accountId && <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black uppercase tracking-widest rounded-full border border-purple-100">Global</span>}
+                  {accountId && <span className="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-full border border-blue-100">Cuenta Específica</span>}
+                  {!accountId && <span className="px-3 py-1 bg-purple-50 text-purple-600 text-[10px] font-black rounded-full border border-purple-100">Global</span>}
                 </div>
                 <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Personalización</h1>
                 <p className="text-slate-500 font-medium mt-1">
@@ -247,7 +248,7 @@ function InvoiceCustomizationForm() {
                   <SectionTitle icon={<FileText size={20} />} title="Contenido de Factura" />
                   <div className="space-y-6 mt-8">
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Encabezado de Servicios</label>
+                      <label className="text-xs font-semibold text-slate-500 ml-1">Encabezado de Servicios</label>
                       <textarea
                         name="service_text"
                         value={custom.service_text || ''}
@@ -258,7 +259,7 @@ function InvoiceCustomizationForm() {
                       />
                     </div>
                     <div className="space-y-2">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Mensaje de Pie de Página</label>
+                      <label className="text-xs font-semibold text-slate-500 ml-1">Mensaje de Pie de Página</label>
                       <textarea
                         name="footer_message"
                         value={custom.footer_message || ''}
@@ -325,17 +326,16 @@ function InvoiceCustomizationForm() {
                     <ToggleItem label="Pie de Página" name="include_footer" checked={custom.include_footer} onChange={handleChange} />
 
                     <div className="pt-6 mt-4 border-t border-slate-50">
-                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1 mb-2 block">Tamaño de Hoja</label>
-                      <select
+                      <label className="text-xs font-semibold text-slate-500 ml-1 mb-2 block">Tamaño de Hoja</label>
+                      <Select
                         name="page_size"
                         value={custom.page_size || 'A4'}
                         onChange={handleChange}
-                        className="w-full bg-slate-50 border-none rounded-2xl px-5 py-4 text-sm font-black text-slate-700 appearance-none cursor-pointer"
                       >
                         <option value="A4">A4 (Estándar)</option>
                         <option value="Letter">Carta (8.5" x 11")</option>
                         <option value="Legal">Oficio</option>
-                      </select>
+                      </Select>
                     </div>
                   </div>
                 </>
@@ -356,13 +356,13 @@ const SectionTitle = ({ icon, title }) => (
     <div className="p-3 rounded-2xl bg-orange-50 text-[#f58d2f] border border-orange-100">
       {icon}
     </div>
-    <h2 className="text-xl font-black text-slate-800 tracking-tight uppercase tracking-widest text-sm">{title}</h2>
+    <h2 className="text-xl font-black text-slate-800 tracking-tight text-sm">{title}</h2>
   </div>
 );
 
 const ImageUploader = ({ label, name, preview, onChange }) => (
   <div className="space-y-3">
-    <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-2">{label}</span>
+    <span className="text-xs font-semibold text-slate-500 ml-2">{label}</span>
     <label className={`
       relative h-48 rounded-[2.5rem] border-2 border-dashed flex flex-col items-center justify-center cursor-pointer transition-all overflow-hidden
       ${preview ? 'border-[#f58d2f] bg-orange-50/30' : 'border-slate-100 bg-slate-50 hover:bg-slate-100'}
@@ -373,7 +373,7 @@ const ImageUploader = ({ label, name, preview, onChange }) => (
       ) : (
         <div className="flex flex-col items-center gap-2">
           <UploadCloud className="text-slate-300" size={32} />
-          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Subir Imagen</span>
+          <span className="text-[9px] font-black text-slate-400">Subir Imagen</span>
         </div>
       )}
     </label>
@@ -382,7 +382,7 @@ const ImageUploader = ({ label, name, preview, onChange }) => (
 
 const SidebarInput = ({ label, name, value, onChange }) => (
   <div className="space-y-1.5">
-    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">{label}</label>
+    <label className="text-xs font-semibold text-slate-500 ml-1">{label}</label>
     <input
       type="text"
       name={name}
@@ -395,7 +395,7 @@ const SidebarInput = ({ label, name, value, onChange }) => (
 
 const ToggleItem = ({ label, name, checked, onChange }) => (
   <label className="flex items-center justify-between p-1 cursor-pointer group">
-    <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors uppercase tracking-tight">{label}</span>
+    <span className="text-sm font-bold text-slate-600 group-hover:text-slate-900 transition-colors">{label}</span>
     <div className="relative inline-flex items-center">
       <input
         type="checkbox"

@@ -81,8 +81,8 @@ function EditProvider() {
     }
   };
 
-  const inputStyle = "w-full bg-slate-50 border-2 border-transparent rounded-[1.5rem] pl-12 pr-5 py-4 text-slate-700 placeholder-slate-400 focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all font-bold text-sm";
-  const labelStyle = "text-[10px] font-black uppercase tracking-[0.2em] text-slate-400 ml-2 mb-1 block";
+  const inputStyle = "w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-5 py-3 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors font-medium text-sm";
+  const labelStyle = "text-xs font-semibold text-slate-500 ml-2 mb-1 block";
 
   const SkeletonInput = () => (
     <div className="space-y-2">
@@ -129,7 +129,7 @@ function EditProvider() {
             messageType === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
           }`}>
             {messageType === 'error' ? <AlertTriangle size={20} /> : <CheckCircle size={20} />}
-            <span className="font-black text-[10px] uppercase tracking-widest leading-tight">{message}</span>
+            <span className="font-black text-[10px] leading-tight">{message}</span>
           </div>
         )}
 
@@ -154,8 +154,8 @@ function EditProvider() {
                     </>
                   ) : (
                     <>
-                      <h3 className="text-xl font-black text-[#1a202c] uppercase tracking-tight">Información de Cuenta</h3>
-                      <p className="text-slate-400 font-bold text-[10px] uppercase tracking-widest mt-0.5">Sincronización de Identidad</p>
+                      <h3 className="text-xl font-black text-[#1a202c] tracking-tight">Información de Cuenta</h3>
+                      <p className="text-slate-400 font-bold text-[10px] mt-0.5">Sincronización de Identidad</p>
                     </>
                   )}
                 </div>
@@ -172,7 +172,7 @@ function EditProvider() {
                 ) : (
                   <form className="space-y-8">
                     <div className="flex items-center gap-4">
-                      <span className="text-[10px] font-black text-slate-300 uppercase tracking-[0.3em]">Datos Generales</span>
+                      <span className="text-[10px] font-black text-slate-300">Datos Generales</span>
                       <div className="h-[1px] flex-1 bg-slate-50" />
                     </div>
                     
@@ -250,7 +250,7 @@ function EditProvider() {
                     <div className="p-3 rounded-2xl bg-orange-50 text-[#f58d2f] border border-orange-100">
                       <Lock size={20} />
                     </div>
-                    <h2 className="text-sm font-black text-slate-800 uppercase tracking-widest">Seguridad</h2>
+                    <h2 className="text-sm font-black text-slate-800">Seguridad</h2>
                   </div>
 
                   <div className="space-y-6">
@@ -274,7 +274,7 @@ function EditProvider() {
                       <div className="mt-0.5">
                         <AlertTriangle size={14} className="text-[#f58d2f]" />
                       </div>
-                      <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-relaxed">
+                      <p className="text-[9px] text-slate-400 font-bold leading-relaxed">
                         Dejar en blanco para mantener la contraseña actual.
                       </p>
                     </div>

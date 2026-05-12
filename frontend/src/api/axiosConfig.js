@@ -59,9 +59,11 @@ api.interceptors.response.use(
 
     if (response?.status === 401 && !originalRequest._retry) {
       if (isRefreshing) {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
           subscribeTokenRefresh((token) => {
+            if (!token) { reject(error); return; }
             originalRequest.headers.Authorization = `Bearer ${token}`;
+            originalRequest._retry = true;
             resolve(api(originalRequest));
           });
         });
@@ -70,8 +72,7 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       const refresh = localStorage.getItem('refresh_token');
 
-      if (!refresh) {
-        // No hay refresh token, forzar logout
+      if (!refresh || refresh === 'undefined' || refresh === 'null') {
         localStorage.clear();
         window.dispatchEvent(new Event('tokenExpired'));
         if (window.location.pathname !== '/login') window.location.href = '/login';
@@ -92,13 +93,17 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         isRefreshing = false;
-        console.error('Refresh token inválido o expirado.');
-        localStorage.clear();
-        window.dispatchEvent(new Event('tokenExpired'));
-        
-        if (window.location.pathname !== '/login') {
-          window.location.href = '/login';
+        refreshSubscribers = [];
+
+        // Solo cerrar sesión si el refresh fue rechazado de forma definitiva (token inválido).
+        // No cerrar sesión por errores de red o 5xx (pueden ser arranques en frío del servidor).
+        const status = refreshError.response?.status;
+        if (status === 401 || status === 400 || status === 403) {
+          localStorage.clear();
+          window.dispatchEvent(new Event('tokenExpired'));
+          if (window.location.pathname !== '/login') window.location.href = '/login';
         }
+
         return Promise.reject(refreshError);
       }
     }

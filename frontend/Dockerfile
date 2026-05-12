@@ -3,7 +3,7 @@ FROM node:20-alpine
 WORKDIR /app
 
 RUN corepack enable \
- && corepack prepare pnpm@latest --activate
+ && corepack prepare pnpm@9 --activate
 
 COPY package.json pnpm-lock.yaml ./
 

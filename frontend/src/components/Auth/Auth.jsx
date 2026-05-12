@@ -73,8 +73,8 @@ function Auth({ onLoginSuccess }) {
   };
 
   // Clases Reutilizables
-  const inputClass = "w-full rounded-2xl bg-white/50 border-2 border-slate-100 pl-12 pr-4 py-3.5 text-slate-700 placeholder:text-slate-400 input-fancy font-medium text-sm";
-  const labelClass = "text-[11px] font-black text-slate-500 uppercase tracking-[0.15em] ml-1 flex items-center";
+  const inputClass = "w-full rounded-2xl bg-white border border-slate-200 pl-12 pr-4 py-3 text-slate-700 placeholder:text-slate-400 font-medium text-sm focus:outline-none focus:border-[#f58d2f]/50 transition-colors";
+  const labelClass = "text-xs font-semibold text-slate-500 ml-1 flex items-center";
   const iconClass = "absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#f58d2f] transition-colors";
 
   const Required = () => <span className="text-red-500 ml-1" title="Obligatorio">*</span>;
@@ -92,7 +92,7 @@ function Auth({ onLoginSuccess }) {
           {(error || success) && (
             <div className={`flex items-center gap-3 p-4 mb-8 rounded-2xl border animate-bounce-short ${error ? "bg-red-50 border-red-100 text-red-600" : "bg-emerald-50 border-emerald-100 text-emerald-600"}`}>
               {error ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
-              <span className="text-[11px] font-bold uppercase">{error || success}</span>
+              <span className="text-[11px] font-bold">{error || success}</span>
             </div>
           )}
 
@@ -110,7 +110,7 @@ function Auth({ onLoginSuccess }) {
               <div className="space-y-2">
                 <div className="flex justify-between items-center">
                   <label className={labelClass}>Contraseña <Required /></label>
-                  <button type="button" onClick={() => navigate("/olvido-contraseña")} className="text-[10px] font-bold text-[#f58d2f] hover:text-[#e87a1c] hover:underline uppercase transition-all">
+                  <button type="button" onClick={() => navigate("/olvido-contraseña")} className="text-xs font-bold text-[#f58d2f] hover:text-[#e87a1c] hover:underline transition-all">
                     ¿La olvidaste?
                   </button>
                 </div>
@@ -212,7 +212,7 @@ function Auth({ onLoginSuccess }) {
               <button
                 type="button"
                 onClick={() => setIsLogin(!isLogin)}
-                className="ml-2 font-black text-[#f58d2f] hover:text-[#e87a1c] hover:underline underline-offset-4 transition-all uppercase text-[11px] tracking-widest"
+                className="ml-2 font-black text-[#f58d2f] hover:text-[#e87a1c] hover:underline underline-offset-4 transition-all text-sm"
               >
                 {isLogin ? "Regístrate ahora" : "Inicia sesión"}
               </button>

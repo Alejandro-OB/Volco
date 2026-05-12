@@ -82,7 +82,7 @@ function ResetPassword() {
             
             {/* Password */}
             <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">
+              <label className="text-xs font-semibold text-slate-500 ml-1">
                 Nueva Contraseña
               </label>
               <div className="relative group">
@@ -92,7 +92,7 @@ function ResetPassword() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="w-full rounded-2xl bg-slate-50 border-2 border-transparent pl-12 pr-12 py-3.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all shadow-sm font-medium text-sm"
+                  className="w-full rounded-2xl bg-white border border-slate-200 pl-12 pr-12 py-3 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors font-medium text-sm"
                   required
                   disabled={loading}
                 />
@@ -108,7 +108,7 @@ function ResetPassword() {
 
             {/* Confirm Password */}
             <div className="space-y-2">
-              <label className="text-[11px] font-black text-slate-400 uppercase tracking-[0.15em] ml-1">
+              <label className="text-xs font-semibold text-slate-500 ml-1">
                 Confirmar Contraseña
               </label>
               <div className="relative group">
@@ -118,7 +118,7 @@ function ResetPassword() {
                   value={password2}
                   onChange={(e) => setPassword2(e.target.value)}
                   placeholder="Repetir contraseña"
-                  className="w-full rounded-2xl bg-slate-50 border-2 border-transparent pl-12 pr-4 py-3.5 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/30 focus:bg-white transition-all shadow-sm font-medium text-sm"
+                  className="w-full rounded-2xl bg-white border border-slate-200 pl-12 pr-4 py-3 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors font-medium text-sm"
                   required
                   disabled={loading}
                 />
@@ -131,7 +131,7 @@ function ResetPassword() {
                 error ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
               }`}>
                 {error ? <AlertTriangle size={18} /> : <CheckCircle size={18} />}
-                <span className="text-[11px] font-bold uppercase tracking-wider">{error || success}</span>
+                <span className="text-[11px] font-bold">{error || success}</span>
               </div>
             )}
 
@@ -158,7 +158,7 @@ function ResetPassword() {
               <button
                 type="button"
                 onClick={() => navigate('/login')}
-                className="ml-2 font-black text-[#f58d2f] hover:text-[#e87a1c] hover:underline underline-offset-4 transition-all uppercase text-[11px] tracking-widest"
+                className="ml-2 font-black text-[#f58d2f] hover:text-[#e87a1c] hover:underline underline-offset-4 transition-all text-sm"
               >
                 Cancelar
               </button>

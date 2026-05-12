@@ -186,66 +186,60 @@ const Clients = () => {
           <QueryError message={extractError(error)} onRetry={() => { setPage(1); refetch(); }} />
         ) : (
         <>
-        {/* Directorio de Clientes - Desktop Grid */}
-        <div className="hidden md:grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {/* Directorio de Clientes - Desktop Table */}
+        <div className="hidden md:block bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {loading ? (
-            <SkeletonList desktop count={6} />
+            <div className="p-6">
+              <SkeletonList desktop count={6} />
+            </div>
           ) : paginatedClients.length > 0 ? (
-            paginatedClients.map((client) => (
-              <div 
-                key={client.id} 
-                className="group relative bg-white/80 backdrop-blur-xl rounded-[2.5rem] border border-white hover:border-[#f58d2f]/20 hover:shadow-[0_20px_60px_-15px_rgba(0,0,0,0.08)] transition-all duration-500 overflow-hidden flex flex-col p-6 animate-in zoom-in-95 duration-500"
-              >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="relative flex-shrink-0">
-                    <div className="h-16 w-16 rounded-2xl bg-gradient-to-br from-orange-50 to-white border border-orange-100 flex items-center justify-center text-[#f58d2f] font-black text-2xl shadow-sm group-hover:scale-110 group-hover:-rotate-3 transition-all duration-500">
-                      {(client.name || "U").charAt(0)}
-                    </div>
-                    <div className="absolute -bottom-1 -right-1 h-5 w-5 bg-emerald-500 border-2 border-white rounded-full shadow-sm" />
-                  </div>
-                  <div className="min-w-0">
-                    <div className="flex items-center gap-2 mb-0.5">
-                      <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">ID-{client.id}</span>
-                      <span className="h-1 w-1 rounded-full bg-emerald-400" />
-                    </div>
-                    <h3 className="text-lg font-black text-slate-900 tracking-tight leading-tight group-hover:text-[#f58d2f] transition-colors truncate">
-                      {client.name}
-                    </h3>
-                  </div>
-                </div>
-
-                <div className="space-y-3 mb-6 flex-1">
-                  <div className="flex items-center gap-3 text-slate-500">
-                    <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f] transition-colors">
-                      <Phone size={14} />
-                    </div>
-                    <span className="text-xs font-bold">{client.phone_number || 'No asignado'}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-500">
-                    <div className="w-8 h-8 flex items-center justify-center rounded-xl bg-slate-50 text-slate-400 group-hover:bg-orange-50 group-hover:text-[#f58d2f] transition-colors">
-                      <Mail size={14} />
-                    </div>
-                    <span className="text-xs font-bold truncate max-w-[180px]">{client.email || 'Sin correo'}</span>
-                  </div>
-                  <div className="flex items-center gap-3 text-slate-400 italic mt-1 pl-1">
-                    <MapPin size={12} className="flex-shrink-0" />
-                    <span className="text-body-sm font-medium truncate">{client.address || 'Sin dirección registrada'}</span>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 pt-4 border-t border-slate-50/50">
-                  <Button variant="success" size="sm" icon={Wallet} onClick={() => navigate(`/clientes/${client.id}/cuentas`)} className="flex-1"><span>Cuentas</span></Button>
-                  <div className="flex gap-1">
-                    <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" onClick={() => handleOpenEditModal(client)} />
-                    <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
-                  </div>
-                </div>
-
-                <Users size={80} className="absolute -bottom-4 -right-4 text-slate-900/[0.02] -rotate-12 pointer-events-none" />
-              </div>
-            ))
+            <table className="w-full">
+              <thead>
+                <tr className="bg-slate-50 border-b border-slate-100">
+                  <th className="px-5 py-3 w-10" />
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cliente</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Teléfono</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Email</th>
+                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Dirección</th>
+                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {paginatedClients.map((client) => (
+                  <tr key={client.id} className="hover:bg-slate-50/60 transition-colors group">
+                    <td className="px-5 py-3.5">
+                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] font-black text-base flex-shrink-0">
+                        {(client.name || 'U').charAt(0)}
+                      </div>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <p className="font-black text-slate-900 text-sm leading-tight">{client.name}</p>
+                      <p className="text-[10px] font-bold text-slate-400  mt-0.5">ID-{client.id}</p>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <span className="text-sm font-medium text-slate-600">{client.phone_number || <span className="text-slate-300 italic text-xs">—</span>}</span>
+                    </td>
+                    <td className="px-5 py-3.5 max-w-[180px]">
+                      <span className="text-sm font-medium text-slate-600 truncate block">{client.email || <span className="text-slate-300 italic text-xs">—</span>}</span>
+                    </td>
+                    <td className="px-5 py-3.5 max-w-[200px]">
+                      <span className="text-sm font-medium text-slate-500 italic truncate block">{client.address || <span className="text-slate-300 italic text-xs">—</span>}</span>
+                    </td>
+                    <td className="px-5 py-3.5">
+                      <div className="flex items-center justify-end gap-1.5">
+                        <Button variant="success" size="sm" icon={Wallet} onClick={() => navigate(`/cuentas?cliente=${client.id}`)}>Cuentas</Button>
+                        <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" onClick={() => handleOpenEditModal(client)} />
+                        <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           ) : (
-            <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
+            <div className="py-16">
+              <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
+            </div>
           )}
         </div>
         {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}
@@ -263,11 +257,11 @@ const Clients = () => {
                   </div>
                   <div className="min-w-0">
                     <p className="font-black text-slate-900 text-[13px] tracking-tight leading-tight truncate">{client.name}</p>
-                    <div className="flex items-center gap-1 text-slate-400 text-[9px] font-bold tracking-widest uppercase">ID-{client.id}</div>
+                    <div className="flex items-center gap-1 text-slate-400 text-[9px] font-bold">ID-{client.id}</div>
                   </div>
                 </div>
                 <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" icon={Wallet} aria-label="Ver cuentas" className="hover:text-green-500 hover:bg-green-50" onClick={() => navigate(`/clientes/${client.id}/cuentas`)} title="Ver Cuentas" />
+                  <Button variant="ghost" size="icon" icon={Wallet} aria-label="Ver cuentas" className="hover:text-green-500 hover:bg-green-50" onClick={() => navigate(`/cuentas?cliente=${client.id}`)} title="Ver Cuentas" />
                   <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" className="hover:text-blue-500 hover:bg-blue-50" onClick={() => handleOpenEditModal(client)} />
                   <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
                 </div>
@@ -280,29 +274,15 @@ const Clients = () => {
                   </div>
                 )}
                 {client.email && (
-                  <div className="flex items-center gap-2 text-slate-500 text-body-sm font-bold">
+                  <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold">
                     <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]">
-                       <Phone size={10} />
-                    </div>
-                    <span className="truncate">{client.phone_number}</span>
-                  </div>
-                )}
-                {client.email && (
-                  <div className="flex items-center gap-2 text-slate-500 text-body-sm font-bold">
-                    <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]">
-                       <Mail size={10} />
+                      <Mail size={10} />
                     </div>
                     <span className="truncate">{client.email}</span>
                   </div>
                 )}
                 {client.address && (
                   <div className="col-span-2 flex items-center gap-2 text-slate-400 text-[10px] font-medium italic">
-                    <MapPin size={9} className="flex-shrink-0" />
-                    <span className="truncate">{client.address}</span>
-                  </div>
-                )}
-                {client.address && (
-                  <div className="col-span-2 flex items-center gap-2 text-slate-400 text-[9px] font-medium italic">
                     <MapPin size={9} className="flex-shrink-0" />
                     <span className="truncate">{client.address}</span>
                   </div>
