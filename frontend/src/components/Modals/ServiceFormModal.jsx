@@ -14,6 +14,7 @@ const ServiceFormModal = ({
   isSubmitting,
   materials,
   accounts,
+  clients = [],
   accountIdUrlParam,
   showCustomMaterial,
   onInputChange,
@@ -87,9 +88,14 @@ const ServiceFormModal = ({
                 disabled={!!accountIdUrlParam}
               >
                 <option value="">Seleccionar cuenta...</option>
-                {accounts.map(acc => (
-                  <option key={acc.id} value={acc.id}>{acc.description}</option>
-                ))}
+                {accounts.map(acc => {
+                  const clientName = clients.find(c => c.id === acc.client_id)?.name;
+                  return (
+                    <option key={acc.id} value={acc.id}>
+                      {clientName ? `${clientName} — ${acc.description}` : acc.description}
+                    </option>
+                  );
+                })}
               </Select>
               {showQuickAccount && (
                 <QuickCreateAccount

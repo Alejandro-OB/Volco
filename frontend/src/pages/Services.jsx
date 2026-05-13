@@ -438,7 +438,7 @@ function Services() {
                 <tr className="bg-slate-50 border-b border-slate-100">
                   <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Fecha</th>
                   <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Material</th>
-                  {!accountId && <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cuenta / Cliente</th>}
+                  {!accountId && <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cliente / Cuenta</th>}
                   <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500">Cantidad</th>
                   <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Total</th>
                   <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
@@ -457,8 +457,8 @@ function Services() {
                       </td>
                       {!accountId && (
                         <td className="px-5 py-3.5">
-                          <p className="font-bold text-slate-800 text-sm">{account?.description || '—'}</p>
-                          <p className="text-xs text-slate-400 mt-0.5">{client?.name || '—'}</p>
+                          <p className="font-bold text-slate-800 text-sm">{client?.name || '—'}</p>
+                          <p className="text-xs text-slate-400 mt-0.5">{account?.description || '—'}</p>
                         </td>
                       )}
                       <td className="px-5 py-3.5 text-center">
@@ -571,6 +571,7 @@ function Services() {
         isSubmitting={isSubmitting}
         materials={materials}
         accounts={accounts}
+        clients={clients}
         accountIdUrlParam={accountId}
         showCustomMaterial={showCustomMaterial}
         onInputChange={handleInputChange}
