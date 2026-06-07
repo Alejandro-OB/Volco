@@ -29,7 +29,7 @@ services:
       - BREVO_API_KEY=${BREVO_API_KEY}
       - EMAIL=${EMAIL}
     ports:
-      - "8001:8000"
+      - "8002:8000"
     volumes:
       - ./backend:/app
     networks:
@@ -44,14 +44,14 @@ services:
       dockerfile: Dockerfile.dev
     container_name: volco-dev-frontend
     environment:
-      - VITE_API_URL=http://localhost:8001
+      - VITE_API_URL=http://localhost:8002
     depends_on:
       - backend
     volumes:
       - ./frontend:/app
       - /app/node_modules
     ports:
-      - "5173:5173"
+      - "5174:5173"
     networks:
       - app-network-dev
 

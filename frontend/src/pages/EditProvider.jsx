@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import api from '../api/axiosConfig';
-import { 
-  User, Mail, FileText, Lock, Shield, Save, 
-  Loader2, CheckCircle, AlertTriangle, UserCog, ArrowLeft
-} from 'lucide-react';
+import { User, Mail, FileText, Lock, Shield, Save, Loader2, AlertTriangle } from 'lucide-react';
+import Button from '../components/UI/Button';
 
 function EditProvider() {
   const { providerId } = useParams();
-  const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
-    document_number: '',
-    email: '',
-    username: '',
-    password: '',
-    old_password: '',
+    name: '', document_number: '', email: '', username: '', password: '', old_password: '',
   });
 
   const [loadingData, setLoadingData] = useState(true);
@@ -24,25 +16,11 @@ function EditProvider() {
   const [message, setMessage] = useState(null);
   const [messageType, setMessageType] = useState('');
 
-  const Required = () => <span className="text-orange-500 ml-1 font-bold" title="Obligatorio">*</span>;
-
   useEffect(() => {
-    const fetchProfile = async () => {
-      try {
-        const resp = await api.get(`/providers/${providerId}/`);
-        setFormData(prev => ({
-          ...prev,
-          ...resp.data,
-          password: '',
-          old_password: '',
-        }));
-      } catch (err) {
-        showStatus('Error al sincronizar datos del perfil.', 'error');
-      } finally {
-        setLoadingData(false);
-      }
-    };
-    fetchProfile();
+    api.get(`/providers/${providerId}/`)
+      .then(res => setFormData(prev => ({ ...prev, ...res.data, password: '', old_password: '' })))
+      .catch(() => showStatus('Error al cargar el perfil.', 'error'))
+      .finally(() => setLoadingData(false));
   }, [providerId]);
 
   const showStatus = (text, type = 'success') => {
@@ -52,236 +30,109 @@ function EditProvider() {
   };
 
   const handleSubmit = async (e) => {
-    if (e) e.preventDefault();
+    e?.preventDefault?.();
     setSaving(true);
-
     const payload = {
       name: formData.name,
       document_number: formData.document_number,
       email: formData.email,
       username: formData.username,
     };
-
     if (formData.password && formData.old_password) {
       payload.password = formData.password;
       payload.old_password = formData.old_password;
     }
-
     try {
       await api.patch(`/providers/${providerId}/`, payload);
       showStatus('Perfil actualizado con éxito.', 'success');
       setFormData(prev => ({ ...prev, password: '', old_password: '' }));
     } catch (err) {
-      const errorDetail = err.response?.data 
-        ? Object.values(err.response.data).flat().join(' ') 
+      const detail = err.response?.data
+        ? Object.values(err.response.data).flat().join(' ')
         : 'Error de conexión con el servidor.';
-      showStatus(errorDetail, 'error');
+      showStatus(detail, 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const inputStyle = "w-full bg-white border border-slate-200 rounded-2xl pl-12 pr-5 py-3 text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors font-medium text-sm";
-  const labelStyle = "text-xs font-semibold text-slate-500 ml-2 mb-1 block";
+  const set = (field) => (e) => setFormData(prev => ({ ...prev, [field]: e.target.value }));
 
-  const SkeletonInput = () => (
-    <div className="space-y-2">
-      <div className="h-3 w-24 bg-slate-100 rounded-full animate-pulse ml-2" />
-      <div className="h-14 bg-slate-50 rounded-[1.5rem] animate-pulse" />
+  if (loadingData) return (
+    <div className="min-h-screen p-4 sm:p-12">
+      <div className="max-w-5xl mx-auto space-y-8 animate-pulse">
+        <div className="h-10 w-40 bg-slate-100 rounded-xl" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 h-64 bg-slate-100 rounded-2xl" />
+          <div className="h-64 bg-slate-100 rounded-2xl" />
+        </div>
+      </div>
     </div>
   );
 
   return (
-    <div className="min-h-screen p-6 sm:p-12 font-sans flex justify-center items-start">
-      <div className="w-full max-w-7xl animate-in fade-in duration-500">
-        
-        {/* ENCABEZADO */}
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
-          {loadingData ? (
-            <div className="space-y-4 w-full max-w-md">
-              <div className="h-12 w-48 bg-slate-200 rounded-2xl animate-pulse" />
-              <div className="h-4 w-64 bg-slate-100 rounded-lg animate-pulse" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div>
-                <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Mi Perfil</h1>
-                <p className="text-slate-500 font-medium mt-1">Gestión de identidad y credenciales del proveedor.</p>
-              </div>
-            </div>
-          )}
+    <div className="min-h-screen font-sans text-slate-900 p-4 sm:p-12 page-enter">
+      <div className="max-w-5xl mx-auto">
 
-          {!loadingData && (
-            <button 
-              onClick={handleSubmit}
-              disabled={saving}
-              className="inline-flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-br from-[#f58d2f] to-[#e87a1c] px-8 py-4 text-sm font-bold text-white shadow-xl shadow-orange-200 transition-all hover:-translate-y-1 active:scale-95 border-none"
-            >
-              {saving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-              {saving ? 'Guardando...' : 'Guardar Cambios'}
-            </button>
-          )}
+        {/* HEADER */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
+          <div>
+            <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">Mi Perfil <span className="text-[#f58d2f]">.</span></h1>
+            <p className="text-sm text-slate-400 font-medium mt-1">Identidad y credenciales del proveedor.</p>
+          </div>
+          <Button variant="primary" size="md" icon={saving ? Loader2 : Save} onClick={handleSubmit} disabled={saving}>
+            {saving ? 'Guardando...' : 'Guardar Cambios'}
+          </Button>
         </div>
 
-        {/* ALERTA DE FEEDBACK */}
+        {/* FEEDBACK */}
         {message && (
-          <div className={`flex items-center gap-3 p-6 rounded-[2rem] border-2 mb-10 animate-in slide-in-from-top-2 ${
+          <div className={`flex items-center gap-3 px-5 py-3.5 rounded-2xl border mb-6 text-sm font-semibold animate-in slide-in-from-top-2 ${
             messageType === 'error' ? 'bg-red-50 border-red-100 text-red-600' : 'bg-emerald-50 border-emerald-100 text-emerald-600'
           }`}>
-            {messageType === 'error' ? <AlertTriangle size={20} /> : <CheckCircle size={20} />}
-            <span className="font-black text-[10px] leading-tight">{message}</span>
+            <AlertTriangle size={15} />
+            {message}
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          
-          {/* COLUMNA IZQUIERDA: DATOS GENERALES */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+          {/* DATOS GENERALES */}
           <div className="lg:col-span-2">
-            <div className="bg-white rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100 overflow-hidden">
-              <div className="p-10 border-b border-slate-50 bg-slate-50/30 flex items-center gap-6">
-                {loadingData ? (
-                  <div className="h-16 w-16 bg-slate-100 rounded-[1.5rem] animate-pulse" />
-                ) : (
-                  <div className="h-16 w-16 bg-orange-50 rounded-[1.5rem] text-[#f58d2f] flex items-center justify-center border border-orange-100 shadow-sm">
-                    <UserCog size={32} />
-                  </div>
-                )}
-                <div className="space-y-2">
-                  {loadingData ? (
-                    <>
-                      <div className="h-6 w-40 bg-slate-200 rounded-lg animate-pulse" />
-                      <div className="h-3 w-32 bg-slate-100 rounded-lg animate-pulse" />
-                    </>
-                  ) : (
-                    <>
-                      <h3 className="text-xl font-black text-[#1a202c] tracking-tight">Información de Cuenta</h3>
-                      <p className="text-slate-400 font-bold text-[10px] mt-0.5">Sincronización de Identidad</p>
-                    </>
-                  )}
-                </div>
+            <Section icon={<User size={15} />} title="Información de Cuenta">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <Field label="Razón Social / Nombre" required>
+                  <Input icon={User} type="text" value={formData.name} onChange={set('name')} />
+                </Field>
+                <Field label="NIT / Identificación" required>
+                  <Input icon={FileText} type="text" value={formData.document_number} onChange={set('document_number')} />
+                </Field>
+                <Field label="Email de Notificaciones" required>
+                  <Input icon={Mail} type="email" value={formData.email} onChange={set('email')} />
+                </Field>
+                <Field label="Usuario del Sistema" required>
+                  <Input icon={Shield} type="text" value={formData.username} onChange={set('username')} />
+                </Field>
               </div>
-
-              <div className="p-10">
-                {loadingData ? (
-                  <div className="space-y-8">
-                    <div className="h-3 w-28 bg-slate-100 rounded-full animate-pulse" />
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                      {[1, 2, 3, 4].map(i => <SkeletonInput key={i} />)}
-                    </div>
-                  </div>
-                ) : (
-                  <form className="space-y-8">
-                    <div className="flex items-center gap-4">
-                      <span className="text-[10px] font-black text-slate-300">Datos Generales</span>
-                      <div className="h-[1px] flex-1 bg-slate-50" />
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                      <div className="space-y-1">
-                        <label className={labelStyle}>Razón Social / Nombre <Required /></label>
-                        <div className="relative">
-                          <User className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          <input type="text"
-                           value={formData.name}
-                           onChange={(e) => setFormData({...formData, name: e.target.value})}
-                           className={inputStyle}
-                           required />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className={labelStyle}>NIT / Identificación <Required /></label>
-                        <div className="relative">
-                          <FileText className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          <input type="text"
-                           value={formData.document_number}
-                           onChange={(e) => setFormData({...formData, document_number: e.target.value})}
-                           className={inputStyle}
-                           required />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className={labelStyle}>Email Notificaciones <Required /></label>
-                        <div className="relative">
-                          <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          <input type="email"
-                           value={formData.email}
-                           onChange={(e) => setFormData({...formData, email: e.target.value})}
-                           className={inputStyle}
-                           required />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className={labelStyle}>Usuario del Sistema <Required /></label>
-                        <div className="relative">
-                          <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                          <input type="text"
-                           value={formData.username}
-                           onChange={(e) => setFormData({...formData, username: e.target.value})}
-                           className={inputStyle}
-                           required />
-                        </div>
-                      </div>
-                    </div>
-                  </form>
-                )}
-              </div>
-            </div>
+            </Section>
           </div>
 
-          {/* COLUMNA DERECHA: SEGURIDAD */}
-          <div className="space-y-8">
-            <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.02)] border border-slate-100">
-              {loadingData ? (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="h-11 w-11 bg-slate-100 rounded-2xl animate-pulse" />
-                    <div className="h-4 w-24 bg-slate-200 rounded-lg animate-pulse" />
-                  </div>
-                  <SkeletonInput />
-                  <SkeletonInput />
-                  <div className="h-10 bg-slate-50 rounded-xl animate-pulse mt-4" />
+          {/* SEGURIDAD */}
+          <div>
+            <Section icon={<Lock size={15} />} title="Seguridad">
+              <div className="space-y-4">
+                <Field label="Clave Actual">
+                  <Input icon={Lock} type="password" value={formData.old_password} onChange={set('old_password')} placeholder="••••••••" />
+                </Field>
+                <Field label="Clave Nueva">
+                  <Input icon={Shield} type="password" value={formData.password} onChange={set('password')} placeholder="••••••••" />
+                </Field>
+                <div className="flex items-start gap-2 pt-2 border-t border-slate-100">
+                  <AlertTriangle size={12} className="text-[#f58d2f] mt-0.5 flex-shrink-0" />
+                  <p className="text-[10px] text-slate-400 leading-relaxed">Dejar en blanco para mantener la contraseña actual.</p>
                 </div>
-              ) : (
-                <>
-                  <div className="flex items-center gap-3 mb-8">
-                    <div className="p-3 rounded-2xl bg-orange-50 text-[#f58d2f] border border-orange-100">
-                      <Lock size={20} />
-                    </div>
-                    <h2 className="text-sm font-black text-slate-800">Seguridad</h2>
-                  </div>
-
-                  <div className="space-y-6">
-                    <div className="space-y-1">
-                      <label className={labelStyle}>Clave Actual</label>
-                      <div className="relative">
-                        <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                        <input type="password" value={formData.old_password} onChange={(e) => setFormData({...formData, old_password: e.target.value})} placeholder="••••••••" className={inputStyle} />
-                      </div>
-                    </div>
-
-                    <div className="space-y-1">
-                      <label className={labelStyle}>Clave Nueva</label>
-                      <div className="relative">
-                        <Shield className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-                        <input type="password" value={formData.password} onChange={(e) => setFormData({...formData, password: e.target.value})} placeholder="••••••••" className={inputStyle} />
-                      </div>
-                    </div>
-                    
-                    <div className="pt-4 border-t border-slate-50 flex items-start gap-3">
-                      <div className="mt-0.5">
-                        <AlertTriangle size={14} className="text-[#f58d2f]" />
-                      </div>
-                      <p className="text-[9px] text-slate-400 font-bold leading-relaxed">
-                        Dejar en blanco para mantener la contraseña actual.
-                      </p>
-                    </div>
-                  </div>
-                </>
-              )}
-            </div>
+              </div>
+            </Section>
           </div>
 
         </div>
@@ -289,5 +140,36 @@ function EditProvider() {
     </div>
   );
 }
+
+/* ── Primitivos ──────────────────────────────────────────────────────────── */
+
+const Section = ({ icon, title, children }) => (
+  <div className="bg-white rounded-2xl border border-slate-100 p-6 space-y-5">
+    <div className="flex items-center gap-2 pb-1 border-b border-slate-50">
+      <span className="text-slate-400">{icon}</span>
+      <h2 className="text-sm font-bold text-slate-600">{title}</h2>
+    </div>
+    {children}
+  </div>
+);
+
+const Field = ({ label, required, children }) => (
+  <div className="space-y-1.5">
+    <label className="text-xs font-semibold text-slate-500 ml-1">
+      {label}{required && <span className="text-orange-500 ml-1 font-bold">*</span>}
+    </label>
+    {children}
+  </div>
+);
+
+const Input = ({ icon: Icon, ...props }) => (
+  <div className="relative">
+    {Icon && <Icon className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={15} />}
+    <input
+      {...props}
+      className={`w-full bg-white border border-slate-200 rounded-2xl ${Icon ? 'pl-11' : 'pl-5'} pr-5 py-3 text-sm text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors`}
+    />
+  </div>
+);
 
 export default EditProvider;

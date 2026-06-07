@@ -10,8 +10,10 @@ import Pagination from '../components/UI/Pagination';
 import QueryError from '../components/UI/QueryError';
 import { extractError } from '../utils/extractError';
 import { fetchMaterials, QK } from '../api/queries';
-import { Plus, Edit2, Trash2, Box, Search } from 'lucide-react';
+import { Plus, Edit2, Trash2, Box } from 'lucide-react';
 import Button from '../components/UI/Button';
+import { Table, TableHead, Th, TableBody, TableRow, Td } from '../components/UI/Table';
+import { SearchInput } from '../components/UI/SearchFilterBar';
 
 const Materials = () => {
   const queryClient = useQueryClient();
@@ -71,7 +73,7 @@ const Materials = () => {
   const [searchTerm, setSearchTerm] = useState("");
 
   // --- FORMULARIO ---
-  const [formData, setFormData] = useState({ name: '', price: '' });
+  const [formData, setFormData] = useState({ name: '', price: '', transport_price: '' });
   const [fieldErrors, setFieldErrors] = useState({});
 
   const handleFieldChange = (e) => {
@@ -83,10 +85,10 @@ const Materials = () => {
   const handleOpenModal = (material = null) => {
     if (material) {
       setEditingMaterial(material);
-      setFormData({ name: material.name, price: material.price });
+      setFormData({ name: material.name, price: material.price ?? '', transport_price: material.transport_price ?? '' });
     } else {
       setEditingMaterial(null);
-      setFormData({ name: '', price: '' });
+      setFormData({ name: '', price: '', transport_price: '' });
     }
     setIsModalOpen(true);
   };
@@ -97,7 +99,11 @@ const Materials = () => {
     const errors = {};
     if (!formData.name.trim()) errors.name = 'El nombre del material es obligatorio';
     if (Object.keys(errors).length) { setFieldErrors(errors); return; }
-    const data = { ...formData, name: formData.name.trim().toUpperCase() };
+    const data = {
+      ...formData,
+      name: formData.name.trim().toUpperCase(),
+      transport_price: formData.transport_price !== '' ? Number(formData.transport_price) : null,
+    };
     if (editingMaterial) {
       updateMutation.mutate({ id: editingMaterial.id, ...data });
     } else {
@@ -134,7 +140,7 @@ const Materials = () => {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div className="space-y-4">
             <div>
-              <h1 className="text-5xl font-black text-[#1a202c] tracking-tight">Materiales <span className="text-[#f58d2f]">.</span></h1>
+              <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">Materiales <span className="text-[#f58d2f]">.</span></h1>
             </div>
           </div>
 
@@ -149,14 +155,11 @@ const Materials = () => {
         </div>
 
         {/* BUSCADOR RÁPIDO */}
-        <div className="relative mb-6 max-w-md">
-          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={18} />
-          <input
-            type="text"
-            placeholder="Buscar material..."
+        <div className="mb-6">
+          <SearchInput
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full bg-white border border-slate-100 rounded-2xl pl-12 pr-4 py-3 text-sm input-fancy"
+            placeholder="Buscar material..."
           />
         </div>
 
@@ -178,44 +181,45 @@ const Materials = () => {
               ))}
             </div>
           ) : paginatedMaterials.length > 0 ? (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-5 py-3 w-10" />
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Material</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Precio base por viaje</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+            <Table>
+              <TableHead>
+                <tr>
+                  <Th className="w-10" />
+                  <Th>Material</Th>
+                  <Th align="right">Precio base por viaje</Th>
+                  <Th align="right">Acciones</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+              </TableHead>
+              <TableBody>
                 {paginatedMaterials.map((m) => (
-                  <tr key={m.id} className="hover:bg-slate-50/60 transition-colors group">
-                    <td className="px-5 py-3.5">
+                  <TableRow key={m.id}>
+                    <Td>
                       <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f]">
                         <Box size={16} />
                       </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-bold text-slate-800 text-sm group-hover:text-[#f58d2f] transition-colors">{m.name}</p>
+                    </Td>
+                    <Td>
+                      <p className="text-sm text-slate-800 group-hover:text-[#f58d2f] transition-colors">{m.name}</p>
                       <p className="text-xs text-slate-400 mt-0.5">ID-{m.id}</p>
-                    </td>
-                    <td className="px-5 py-3.5 text-right">
-                      <span className="font-black text-slate-800 text-sm">{formatCurrency(m.price)}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
+                    </Td>
+                    <Td align="right">
+                      <span className="text-sm text-slate-700 tabular-nums">{formatCurrency(m.price)}</span>
+                      {m.transport_price != null && (
+                        <p className="text-xs text-slate-400 mt-0.5 tabular-nums">Transporte: {formatCurrency(m.transport_price)}</p>
+                      )}
+                    </Td>
+                    <Td>
                       <div className="flex items-center justify-end gap-1">
                         <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar material" onClick={() => handleOpenModal(m)} />
                         <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar material" className="hover:text-red-500" onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} />
                       </div>
-                    </td>
-                  </tr>
+                    </Td>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           ) : (
-            <div className="py-16">
-              <EmptyState icon={Box} title="Sin resultados" description="No se encontraron materiales" />
-            </div>
+            <EmptyState icon={Box} title="Sin resultados" description="No se encontraron materiales" />
           )}
         </div>
         {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}

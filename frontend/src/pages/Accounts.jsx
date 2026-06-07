@@ -2,12 +2,14 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, Plus, Calendar, Trash2, Edit2,
-  Receipt, Truck, X, Check, Filter,
+  Plus, Calendar, Trash2, Edit2,
+  Receipt, Truck, X, Check,
   Loader2, AlertTriangle, CheckCircle, FileText,
   ChevronRight, ChevronDown, Briefcase, Palette, Wallet
 } from 'lucide-react';
 import Select from '../components/UI/Select';
+import { Table, TableHead, Th, TableBody, TableRow, Td } from '../components/UI/Table';
+import { FilterBar, FilterRow, SearchInput, FilterSelect } from '../components/UI/SearchFilterBar';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
@@ -269,46 +271,41 @@ const Accounts = () => {
 
         {/* Filtros */}
         <div className="flex flex-col gap-6">
-          <div className="flex bg-slate-100 p-1.5 rounded-2xl w-full max-w-3xl overflow-x-auto">
+          <div className="flex bg-slate-100/80 p-1 rounded-2xl w-full max-w-2xl gap-0.5 overflow-x-auto">
             {['Todas', 'Pendientes', 'Facturadas', 'Sin Movimientos'].map(tab => (
-              <Button
+              <button
                 key={tab}
-                variant={activeTab === tab ? 'primary' : 'ghost'}
-                size="sm"
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 min-w-[140px] !rounded-xl ${activeTab === tab ? '' : 'text-slate-400'}`}
+                className={`flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 ${
+                  activeTab === tab
+                    ? 'bg-[#1a202c] text-white shadow-sm'
+                    : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
+                }`}
               >
                 {tab}
-              </Button>
+              </button>
             ))}
           </div>
 
-          <div className="flex flex-col lg:flex-row gap-4 items-center">
-            <div className="relative w-full lg:flex-1">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Buscar por cliente o descripción..."
-                className="w-full pl-12 pr-4 py-4 bg-white border-2 border-slate-100 rounded-2xl focus:outline-none focus:border-[#f58d2f]/20 transition-all text-sm font-bold shadow-sm"
+          <FilterBar>
+            <FilterRow>
+              <SearchInput
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por cliente o descripción..."
               />
-            </div>
-
-            <div className="relative w-full lg:w-72">
-              <Filter className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 z-10 pointer-events-none" />
-              <Select
+              <FilterSelect
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
-                className="pl-12 bg-white border-2 border-slate-100 shadow-sm"
+                className="lg:w-72"
               >
                 <option value="">Todos los clientes</option>
                 {clients.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
-              </Select>
-            </div>
-          </div>
+              </FilterSelect>
+            </FilterRow>
+          </FilterBar>
         </div>
 
         {/* Tabla flat — solo desktop */}
@@ -328,18 +325,18 @@ const Accounts = () => {
               ))}
             </div>
           ) : filteredAccounts.length > 0 ? (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cliente</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cuenta / Obra</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Periodo</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Total</th>
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500">Estado</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+            <Table>
+              <TableHead>
+                <tr>
+                  <Th>Cliente</Th>
+                  <Th>Cuenta / Obra</Th>
+                  <Th>Periodo</Th>
+                  <Th align="right">Total</Th>
+                  <Th align="center">Estado</Th>
+                  <Th align="right">Acciones</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+              </TableHead>
+              <TableBody>
                 {filteredAccounts.map(account => {
                   const client = clients.find(c => c.id === account.client_id);
                   const accountServices = services.filter(s => s.service_account_id === account.id);
@@ -348,106 +345,105 @@ const Accounts = () => {
                   const totalValue = accountServices.reduce((sum, s) => sum + (Number(s.price) * Number(s.quantity)), 0);
 
                   return (
-                    <tr key={account.id} className="hover:bg-slate-50/60 transition-colors group">
-                      <td className="px-5 py-3.5">
+                    <TableRow key={account.id}>
+                      <Td>
                         <div className="flex items-center gap-2.5">
-                          <div className="h-8 w-8 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] font-black text-sm flex-shrink-0">
+                          <div className="h-7 w-7 rounded-lg bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] font-medium text-xs flex-shrink-0">
                             {(client?.name || 'C').charAt(0)}
                           </div>
-                          <span className="text-sm font-bold text-slate-700 truncate max-w-[130px]">{client?.name || '—'}</span>
+                          <span className="text-sm text-slate-700 truncate max-w-[130px]">{client?.name || '—'}</span>
                         </div>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <p className="font-black text-slate-900 text-sm group-hover:text-[#f58d2f] transition-colors">{account.description}</p>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500">
-                          <Calendar size={12} className="text-[#f58d2f] flex-shrink-0" />
+                      </Td>
+                      <Td>
+                        <div>
+                          <p className="text-sm text-slate-800">{account.description}</p>
+                        </div>
+                      </Td>
+                      <Td>
+                        <div className="flex items-center gap-1.5 text-xs text-slate-400">
+                          <Calendar size={11} className="text-slate-300 flex-shrink-0" />
                           {account.start_date} — {account.end_date}
                         </div>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <span className="font-black text-slate-800 text-sm">{formatCurrency(totalValue)}</span>
-                      </td>
-                      <td className="px-5 py-3.5 text-center">
-                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-[10px] font-black border ${
+                      </Td>
+                      <Td align="right">
+                        <span className="text-sm text-slate-700 tabular-nums">{formatCurrency(totalValue)}</span>
+                      </Td>
+                      <Td align="center">
+                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium border ${
                           hasInvoice
                             ? 'bg-emerald-50 text-emerald-600 border-emerald-100'
                             : hasServices
                               ? 'bg-orange-50 text-[#f58d2f] border-orange-100'
-                              : 'bg-slate-100 text-slate-400 border-slate-200'
+                              : 'bg-slate-50 text-slate-400 border-slate-200'
                         }`}>
                           {hasInvoice
                             ? <CheckCircle size={9} />
                             : hasServices
-                              ? <div className="w-1.5 h-1.5 rounded-full bg-[#f58d2f] animate-pulse" />
+                              ? <div className="w-1.5 h-1.5 rounded-full bg-[#f58d2f]" />
                               : <AlertTriangle size={9} />}
                           {hasInvoice ? 'Facturado' : hasServices ? 'Pendiente' : 'Sin viajes'}
                         </span>
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex items-center justify-end gap-2">
-                          {/* Viajes */}
+                      </Td>
+                      <Td>
+                        <div className="flex items-center justify-end gap-1">
                           <button
                             onClick={() => navigate(`/servicios?cuenta=${account.id}`)}
-                            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-blue-50 hover:text-blue-600 transition-colors"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-150"
                           >
-                            <Truck size={12} /> Viajes
+                            <Truck size={12} />
+                            Viajes
                           </button>
 
-                          {/* Facturar / dropdown factura */}
-                          {hasInvoice ? (
-                            <button
-                              onClick={(e) => openInvoiceDropdown(e, account.id)}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                            >
-                              {loadingId === account.id
-                                ? <Loader2 size={12} className="animate-spin" />
-                                : <Receipt size={12} />}
-                              Factura
-                              <ChevronDown size={10} className={`transition-transform ${openInvoiceMenu === account.id ? 'rotate-180' : ''}`} />
-                            </button>
-                          ) : (
-                            <button
-                              onClick={() => handleInvoiceAction(account)}
-                              disabled={!hasServices || loadingId === account.id}
-                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-orange-50 text-[#f58d2f] border border-orange-100 hover:bg-orange-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                            >
-                              {loadingId === account.id
-                                ? <Loader2 size={12} className="animate-spin" />
-                                : <FileText size={12} />}
-                              Facturar
-                            </button>
-                          )}
+                          <div className="w-[90px] flex justify-center">
+                            {hasInvoice ? (
+                              <button
+                                onClick={(e) => openInvoiceDropdown(e, account.id)}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-150"
+                              >
+                                {loadingId === account.id
+                                  ? <Loader2 size={12} className="animate-spin" />
+                                  : <Receipt size={12} />}
+                                Factura
+                                <ChevronDown size={10} className={`transition-transform ${openInvoiceMenu === account.id ? 'rotate-180' : ''}`} />
+                              </button>
+                            ) : (
+                              <button
+                                onClick={() => handleInvoiceAction(account)}
+                                disabled={!hasServices || loadingId === account.id}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-medium text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                              >
+                                {loadingId === account.id
+                                  ? <Loader2 size={12} className="animate-spin" />
+                                  : <FileText size={12} />}
+                                Facturar
+                              </button>
+                            )}
+                          </div>
 
-                          <div className="w-px h-5 bg-slate-100" />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            icon={Edit2}
-                            aria-label="Editar cuenta"
-                            className="hover:text-amber-500"
+                          <div className="w-px h-4 bg-slate-100 mx-0.5" />
+                          <button
                             onClick={() => handleOpenModal(account)}
-                          />
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            icon={Trash2}
-                            aria-label="Eliminar cuenta"
-                            className="hover:text-red-500"
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150"
+                            aria-label="Editar cuenta"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button
                             onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }}
-                          />
+                            className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all duration-150"
+                            aria-label="Eliminar cuenta"
+                          >
+                            <Trash2 size={14} />
+                          </button>
                         </div>
-                      </td>
-                    </tr>
+                      </Td>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           ) : (
-            <div className="py-20">
-              <EmptyState icon={Briefcase} title="No se encontraron cuentas" description="Registra una nueva cuenta para empezar" />
-            </div>
+            <EmptyState icon={Briefcase} title="No se encontraron cuentas" description="Registra una nueva cuenta para empezar" />
           )}
         </div>
       </div>

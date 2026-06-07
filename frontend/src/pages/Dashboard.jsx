@@ -7,7 +7,7 @@ import {
 } from 'recharts';
 import {
   TrendingUp, Users, Briefcase, Truck, DollarSign, Calendar,
-  ArrowUpRight, Activity, Plus, Mountain, ChevronRight
+  ArrowUpRight, Plus, Mountain, ChevronRight
 } from 'lucide-react';
 import { fetchClients, fetchAccounts, fetchServices, fetchMaterials, QK } from '../api/queries';
 
@@ -151,11 +151,7 @@ const Dashboard = () => {
       {/* HEADER */}
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <div className="inline-flex items-center gap-2 mb-3 bg-white px-4 py-2 rounded-2xl shadow-sm border border-slate-100">
-            <Activity className="w-4 h-4 text-[#f58d2f]" />
-            <span className="text-body-sm font-bold text-slate-500">Resumen General</span>
-          </div>
-          <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
+<h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
             Panel de Control <span className="text-[#f58d2f]">.</span>
           </h1>
         </div>

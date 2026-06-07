@@ -45,7 +45,7 @@ function PdfModal({ show, onClose, pdfUrl, invoiceId }) {
 
   const modalContent = (
     <div ref={trapRef}
-      className="fixed inset-0 z-[3000] flex items-center justify-center bg-slate-950/70 backdrop-blur-sm animate-in fade-in duration-200"
+      className="fixed inset-0 z-[3000] flex items-center justify-center bg-black/10 backdrop-blur-sm animate-in fade-in duration-200"
       onClick={(e) => e.target === e.currentTarget && onClose()}
     >
       {/* --- DESKTOP MODAL --- */}

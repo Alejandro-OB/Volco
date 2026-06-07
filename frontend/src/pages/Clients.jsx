@@ -1,12 +1,15 @@
 import React, { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  Search, Plus, Filter, ArrowUpDown, MoreHorizontal,
+  Plus, Filter, ArrowUpDown, MoreHorizontal,
   MapPin, Phone, Mail, FileText, ChevronRight, Settings, Trash2, Edit2, ShieldAlert, Check, X, User, Save, Loader2, Hash, Wallet, Users
 } from 'lucide-react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import Button from '../components/UI/Button';
+import TableActionButton from '../components/UI/TableActionButton';
+import { Table, TableHead, Th, TableBody, TableRow, Td } from '../components/UI/Table';
+import { SearchInput } from '../components/UI/SearchFilterBar';
 import EmptyState from '../components/UI/EmptyState';
 import SkeletonList from '../components/UI/SkeletonList';
 import Pagination from '../components/UI/Pagination';
@@ -169,17 +172,12 @@ const Clients = () => {
         </div>
 
         {/* Filtros */}
-        <div className="bg-white rounded-[2rem] shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-slate-100 p-5 mb-8">
-          <div className="relative w-full group">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-slate-400 group-focus-within:text-[#f58d2f] transition-colors" />
-            <input
-              type="text"
-              placeholder="Buscar por nombre, ID o teléfono..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-12 pr-4 py-4 bg-slate-50 border-2 border-transparent rounded-2xl text-sm font-medium shadow-inner input-fancy"
-            />
-          </div>
+        <div className="mb-8">
+          <SearchInput
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            placeholder="Buscar por nombre, ID o teléfono..."
+          />
         </div>
 
         {isError ? (
@@ -193,53 +191,56 @@ const Clients = () => {
               <SkeletonList desktop count={6} />
             </div>
           ) : paginatedClients.length > 0 ? (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-5 py-3 w-10" />
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cliente</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Teléfono</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Email</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Dirección</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+            <Table>
+              <TableHead>
+                <tr>
+                  <Th className="w-10" />
+                  <Th>Cliente</Th>
+                  <Th>Teléfono</Th>
+                  <Th>Email</Th>
+                  <Th>Dirección</Th>
+                  <Th align="right">Acciones</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+              </TableHead>
+              <TableBody>
                 {paginatedClients.map((client) => (
-                  <tr key={client.id} className="hover:bg-slate-50/60 transition-colors group">
-                    <td className="px-5 py-3.5">
-                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] font-black text-base flex-shrink-0">
+                  <TableRow key={client.id}>
+                    <Td>
+                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] font-medium text-sm flex-shrink-0">
                         {(client.name || 'U').charAt(0)}
                       </div>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <p className="font-black text-slate-900 text-sm leading-tight">{client.name}</p>
-                      <p className="text-[10px] font-bold text-slate-400  mt-0.5">ID-{client.id}</p>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <span className="text-sm font-medium text-slate-600">{client.phone_number || <span className="text-slate-300 italic text-xs">—</span>}</span>
-                    </td>
-                    <td className="px-5 py-3.5 max-w-[180px]">
-                      <span className="text-sm font-medium text-slate-600 truncate block">{client.email || <span className="text-slate-300 italic text-xs">—</span>}</span>
-                    </td>
-                    <td className="px-5 py-3.5 max-w-[200px]">
-                      <span className="text-sm font-medium text-slate-500 italic truncate block">{client.address || <span className="text-slate-300 italic text-xs">—</span>}</span>
-                    </td>
-                    <td className="px-5 py-3.5">
-                      <div className="flex items-center justify-end gap-1.5">
-                        <Button variant="success" size="sm" icon={Wallet} onClick={() => navigate(`/cuentas?cliente=${client.id}`)}>Cuentas</Button>
-                        <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" onClick={() => handleOpenEditModal(client)} />
-                        <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
+                    </Td>
+                    <Td>
+                      <p className="text-sm text-slate-800 leading-tight">{client.name}</p>
+                      <p className="text-[10px] text-slate-400 mt-0.5">ID-{client.id}</p>
+                    </Td>
+                    <Td>
+                      <span className="text-sm text-slate-600">{client.phone_number || <span className="text-slate-300 text-xs">—</span>}</span>
+                    </Td>
+                    <Td className="max-w-[180px]">
+                      <span className="text-sm text-slate-600 truncate block">{client.email || <span className="text-slate-300 text-xs">—</span>}</span>
+                    </Td>
+                    <Td className="max-w-[200px]">
+                      <span className="text-sm text-slate-500 truncate block">{client.address || <span className="text-slate-300 text-xs">—</span>}</span>
+                    </Td>
+                    <Td>
+                      <div className="flex items-center justify-end gap-1">
+                        <TableActionButton icon={Wallet} onClick={() => navigate(`/cuentas?cliente=${client.id}`)}>Cuentas</TableActionButton>
+                        <div className="w-px h-4 bg-slate-100 mx-0.5" />
+                        <button onClick={() => handleOpenEditModal(client)} aria-label="Editar cliente" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} aria-label="Eliminar cliente" className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all duration-150">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
-                    </td>
-                  </tr>
+                    </Td>
+                  </TableRow>
                 ))}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           ) : (
-            <div className="py-16">
-              <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
-            </div>
+            <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
           )}
         </div>
         {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}

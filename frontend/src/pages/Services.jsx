@@ -1,11 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
-  Search, Plus, Edit2, Trash2, X,
+  Plus, Edit2, Trash2,
   ChevronDown, ChevronRight, Briefcase, Wallet, Mountain
 } from 'lucide-react';
-import Select from '../components/UI/Select';
-import DatePicker from '../components/UI/DatePicker';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import api from '../api/axiosConfig';
 import ConfirmModal from '../components/Modals/ConfirmModal';
@@ -16,6 +14,8 @@ import { useToast } from '../hooks/useToast';
 import { extractError } from '../utils/extractError';
 import Breadcrumb from '../components/Layout/Breadcrumb';
 import { fetchClients, fetchAccounts, fetchMaterials, fetchServices, QK } from '../api/queries';
+import { Table, TableHead, Th, TableBody, TableRow, Td } from '../components/UI/Table';
+import { FilterBar, FilterRow, SearchInput, FilterSelect, DateRangeFilter, ClearButton } from '../components/UI/SearchFilterBar';
 
 function Services() {
   const navigate = useNavigate();
@@ -71,7 +71,7 @@ function Services() {
     id: null, service_account_id: '', material_id: '',
     custom_material: '', quantity: '', price: '',
     service_date: new Date().toISOString().split('T')[0],
-    notes: '',
+    notes: '', is_transport_only: false,
   });
 
   // Expandir acordeón automáticamente si venimos con ?cuenta=ID
@@ -148,6 +148,13 @@ function Services() {
     setOpenAccounts(prev => ({ ...prev, [name]: !prev[name] }));
   };
 
+  // Devuelve el precio a autocompletar según si el viaje es solo transporte o completo
+  const basePriceFor = (material, transportMode) => {
+    if (!material) return '';
+    if (transportMode) return material.transport_price ?? '';
+    return material.price ?? '';
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     if (name === 'material_id') {
@@ -155,11 +162,12 @@ function Services() {
         setShowCustomMaterial(true);
         setPriceModified(false);
         setOriginalPrice(null);
-        setFormData(prev => ({ ...prev, material_id: '', custom_material: '', price: '' }));
+        setFormData(prev => ({ ...prev, material_id: '', custom_material: '', price: '', is_transport_only: false }));
       } else {
         setShowCustomMaterial(false);
         const selectedMat = materials.find(m => m.id === Number(value));
-        const matPrice = selectedMat?.price ?? '';
+        const isTransport = formData.is_transport_only;
+        const matPrice = basePriceFor(selectedMat, isTransport);
         setOriginalPrice(matPrice);
         setPriceModified(false);
         setFormData(prev => ({ ...prev, material_id: value, custom_material: '', price: matPrice }));
@@ -172,6 +180,14 @@ function Services() {
     }
   };
 
+  const handleToggleTransport = (checked) => {
+    const selectedMat = materials.find(m => m.id === Number(formData.material_id));
+    const newPrice = basePriceFor(selectedMat, checked);
+    setOriginalPrice(newPrice !== '' ? newPrice : null);
+    setPriceModified(false);
+    setFormData(prev => ({ ...prev, is_transport_only: checked, price: newPrice }));
+  };
+
   const handleOpenModal = (data = null) => {
     const service = (data && data.id && !data.nativeEvent) ? data : null;
     const preAccountId = (typeof data === 'number' || typeof data === 'string') ? data : null;
@@ -181,10 +197,12 @@ function Services() {
 
     if (service) {
       const isCustom = !!service.custom_material;
+      const isTransport = !!service.is_transport_only;
       setShowCustomMaterial(isCustom);
       if (!isCustom && service.material_id) {
         const mat = materials.find(m => m.id === service.material_id);
-        setOriginalPrice(mat?.price ?? service.price);
+        const refPrice = isTransport ? (mat?.transport_price ?? service.price) : (mat?.price ?? service.price);
+        setOriginalPrice(refPrice);
       }
       setFormData({
         id: service.id, service_account_id: service.service_account_id,
@@ -193,6 +211,7 @@ function Services() {
         quantity: service.quantity, price: service.price,
         service_date: service.service_date,
         notes: service.notes || '',
+        is_transport_only: isTransport,
       });
     } else {
       setShowCustomMaterial(false);
@@ -201,7 +220,7 @@ function Services() {
         service_account_id: preAccountId || accountId || '',
         material_id: '', custom_material: '', quantity: '', price: '',
         service_date: new Date().toISOString().split('T')[0],
-        notes: '',
+        notes: '', is_transport_only: false,
       });
     }
     setIsModalOpen(true);
@@ -210,11 +229,12 @@ function Services() {
   const handleUpdateMaterialPrice = async () => {
     if (!formData.material_id || !formData.price) return;
     try {
-      await api.patch(`materials/${formData.material_id}/`, { price: Number(formData.price) });
+      const field = formData.is_transport_only ? 'transport_price' : 'price';
+      await api.patch(`materials/${formData.material_id}/`, { [field]: Number(formData.price) });
       queryClient.invalidateQueries({ queryKey: QK.materials });
       setOriginalPrice(Number(formData.price));
       setPriceModified(false);
-      addToast('Precio del material actualizado.', 'success');
+      addToast(formData.is_transport_only ? 'Precio de transporte actualizado.' : 'Precio del material actualizado.', 'success');
     } catch (err) { addToast(extractError(err), 'error'); }
   };
 
@@ -251,6 +271,7 @@ function Services() {
       material_id: showCustomMaterial ? null : Number(formData.material_id),
       custom_material: showCustomMaterial ? formData.custom_material?.trim().toUpperCase() || null : null,
       notes: formData.notes?.trim() || null,
+      is_transport_only: !!formData.is_transport_only,
     };
 
     try {
@@ -263,7 +284,7 @@ function Services() {
         addToast('Registro exitoso.', 'success');
         setFormData(prev => ({
           ...prev,
-          material_id: '', custom_material: '', quantity: '', price: '',
+          material_id: '', custom_material: '', quantity: '', price: '', notes: '', is_transport_only: false,
         }));
         setShowCustomMaterial(false);
       }
@@ -348,69 +369,40 @@ function Services() {
 
         {/* FILTROS */}
         {!accountId && (
-          <div className="flex flex-col gap-3 mb-6">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1 min-w-0">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-300" size={16} />
-                <input
-                  type="text"
-                  placeholder="Buscar por cliente o cuenta..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full bg-white border border-slate-200 rounded-2xl pl-11 pr-4 py-3 text-sm font-medium text-slate-700 placeholder:text-slate-400 focus:outline-none focus:border-[#f58d2f]/50 transition-colors"
-                />
-              </div>
-              <Select
+          <FilterBar className="mb-6">
+            <FilterRow>
+              <SearchInput
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                placeholder="Buscar por cliente o cuenta..."
+              />
+              <FilterSelect
                 value={selectedClient}
                 onChange={(e) => { setSelectedClient(e.target.value); setSelectedAccount(''); }}
               >
                 <option value="">Todos los clientes</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </Select>
-              <Select
+              </FilterSelect>
+              <FilterSelect
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
                 disabled={accountsForClient.length === 0}
               >
                 <option value="">Todas las cuentas</option>
                 {accountsForClient.map(a => <option key={a.id} value={a.id}>{a.description}</option>)}
-              </Select>
+              </FilterSelect>
               {(selectedClient || selectedAccount || searchTerm) && (
-                <button
-                  onClick={() => { setSelectedClient(''); setSelectedAccount(''); setSearchTerm(''); }}
-                  className="px-4 py-3 rounded-2xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors text-sm font-medium whitespace-nowrap"
-                >
-                  Limpiar
-                </button>
+                <ClearButton onClick={() => { setSelectedClient(''); setSelectedAccount(''); setSearchTerm(''); }} />
               )}
-            </div>
-            <div className="flex gap-2 items-center flex-wrap">
-              <DatePicker
-                name="dateFrom"
-                value={dateFrom}
-                onChange={(e) => setDateFrom(e.target.value)}
-                placeholder="Desde"
-                className="w-44"
-              />
-              <span className="text-slate-300 text-xs">—</span>
-              <DatePicker
-                name="dateTo"
-                value={dateTo}
-                onChange={(e) => setDateTo(e.target.value)}
-                placeholder="Hasta"
-                className="w-44"
-              />
-              {(dateFrom || dateTo) && (
-                <button
-                  onClick={() => { setDateFrom(''); setDateTo(''); }}
-                  className="p-2.5 rounded-xl bg-white border border-slate-200 text-slate-400 hover:text-red-500 hover:border-red-200 transition-colors"
-                  title="Limpiar fechas"
-                >
-                  <X size={14} />
-                </button>
-              )}
-            </div>
-          </div>
+            </FilterRow>
+            <DateRangeFilter
+              from={dateFrom}
+              to={dateTo}
+              onFromChange={(e) => setDateFrom(e.target.value)}
+              onToChange={(e) => setDateTo(e.target.value)}
+              onClear={() => { setDateFrom(''); setDateTo(''); }}
+            />
+          </FilterBar>
         )}
 
         {/* Tabla flat — solo desktop */}
@@ -429,56 +421,59 @@ function Services() {
               ))}
             </div>
           ) : filteredServices.length === 0 ? (
-            <div className="py-20">
-              <EmptyState icon={Briefcase} title="Sin movimientos registrados" description="Registra el primer viaje usando el botón superior" />
-            </div>
+            <EmptyState icon={Briefcase} title="Sin movimientos registrados" description="Registra el primer viaje usando el botón superior" />
           ) : (
-            <table className="w-full">
-              <thead>
-                <tr className="bg-slate-50 border-b border-slate-100">
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Fecha</th>
-                  <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Material</th>
-                  {!accountId && <th className="px-5 py-3 text-left text-xs font-semibold text-slate-500">Cliente / Cuenta</th>}
-                  <th className="px-5 py-3 text-center text-xs font-semibold text-slate-500">Cantidad</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Total</th>
-                  <th className="px-5 py-3 text-right text-xs font-semibold text-slate-500">Acciones</th>
+            <Table>
+              <TableHead>
+                <tr>
+                  <Th>Fecha</Th>
+                  <Th>Material</Th>
+                  {!accountId && <Th>Cliente / Cuenta</Th>}
+                  <Th align="center">Cantidad</Th>
+                  <Th align="right">Total</Th>
+                  <Th align="right">Acciones</Th>
                 </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100">
+              </TableHead>
+              <TableBody>
                 {filteredServices.map(s => {
                   const account = accounts.find(a => a.id === s.service_account_id);
                   const client = clients.find(c => c.id === account?.client_id);
                   return (
-                    <tr key={s.id} className="hover:bg-slate-50/60 transition-colors group">
-                      <td className="px-5 py-3.5 text-sm font-semibold text-slate-600 whitespace-nowrap">{s.service_date}</td>
-                      <td className="px-5 py-3.5">
-                        <p className="font-bold text-slate-800 text-sm">{getMaterialName(s)}</p>
-                        {s.notes && <p className="text-xs text-slate-400 italic mt-0.5">({s.notes})</p>}
-                      </td>
+                    <TableRow key={s.id}>
+                      <Td className="text-sm text-slate-600 whitespace-nowrap">{s.service_date}</Td>
+                      <Td>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm text-slate-800">{getMaterialName(s)}</p>
+                          {s.is_transport_only && (
+                            <span className="text-[10px] font-bold text-[#f58d2f] bg-orange-50 border border-orange-100 px-2 py-0.5 rounded-full whitespace-nowrap">Transporte</span>
+                          )}
+                        </div>
+                        {s.notes && <p className="text-xs text-slate-400 mt-0.5">({s.notes})</p>}
+                      </Td>
                       {!accountId && (
-                        <td className="px-5 py-3.5">
-                          <p className="font-bold text-slate-800 text-sm">{client?.name || '—'}</p>
+                        <Td>
+                          <p className="text-sm text-slate-800">{client?.name || '—'}</p>
                           <p className="text-xs text-slate-400 mt-0.5">{account?.description || '—'}</p>
-                        </td>
+                        </Td>
                       )}
-                      <td className="px-5 py-3.5 text-center">
-                        <span className="font-bold text-slate-700 text-sm">{s.quantity}</span>
+                      <Td align="center">
+                        <span className="text-sm text-slate-700">{s.quantity}</span>
                         <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(s.price)} c/u</p>
-                      </td>
-                      <td className="px-5 py-3.5 text-right">
-                        <span className="font-black text-emerald-600 text-sm">{formatCurrency(s.total_amount)}</span>
-                      </td>
-                      <td className="px-5 py-3.5">
+                      </Td>
+                      <Td align="right">
+                        <span className="text-sm text-slate-700 tabular-nums">{formatCurrency(s.total_amount)}</span>
+                      </Td>
+                      <Td>
                         <div className="flex items-center justify-end gap-1">
                           <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar" className="hover:text-blue-500" onClick={() => handleOpenModal(s)} />
                           <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar" className="hover:text-red-500" onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} />
                         </div>
-                      </td>
-                    </tr>
+                      </Td>
+                    </TableRow>
                   );
                 })}
-              </tbody>
-            </table>
+              </TableBody>
+            </Table>
           )}
         </div>
 
@@ -535,7 +530,12 @@ function Services() {
                             <Mountain size={12} />
                           </div>
                           <div className="min-w-0">
-                            <p className="font-black text-slate-800 text-[11px] truncate">{getMaterialName(s)}</p>
+                            <div className="flex items-center gap-1.5">
+                              <p className="font-black text-slate-800 text-[11px] truncate">{getMaterialName(s)}</p>
+                              {s.is_transport_only && (
+                                <span className="text-[8px] font-bold text-[#f58d2f] bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Transporte</span>
+                              )}
+                            </div>
                             {s.notes
                               ? <span className="text-[8px] font-medium text-slate-400 italic truncate">({s.notes})</span>
                               : <span className="text-[8px] font-bold text-slate-400">{s.service_date}</span>
@@ -575,6 +575,7 @@ function Services() {
         accountIdUrlParam={accountId}
         showCustomMaterial={showCustomMaterial}
         onInputChange={handleInputChange}
+        onToggleTransport={handleToggleTransport}
         onSubmit={handleSave}
         canSubmit={canSubmit}
         formatCurrency={formatCurrency}

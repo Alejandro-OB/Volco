@@ -3,6 +3,7 @@ from sqlmodel import Field, SQLModel
 class MaterialBase(SQLModel):
     name: str = Field()
     price: int | None = Field(default=None)
+    transport_price: int | None = Field(default=None)
 
 class MaterialCreate(MaterialBase):
     pass
@@ -10,3 +11,4 @@ class MaterialCreate(MaterialBase):
 class MaterialUpdate(SQLModel):
     name: str | None = None
     price: int | None = None
+    transport_price: int | None = None

@@ -332,9 +332,9 @@
           <td>{{ s.service_date.strftime('%d/%m/%Y') }}</td>
           <td>
             {% if s.custom_material %}
-            VIAJE DE {{ s.custom_material | upper }}
+            {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJE DE' }} {{ s.custom_material | upper }}
             {% elif s.material %}
-            VIAJE DE {{ s.material.name | upper }}
+            {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJE DE' }} {{ s.material.name | upper }}
             {% else %}
             VIAJE SIN MATERIAL
             {% endif %}

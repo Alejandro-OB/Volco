@@ -132,10 +132,11 @@ def render_excel_from_invoice(invoice, services, total, provider, customization=
         
         s_date = s.service_date.strftime('%d/%m/%Y') if hasattr(s.service_date, 'strftime') else str(s.service_date)
         
+        prefix = "TRANSPORTE DE" if s.is_transport_only else "VIAJE DE"
         if s.custom_material:
-            s_name = f"VIAJE DE {s.custom_material.upper()}"
+            s_name = f"{prefix} {s.custom_material.upper()}"
         elif s.material:
-            s_name = f"VIAJE DE {s.material.name.upper()}"
+            s_name = f"{prefix} {s.material.name.upper()}"
         else:
             s_name = "VIAJE SIN MATERIAL"
         if s.notes:
