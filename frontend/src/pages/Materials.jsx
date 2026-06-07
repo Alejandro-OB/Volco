@@ -168,7 +168,7 @@ const Materials = () => {
         ) : (
         <>
         {/* Catálogo de Materiales - Tabla */}
-        <div className="hidden md:block bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {loading ? (
             <div className="divide-y divide-slate-100">
               {[1,2,3,4,5].map(i => (
@@ -184,85 +184,43 @@ const Materials = () => {
             <Table>
               <TableHead>
                 <tr>
-                  <Th className="w-10" />
+                  <Th className="hidden md:table-cell w-10" />
                   <Th>Material</Th>
-                  <Th align="right">Precio base por viaje</Th>
+                  <Th align="right">Precio</Th>
                   <Th align="right">Acciones</Th>
                 </tr>
               </TableHead>
               <TableBody>
                 {paginatedMaterials.map((m) => (
                   <TableRow key={m.id}>
-                    <Td>
+                    <Td className="hidden md:table-cell">
                       <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f]">
                         <Box size={16} />
                       </div>
                     </Td>
                     <Td>
-                      <p className="text-sm text-slate-800 group-hover:text-[#f58d2f] transition-colors">{m.name}</p>
-                      <p className="text-xs text-slate-400 mt-0.5">ID-{m.id}</p>
+                      <p className="text-sm text-slate-800">{m.name}</p>
                     </Td>
                     <Td align="right">
                       <span className="text-sm text-slate-700 tabular-nums">{formatCurrency(m.price)}</span>
                       {m.transport_price != null && (
-                        <p className="text-xs text-slate-400 mt-0.5 tabular-nums">Transporte: {formatCurrency(m.transport_price)}</p>
+                        <p className="text-xs text-slate-400 mt-0.5 tabular-nums hidden md:block">Transporte: {formatCurrency(m.transport_price)}</p>
                       )}
                     </Td>
                     <Td>
                       <div className="flex items-center justify-end gap-1">
-                        <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar material" onClick={() => handleOpenModal(m)} />
-                        <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar material" className="hover:text-red-500" onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} />
+                        <button onClick={() => handleOpenModal(m)} aria-label="Editar material" className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150">
+                          <Edit2 size={14} />
+                        </button>
+                        <button onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} aria-label="Eliminar material" className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all duration-150">
+                          <Trash2 size={14} />
+                        </button>
                       </div>
                     </Td>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
-          ) : (
-            <EmptyState icon={Box} title="Sin resultados" description="No se encontraron materiales" />
-          )}
-        </div>
-        {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}
-
-        {/* Catálogo de Materiales — Mobile List */}
-        <div className="md:hidden space-y-3">
-          {loading ? (
-            <SkeletonList rows={3} />
-          ) : paginatedMaterials.length > 0 ? (
-            paginatedMaterials.map((m) => (
-              <div key={m.id} className="bg-white/80 backdrop-blur-xl rounded-2xl border border-white p-4 shadow-sm flex items-center justify-between group">
-                <div className="flex items-center gap-4 min-w-0">
-                  <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0 shadow-sm">
-                    <Box size={20} />
-                  </div>
-                  <div className="min-w-0">
-                    <h3 className="text-sm font-black text-slate-900 leading-tight truncate">{m.name}</h3>
-                    <div className="flex items-center gap-1.5 mt-0.5">
-                      <span className="text-[9px] font-black text-[#f58d2f] bg-orange-50 px-2 py-0.5 rounded-full border border-orange-100">{formatCurrency(m.price)}</span>
-                      <span className="text-[9px] font-bold text-slate-300">ID-{m.id}</span>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    icon={Edit2}
-                    aria-label="Editar material"
-                    className="hover:text-blue-500"
-                    onClick={() => handleOpenModal(m)} 
-                  />
-                  <Button 
-                    variant="ghost" 
-                    size="icon" 
-                    icon={Trash2}
-                    aria-label="Eliminar material"
-                    className="hover:text-red-500"
-                    onClick={() => { setSelectedId(m.id); setConfirmOpen(true); }} 
-                  />
-                </div>
-              </div>
-            ))
           ) : (
             <EmptyState icon={Box} title="Sin resultados" description="No se encontraron materiales" />
           )}

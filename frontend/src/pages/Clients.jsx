@@ -184,8 +184,8 @@ const Clients = () => {
           <QueryError message={extractError(error)} onRetry={() => { setPage(1); refetch(); }} />
         ) : (
         <>
-        {/* Directorio de Clientes - Desktop Table */}
-        <div className="hidden md:block bg-white rounded-2xl border border-slate-100 overflow-hidden">
+        {/* Tabla — todos los breakpoints */}
+        <div className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
           {loading ? (
             <div className="p-6">
               <SkeletonList desktop count={6} />
@@ -194,11 +194,10 @@ const Clients = () => {
             <Table>
               <TableHead>
                 <tr>
-                  <Th className="w-10" />
                   <Th>Cliente</Th>
-                  <Th>Teléfono</Th>
-                  <Th>Email</Th>
-                  <Th>Dirección</Th>
+                  <Th className="hidden md:table-cell">Teléfono</Th>
+                  <Th className="hidden md:table-cell">Email</Th>
+                  <Th className="hidden md:table-cell">Dirección</Th>
                   <Th align="right">Acciones</Th>
                 </tr>
               </TableHead>
@@ -206,21 +205,15 @@ const Clients = () => {
                 {paginatedClients.map((client) => (
                   <TableRow key={client.id}>
                     <Td>
-                      <div className="h-9 w-9 rounded-xl bg-orange-50 border border-orange-100 flex items-center justify-center text-[#f58d2f] font-medium text-sm flex-shrink-0">
-                        {(client.name || 'U').charAt(0)}
-                      </div>
-                    </Td>
-                    <Td>
                       <p className="text-sm text-slate-800 leading-tight">{client.name}</p>
-                      <p className="text-[10px] text-slate-400 mt-0.5">ID-{client.id}</p>
                     </Td>
-                    <Td>
+                    <Td className="hidden md:table-cell">
                       <span className="text-sm text-slate-600">{client.phone_number || <span className="text-slate-300 text-xs">—</span>}</span>
                     </Td>
-                    <Td className="max-w-[180px]">
+                    <Td className="hidden md:table-cell max-w-[180px]">
                       <span className="text-sm text-slate-600 truncate block">{client.email || <span className="text-slate-300 text-xs">—</span>}</span>
                     </Td>
-                    <Td className="max-w-[200px]">
+                    <Td className="hidden md:table-cell max-w-[200px]">
                       <span className="text-sm text-slate-500 truncate block">{client.address || <span className="text-slate-300 text-xs">—</span>}</span>
                     </Td>
                     <Td>
@@ -240,57 +233,6 @@ const Clients = () => {
               </TableBody>
             </Table>
           ) : (
-            <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
-          )}
-        </div>
-        {!loading && !isError && <Pagination page={page} totalPages={pageCount} onChange={setPage} />}
-
-        {/* Cards — solo móvil */}
-        <div className="md:hidden space-y-3">
-          {loading ? (
-            <SkeletonList rows={3} />
-          ) : paginatedClients.length > 0 ? paginatedClients.map(client => (
-            <div key={client.id} className="bg-white/80 backdrop-blur-xl rounded-[1.75rem] border border-white p-4 shadow-sm flex flex-col gap-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3 min-w-0">
-                  <div className="h-10 w-10 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] font-bold text-base shadow-sm flex-shrink-0">
-                    {(client.name || 'U').charAt(0)}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="font-black text-slate-900 text-[13px] tracking-tight leading-tight truncate">{client.name}</p>
-                    <div className="flex items-center gap-1 text-slate-400 text-[9px] font-bold">ID-{client.id}</div>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Button variant="ghost" size="icon" icon={Wallet} aria-label="Ver cuentas" className="hover:text-green-500 hover:bg-green-50" onClick={() => navigate(`/cuentas?cliente=${client.id}`)} title="Ver Cuentas" />
-                  <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cliente" className="hover:text-blue-500 hover:bg-blue-50" onClick={() => handleOpenEditModal(client)} />
-                  <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cliente" className="hover:text-red-500 hover:bg-red-50" onClick={() => { setSelectedId(client.id); setShowDeleteModal(true); }} />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-3 pl-1">
-                {client.phone_number && (
-                  <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold">
-                    <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]"><Phone size={10} /></div>
-                    <span className="truncate">{client.phone_number}</span>
-                  </div>
-                )}
-                {client.email && (
-                  <div className="flex items-center gap-2 text-slate-500 text-[10px] font-bold">
-                    <div className="h-6 w-6 rounded-lg bg-orange-50/50 flex items-center justify-center text-[#f58d2f]">
-                      <Mail size={10} />
-                    </div>
-                    <span className="truncate">{client.email}</span>
-                  </div>
-                )}
-                {client.address && (
-                  <div className="col-span-2 flex items-center gap-2 text-slate-400 text-[10px] font-medium italic">
-                    <MapPin size={9} className="flex-shrink-0" />
-                    <span className="truncate">{client.address}</span>
-                  </div>
-                )}
-              </div>
-            </div>
-          )) : (
             <EmptyState icon={Users} title="Sin resultados" description="No se encontraron clientes" />
           )}
         </div>

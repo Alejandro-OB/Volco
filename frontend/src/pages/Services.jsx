@@ -53,6 +53,12 @@ function Services() {
   const formatCurrency = (v) =>
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
+  const formatShortDate = (dateStr) => {
+    const [, month, day] = dateStr.split('-');
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${parseInt(day)} ${months[parseInt(month) - 1]}`;
+  };
+
   const getAccountName = (id) =>
     accounts.find(a => a.id === id)?.description || 'Cuenta General';
 
@@ -350,9 +356,17 @@ function Services() {
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-12">
           <div>
             <h1 className="text-4xl font-black text-slate-900 tracking-tight">Viajes <span className="text-[#f58d2f]">.</span></h1>
-            <p className="text-slate-500 font-medium">
-              {accountId ? `Filtrado por: ${getAccountName(Number(accountId))}` : ''}
-            </p>
+            {accountId && (
+              <p className="mt-1 text-sm text-slate-500 font-medium">
+                {getAccountName(Number(accountId))}
+                <span className="mx-2 text-slate-300">·</span>
+                <span className="tabular-nums">{services.length} {services.length === 1 ? 'viaje' : 'viajes'}</span>
+                <span className="mx-2 text-slate-300">·</span>
+                <span className="tabular-nums font-semibold text-slate-700">
+                  {formatCurrency(services.reduce((sum, s) => sum + (Number(s.quantity) * Number(s.price)), 0))}
+                </span>
+              </p>
+            )}
           </div>
           <div className="flex flex-col sm:flex-row gap-3 w-full lg:w-auto">
             <Button
@@ -490,69 +504,53 @@ function Services() {
           ) : Object.keys(groupedData).length === 0 ? (
             <EmptyState icon={Briefcase} title="Sin resultados" description="Sin movimientos registrados" />
           ) : Object.entries(groupedData).map(([clientName, clientAccounts]) => (
-            <div key={clientName} className="bg-white rounded-[2rem] border border-slate-100 overflow-hidden shadow-sm">
+            <div key={clientName} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
               {/* Header cliente */}
               <button
                 onClick={() => toggleClient(clientName)}
-                className="w-full flex items-center gap-3 px-5 py-4 bg-slate-50 border-b border-slate-100"
+                className="w-full flex items-center gap-3 px-4 py-3 border-b border-slate-100"
               >
-                <div className={`p-1 rounded-lg transition-all ${openClients[clientName] ? 'bg-orange-100 text-[#f58d2f]' : 'bg-slate-200 text-slate-500'}`}>
-                  {openClients[clientName] ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
-                </div>
-                <Briefcase size={15} className="text-[#f58d2f]" />
-                <span className="font-black text-slate-800 text-sm flex-1 text-left">{clientName}</span>
-                <span className="text-[10px] font-black text-slate-400 bg-white px-2 py-0.5 rounded-full border border-slate-200">
-                  {Object.values(clientAccounts).reduce((sum, arr) => sum + arr.length, 0)} viajes
+                <ChevronRight size={13} className={`text-slate-400 transition-transform duration-200 ${openClients[clientName] ? 'rotate-90' : ''}`} />
+                <span className="font-medium text-slate-700 text-[13px] flex-1 text-left truncate">{clientName}</span>
+                <span className="text-[11px] text-slate-400 tabular-nums">
+                  {Object.values(clientAccounts).reduce((sum, arr) => sum + arr.length, 0)}
                 </span>
               </button>
 
-              {/* Servicios planos por cliente: todas las cuentas se muestran inline */}
               {openClients[clientName] && Object.entries(clientAccounts).map(([accountName, accountServices]) => (
                 <React.Fragment key={accountName}>
-                  {/* Badge de cuenta como separador */}
-                  <div className="flex items-center gap-2 px-5 py-2 bg-slate-50/50 border-b border-slate-50">
-                    <Wallet size={11} className="text-[#f58d2f] flex-shrink-0" />
-                    <span className="text-[9px] font-bold text-slate-500 truncate">{accountName}</span>
-                    <span className="text-[8px] font-black text-slate-400 ml-auto">{accountServices.length} viajes</span>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      icon={Plus}
-                      className="!p-1 !rounded-lg !h-6 !w-6"
+                  {/* Separador de cuenta */}
+                  <div className="flex items-center gap-2 px-4 py-1.5 bg-slate-50 border-b border-slate-100">
+                    <span className="text-[11px] text-slate-500 truncate flex-1">{accountName}</span>
+                    <button
                       onClick={(e) => { e.stopPropagation(); handleOpenModal(accountServices[0]?.service_account_id); }}
-                    />
+                      className="p-1 rounded-md text-slate-400 hover:text-[#f58d2f] hover:bg-orange-50 transition-colors"
+                    >
+                      <Plus size={12} />
+                    </button>
                   </div>
                   {accountServices.map(s => (
-                    <div key={s.id} className="flex flex-col px-5 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 transition-colors gap-2">
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2.5 min-w-0">
-                          <div className="h-7 w-7 rounded-lg bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0">
-                            <Mountain size={12} />
-                          </div>
-                          <div className="min-w-0">
-                            <div className="flex items-center gap-1.5">
-                              <p className="font-black text-slate-800 text-[11px] truncate">{getMaterialName(s)}</p>
-                              {s.is_transport_only && (
-                                <span className="text-[8px] font-bold text-[#f58d2f] bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Transporte</span>
-                              )}
-                            </div>
-                            {s.notes
-                              ? <span className="text-[8px] font-medium text-slate-400 italic truncate">({s.notes})</span>
-                              : <span className="text-[8px] font-bold text-slate-400">{s.service_date}</span>
-                            }
-                          </div>
+                    <div key={s.id} className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5">
+                          <p className="font-medium text-slate-800 text-[12px] truncate">{getMaterialName(s)}</p>
+                          {s.is_transport_only && (
+                            <span className="text-[8px] font-medium text-[#f58d2f] bg-orange-50 border border-orange-100 px-1.5 py-0.5 rounded-full flex-shrink-0">Transp.</span>
+                          )}
                         </div>
-                        <div className="flex items-center gap-0.5 flex-shrink-0">
-                          <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar servicio" className="!p-1.5 hover:text-blue-500" onClick={() => handleOpenModal(s)} />
-                          <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar servicio" className="!p-1.5 hover:text-red-500" onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} />
-                        </div>
+                        <p className="text-[10px] text-slate-400 mt-0.5">
+                          {formatShortDate(s.service_date)} · {s.quantity} × {formatCurrency(s.price)}
+                          {s.notes && <span className="italic ml-1">({s.notes})</span>}
+                        </p>
                       </div>
-                      <div className="flex items-center justify-between pl-9">
-                        <div className="flex items-center gap-2">
-                          <span className="text-[11px] font-black text-slate-700">{s.quantity} viajes</span>
-                          <span className="text-[8px] text-slate-400 font-bold italic">c/u {formatCurrency(s.price)}</span>
-                        </div>
-                        <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg border border-emerald-100">{formatCurrency(s.total_amount)}</span>
+                      <span className="text-[12px] font-semibold text-slate-700 tabular-nums flex-shrink-0">{formatCurrency(s.total_amount)}</span>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <button onClick={() => handleOpenModal(s)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150" aria-label="Editar">
+                          <Edit2 size={13} />
+                        </button>
+                        <button onClick={() => { setTargetId(s.id); setShowDeleteModal(true); }} className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all duration-150" aria-label="Eliminar">
+                          <Trash2 size={13} />
+                        </button>
                       </div>
                     </div>
                   ))}

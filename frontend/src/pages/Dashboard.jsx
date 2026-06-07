@@ -10,6 +10,7 @@ import {
   ArrowUpRight, Plus, Mountain, ChevronRight
 } from 'lucide-react';
 import { fetchClients, fetchAccounts, fetchServices, fetchMaterials, QK } from '../api/queries';
+import Button from '../components/UI/Button';
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -123,15 +124,15 @@ const Dashboard = () => {
   const StatCard = ({ title, value, icon: Icon, color, trend, to }) => (
     <Link
       to={to}
-      className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col justify-between hover:-translate-y-1 hover:shadow-2xl hover:border-[#f58d2f]/20 transition-all duration-300 cursor-pointer group"
+      className="bg-white p-4 md:p-6 rounded-2xl md:rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100 flex flex-col justify-between hover:-translate-y-1 hover:shadow-2xl hover:border-[#f58d2f]/20 transition-all duration-300 cursor-pointer group"
     >
-      <div className="flex justify-between items-start mb-4">
-        <div className={`p-4 rounded-2xl ${color} group-hover:scale-110 transition-transform duration-300`}>
-          <Icon className="w-6 h-6" />
+      <div className="flex justify-between items-start mb-3 md:mb-4">
+        <div className={`p-2.5 md:p-4 rounded-xl md:rounded-2xl ${color} group-hover:scale-110 transition-transform duration-300`}>
+          <Icon className="w-5 h-5 md:w-6 md:h-6" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {trend && (
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full">
+            <span className="hidden sm:flex items-center gap-1 text-[10px] font-bold text-emerald-500 bg-emerald-50 px-2 py-1 rounded-full">
               <ArrowUpRight size={12} /> {trend}
             </span>
           )}
@@ -139,8 +140,8 @@ const Dashboard = () => {
         </div>
       </div>
       <div>
-        <p className="text-body-sm font-bold text-slate-400 mb-1">{title}</p>
-        <h3 className="text-3xl font-black text-slate-800 tracking-tight">{value}</h3>
+        <p className="text-[11px] md:text-body-sm font-bold text-slate-400 mb-0.5 md:mb-1">{title}</p>
+        <h3 className="text-xl md:text-3xl font-black text-slate-800 tracking-tight">{value}</h3>
       </div>
     </Link>
   );
@@ -149,23 +150,17 @@ const Dashboard = () => {
     <div className="p-4 md:p-8 max-w-7xl mx-auto space-y-8 animate-in fade-in zoom-in-95 duration-500">
 
       {/* HEADER */}
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-<h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
-            Panel de Control <span className="text-[#f58d2f]">.</span>
-          </h1>
-        </div>
-        <button
-          onClick={() => navigate('/servicios?nuevo=1')}
-          className="flex items-center gap-2.5 px-6 py-3.5 bg-[#f58d2f] text-white font-black rounded-2xl shadow-lg shadow-orange-200 hover:bg-[#e87a1c] hover:shadow-xl hover:-translate-y-0.5 transition-all duration-300 text-sm self-start md:self-auto"
-        >
-          <Plus size={18} strokeWidth={2.5} />
+      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+        <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
+          Panel de Control <span className="text-[#f58d2f]">.</span>
+        </h1>
+        <Button variant="primary" size="md" icon={Plus} onClick={() => navigate('/servicios?nuevo=1')} className="w-full md:w-auto">
           Nuevo Viaje
-        </button>
+        </Button>
       </header>
 
       {/* METRIC CARDS */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6">
         <StatCard
           title="Ingresos Totales"
           value={formatCurrency(metrics.totalRevenue)}
@@ -198,8 +193,8 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* CHARTS */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
+      {/* CHARTS — solo desktop */}
+      <div className="hidden md:grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6">
 
         <div className="bg-white p-6 rounded-3xl shadow-xl shadow-slate-200/40 border border-slate-100">
           <div className="flex justify-between items-center mb-6">
@@ -280,21 +275,21 @@ const Dashboard = () => {
               return (
                 <div
                   key={s.id}
-                  className="flex items-center gap-4 px-6 py-4 hover:bg-slate-50/70 transition-colors cursor-pointer group"
+                  className="flex items-center gap-3 px-4 md:px-6 py-3 md:py-4 hover:bg-slate-50/70 transition-colors cursor-pointer group"
                   onClick={() => navigate(`/servicios?cuenta=${s.service_account_id}`)}
                 >
-                  <div className="h-9 w-9 rounded-xl bg-orange-50 flex items-center justify-center text-[#f58d2f] flex-shrink-0 group-hover:bg-[#f58d2f] group-hover:text-white transition-colors">
+                  <div className="hidden md:flex h-9 w-9 rounded-xl bg-orange-50 items-center justify-center text-[#f58d2f] flex-shrink-0 group-hover:bg-[#f58d2f] group-hover:text-white transition-colors">
                     <Mountain size={16} />
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="font-black text-slate-800 text-sm truncate">{getMaterialName(s)}</p>
-                    <p className="text-xs text-slate-400 font-bold truncate">
+                    <p className="font-medium text-slate-800 text-[12px] md:text-sm truncate">{getMaterialName(s)}</p>
+                    <p className="text-[10px] text-slate-400 truncate">
                       {account?.description || '—'} · {client?.name || '—'}
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-xs font-black text-emerald-600">{formatCurrency(s.quantity * s.price)}</p>
-                    <p className="text-[10px] text-slate-400 font-bold">{s.service_date}</p>
+                    <p className="text-[11px] md:text-xs font-semibold text-emerald-600">{formatCurrency(s.quantity * s.price)}</p>
+                    <p className="text-[10px] text-slate-400">{s.service_date}</p>
                   </div>
                 </div>
               );

@@ -97,6 +97,13 @@ const Accounts = () => {
     }).format(value);
   };
 
+  // --- UTILIDAD: FECHA CORTA (mobile) ---
+  const formatShortDate = (dateStr) => {
+    const [, month, day] = dateStr.split('-');
+    const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
+    return `${parseInt(day)} ${months[parseInt(month) - 1]}`;
+  };
+
   // --- FILTRADO LOCAL ---
   const filteredAccounts = useMemo(() => {
     return allAccounts.filter(account => {
@@ -252,7 +259,7 @@ const Accounts = () => {
 
         <header className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="space-y-1">
-            <h1 className="text-4xl font-black text-[#1a202c] tracking-tight">
+            <h1 className="text-3xl md:text-4xl font-black text-[#1a202c] tracking-tight">
               Control de Cuentas <span className="text-[#f58d2f]">.</span>
             </h1>
           </div>
@@ -271,12 +278,12 @@ const Accounts = () => {
 
         {/* Filtros */}
         <div className="flex flex-col gap-6">
-          <div className="flex bg-slate-100/80 p-1 rounded-2xl w-full max-w-2xl gap-0.5 overflow-x-auto">
+          <div className="flex bg-slate-100/80 p-px md:p-1 rounded-lg md:rounded-2xl w-fit md:w-full md:max-w-2xl gap-px overflow-x-auto">
             {['Todas', 'Pendientes', 'Facturadas', 'Sin Movimientos'].map(tab => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`flex-1 min-w-[120px] px-4 py-2.5 rounded-xl text-[13px] font-bold transition-all duration-200 ${
+                className={`md:flex-1 px-3 py-0.5 md:py-2.5 rounded-md md:rounded-xl text-[11px] md:text-[13px] font-medium whitespace-nowrap transition-all duration-200 ${
                   activeTab === tab
                     ? 'bg-[#1a202c] text-white shadow-sm'
                     : 'text-slate-500 hover:text-slate-800 hover:bg-white/60'
@@ -367,6 +374,7 @@ const Accounts = () => {
                       </Td>
                       <Td align="right">
                         <span className="text-sm text-slate-700 tabular-nums">{formatCurrency(totalValue)}</span>
+                        <p className="text-[10px] text-slate-400 mt-0.5 tabular-nums">{accountServices.length} viajes</p>
                       </Td>
                       <Td align="center">
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-lg text-xs font-medium border ${
@@ -448,115 +456,89 @@ const Accounts = () => {
         </div>
       </div>
 
-      {/* Cards — solo móvil */}
-      <div className="md:hidden space-y-4 mt-2">
+      {/* Acordeón móvil — solo mobile */}
+      <div className="md:hidden space-y-3">
         {loading ? (
           [1, 2, 3].map(i => (
-            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-4 animate-pulse ml-4 space-y-3">
+            <div key={i} className="bg-white rounded-2xl border border-slate-100 p-5 animate-pulse space-y-3">
               <div className="h-4 bg-slate-100 rounded-lg w-1/2" />
               <div className="h-3 bg-slate-100 rounded w-full" />
             </div>
           ))
-        ) : Object.keys(groupedAccounts).length > 0 ? (
-          Object.entries(groupedAccounts).map(([clientName, accounts]) => (
-            <div key={clientName} className="space-y-2">
-              {/* Header cliente — Flat modern style */}
-              <button
-                onClick={() => toggleClient(clientName)}
-                className={`w-full flex items-center gap-3 px-4 py-3.5 rounded-2xl border transition-all duration-300 ${
-                  openClients[clientName] 
-                    ? 'bg-white border-[#f58d2f]/20 shadow-sm' 
-                    : 'bg-slate-50/50 border-transparent hover:bg-slate-50'
-                }`}
-              >
-                <div className={`p-1.5 rounded-xl transition-all ${openClients[clientName] ? 'bg-orange-100 text-[#f58d2f] rotate-90' : 'bg-slate-200 text-slate-400'}`}>
-                  <ChevronRight size={14} />
-                </div>
-                <div className="flex-1 text-left min-w-0">
-                   <span className="text-[13px] font-black text-slate-800 block truncate">{clientName}</span>
-                </div>
-                <span className="text-[9px] font-black text-slate-400 bg-white px-2.5 py-1 rounded-lg border border-slate-100">
-                  {accounts.length}
-                </span>
-              </button>
+        ) : Object.keys(groupedAccounts).length === 0 ? (
+          <EmptyState icon={Wallet} title="Sin resultados" description="No se encontraron cuentas." />
+        ) : Object.entries(groupedAccounts).map(([clientName, clientAccounts]) => (
+          <div key={clientName} className="bg-white rounded-2xl border border-slate-100 overflow-hidden">
+            {/* Header cliente */}
+            <button
+              onClick={() => toggleClient(clientName)}
+              className="w-full flex items-center gap-3 px-4 py-3 border-b border-slate-100"
+            >
+              <ChevronRight size={13} className={`text-slate-400 transition-transform duration-200 ${openClients[clientName] ? 'rotate-90' : ''}`} />
+              <span className="font-medium text-slate-700 text-[13px] flex-1 text-left truncate">{clientName}</span>
+              <span className="text-[11px] text-slate-400 tabular-nums">{clientAccounts.length}</span>
+            </button>
 
-              {/* Cuentas — solo cuando está abierto */}
-              {openClients[clientName] && (
-                <div className="pl-4 space-y-3 animate-in fade-in slide-in-from-left-2 duration-300">
-                  {accounts.map(account => {
-                    const hasInvoice = invoices.some(i => i.service_account_id === account.id);
-                    const hasServices = services.some(s => s.service_account_id === account.id);
-                    const accountServices = services.filter(s => s.service_account_id === account.id);
-                    const totalValue = accountServices.reduce((sum, s) => sum + (parseFloat(s.price) * s.quantity || 0), 0);
-                    return (
-                      <div key={account.id} className="bg-white/80 backdrop-blur-xl rounded-[1.5rem] border border-white p-4 shadow-sm group">
-                        <div className="flex items-start justify-between gap-3 mb-3">
-                          <div className="min-w-0">
-                            <p className="font-black text-slate-900 text-[13px] leading-tight group-hover:text-[#f58d2f] transition-colors">{account.description}</p>
-                            <div className="flex items-center gap-1.5 text-slate-400 text-[9px] font-medium mt-1">
-                               <Calendar size={10} className="text-[#f58d2f]" />
-                               {account.start_date} — {account.end_date}
-                            </div>
-                          </div>
-                          <span className={`flex-shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[8px] font-black border shadow-sm ${hasInvoice ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : 'bg-orange-50 text-[#f58d2f] border-orange-100'}`}>
-                            {hasInvoice ? <CheckCircle size={9} /> : <div className="h-1.5 w-1.5 rounded-full bg-[#f58d2f] animate-pulse" />}
-                            {hasInvoice ? 'Facturado' : 'Pendiente'}
-                          </span>
-                        </div>
-                        
-                        <div className="flex flex-col gap-3 pt-3 border-t border-slate-50">
-                          {/* Cartera + edit/delete */}
-                          <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                              <span className="text-[8px] font-bold text-slate-400">Cartera Actual</span>
-                              <span className="text-sm font-black text-slate-800">{formatCurrency(totalValue)}</span>
-                            </div>
-                            <div className="flex items-center gap-0.5">
-                              <Button variant="ghost" size="icon" icon={Edit2} aria-label="Editar cuenta" className="!p-2 hover:text-amber-500" onClick={() => handleOpenModal(account)} />
-                              <Button variant="ghost" size="icon" icon={Trash2} aria-label="Eliminar cuenta" className="!p-2 hover:text-red-500" onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }} />
-                            </div>
-                          </div>
-
-                          {/* Viajes + invoice actions */}
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => navigate(`/servicios?cuenta=${account.id}`)}
-                              className="flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-blue-50 hover:text-blue-600 transition-colors"
-                            >
-                              <Truck size={13} /> Viajes
-                            </button>
-
-                            {hasInvoice ? (
-                              <button
-                                onClick={(e) => openInvoiceDropdown(e, account.id)}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-emerald-50 text-emerald-600 border border-emerald-100 hover:bg-emerald-100 transition-colors"
-                              >
-                                {loadingId === account.id ? <Loader2 size={13} className="animate-spin" /> : <Receipt size={13} />}
-                                Factura
-                                <ChevronDown size={11} className={`transition-transform ${openInvoiceMenu === account.id ? 'rotate-180' : ''}`} />
-                              </button>
-                            ) : (
-                              <button
-                                onClick={() => handleInvoiceAction(account)}
-                                disabled={!hasServices || loadingId === account.id}
-                                className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl text-xs font-semibold bg-orange-50 text-[#f58d2f] border border-orange-100 hover:bg-orange-100 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
-                              >
-                                {loadingId === account.id ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
-                                Facturar
-                              </button>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+            {openClients[clientName] && clientAccounts.map(account => {
+              const hasInvoice = invoices.some(i => i.service_account_id === account.id);
+              const hasServices = services.some(s => s.service_account_id === account.id);
+              const accountServices = services.filter(s => s.service_account_id === account.id);
+              const totalValue = accountServices.reduce((sum, s) => sum + (parseFloat(s.price) * s.quantity || 0), 0);
+              return (
+                <div key={account.id} className="flex items-center gap-2 px-4 py-2.5 border-b border-slate-50 last:border-0 hover:bg-slate-50/60 transition-colors">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-slate-800 text-[12px] truncate">{account.description}</p>
+                    <p className="text-[10px] text-slate-400 mt-0.5">
+                      {formatShortDate(account.start_date)} — {formatShortDate(account.end_date)} · {accountServices.length} viajes
+                    </p>
+                  </div>
+                  <span className="text-[12px] font-semibold text-slate-700 tabular-nums flex-shrink-0">{formatCurrency(totalValue)}</span>
+                  <div className="flex items-center gap-0.5 flex-shrink-0">
+                    <button
+                      onClick={() => navigate(`/servicios?cuenta=${account.id}`)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150"
+                      aria-label="Ver viajes"
+                    >
+                      <Truck size={13} />
+                    </button>
+                    {hasInvoice ? (
+                      <button
+                        onClick={(e) => openInvoiceDropdown(e, account.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150"
+                        aria-label="Ver factura"
+                      >
+                        {loadingId === account.id ? <Loader2 size={13} className="animate-spin" /> : <Receipt size={13} />}
+                      </button>
+                    ) : (
+                      <button
+                        onClick={() => handleInvoiceAction(account)}
+                        disabled={!hasServices || loadingId === account.id}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                        aria-label="Facturar"
+                      >
+                        {loadingId === account.id ? <Loader2 size={13} className="animate-spin" /> : <FileText size={13} />}
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleOpenModal(account)}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150"
+                      aria-label="Editar cuenta"
+                    >
+                      <Edit2 size={13} />
+                    </button>
+                    <button
+                      onClick={() => { setDeleteId(account.id); setShowConfirmModal(true); }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all duration-150"
+                      aria-label="Eliminar cuenta"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
-              )}
-            </div>
-          ))
-          ) : (
-            <EmptyState icon={Wallet} title="Sin resultados" description="No se encontraron cuentas." />
-          )}
+              );
+            })}
+          </div>
+        ))}
       </div>
 
 
