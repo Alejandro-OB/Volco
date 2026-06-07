@@ -304,6 +304,7 @@ const Accounts = () => {
               <FilterSelect
                 value={selectedClient}
                 onChange={(e) => setSelectedClient(e.target.value)}
+                label="Cliente:"
                 className="lg:w-72"
               >
                 <option value="">Todos los clientes</option>

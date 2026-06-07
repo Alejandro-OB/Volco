@@ -45,9 +45,9 @@ export function SearchInput({ value, onChange, placeholder = 'Buscar...', classN
 
 // ── Select de filtro (re-exporta Select con tamaño estándar) ─────────────────
 
-export function FilterSelect({ value, onChange, disabled, children, className = '' }) {
+export function FilterSelect({ value, onChange, disabled, label, children, className = '' }) {
   return (
-    <Select value={value} onChange={onChange} disabled={disabled} className={className}>
+    <Select value={value} onChange={onChange} disabled={disabled} label={label} className={className}>
       {children}
     </Select>
   );

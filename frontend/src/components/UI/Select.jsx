@@ -8,6 +8,7 @@ const Select = ({
   name,
   disabled = false,
   compact = false,
+  label = '',
   className = '',
   children,
   ...props
@@ -29,6 +30,7 @@ const Select = ({
 
   const openDropdown = () => {
     if (disabled) return;
+    if (open) { setOpen(false); return; }
     const rect = triggerRef.current.getBoundingClientRect();
     setDropPos({ top: rect.bottom + 6, left: rect.left, width: rect.width });
     setOpen(true);
@@ -68,8 +70,11 @@ const Select = ({
           `}
           {...props}
         >
-          <span className={selected && selected.value !== '' ? 'text-slate-700 truncate' : 'text-slate-400'}>
-            {selected?.label ?? 'Seleccionar...'}
+          <span className="flex items-center gap-1.5 truncate min-w-0">
+            {label && <span className="text-slate-400 flex-shrink-0">{label}</span>}
+            <span className={selected && selected.value !== '' ? 'text-slate-700 truncate' : 'text-slate-400 truncate'}>
+              {selected?.label ?? 'Seleccionar...'}
+            </span>
           </span>
           <ChevronDown
             size={compact ? 14 : 16}

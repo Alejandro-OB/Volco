@@ -112,12 +112,9 @@ function Services() {
       const client = clients.find(c => c.id === account?.client_id);
       const clientName = client?.name || 'Cliente Particular';
 
-      // Filter by search term against client name or account name
-      if (term && !clientName.toLowerCase().includes(term) && !accountName.toLowerCase().includes(term)) {
-        return acc;
-      }
-
-      // Filter by date range
+      if (selectedClient && account?.client_id !== Number(selectedClient)) return acc;
+      if (selectedAccount && service.service_account_id !== Number(selectedAccount)) return acc;
+      if (term && !clientName.toLowerCase().includes(term) && !accountName.toLowerCase().includes(term)) return acc;
       if (dateFrom && service.service_date < dateFrom) return acc;
       if (dateTo && service.service_date > dateTo) return acc;
 
@@ -126,7 +123,7 @@ function Services() {
       acc[clientName][accountName].push(service);
       return acc;
     }, {});
-  }, [services, accounts, clients, searchTerm, dateFrom, dateTo]);
+  }, [services, accounts, clients, searchTerm, dateFrom, dateTo, selectedClient, selectedAccount]);
 
   const filteredServices = useMemo(() => {
     const term = searchTerm.toLowerCase().trim();
@@ -393,6 +390,7 @@ function Services() {
               <FilterSelect
                 value={selectedClient}
                 onChange={(e) => { setSelectedClient(e.target.value); setSelectedAccount(''); }}
+                label="Cliente:"
               >
                 <option value="">Todos los clientes</option>
                 {clients.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
@@ -401,6 +399,7 @@ function Services() {
                 value={selectedAccount}
                 onChange={(e) => setSelectedAccount(e.target.value)}
                 disabled={accountsForClient.length === 0}
+                label="Cuenta:"
               >
                 <option value="">Todas las cuentas</option>
                 {accountsForClient.map(a => <option key={a.id} value={a.id}>{a.description}</option>)}
