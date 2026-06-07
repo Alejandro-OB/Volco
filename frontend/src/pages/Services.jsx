@@ -320,7 +320,7 @@ function Services() {
   const canSubmit = validateForm();
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-4 sm:p-12 font-sans page-enter">
+    <div className="min-h-screen p-4 sm:p-12 font-sans page-enter">
       <div className="max-w-7xl mx-auto">
 
         {accountId && <Breadcrumb />}

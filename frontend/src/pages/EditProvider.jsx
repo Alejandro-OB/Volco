@@ -92,7 +92,7 @@ function EditProvider() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] p-6 sm:p-12 font-sans flex justify-center items-start">
+    <div className="min-h-screen p-6 sm:p-12 font-sans flex justify-center items-start">
       <div className="w-full max-w-7xl animate-in fade-in duration-500">
         
         {/* ENCABEZADO */}

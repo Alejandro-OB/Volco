@@ -158,7 +158,7 @@ function InvoiceCustomizationForm() {
   );
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12">
+    <div className="min-h-screen font-sans text-slate-900 p-4 sm:p-12">
       <div className="max-w-7xl mx-auto">
 
         {/* ENCABEZADO */}

@@ -243,7 +243,7 @@ const Accounts = () => {
 
 
   return (
-    <div className="min-h-screen bg-[#f8fafc] font-sans text-slate-900 p-4 sm:p-12 page-enter">
+    <div className="min-h-screen font-sans text-slate-900 p-4 sm:p-12 page-enter">
       <div className="max-w-7xl mx-auto space-y-10">
 
         {clientId && <Breadcrumb />}

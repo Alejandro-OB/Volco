@@ -338,7 +338,9 @@
             {% else %}
             VIAJE SIN MATERIAL
             {% endif %}
-            {% if s.notes %}({{ s.notes }}){% endif %}
+            {% if s.notes %}
+            <br><span style="font-size: 11px; color: #666; font-style: italic; font-weight: 400;">{{ s.notes }}</span>
+            {% endif %}
           </td>
 
           <td>{{ s.quantity }}</td>
