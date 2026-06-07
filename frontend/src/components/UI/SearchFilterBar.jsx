@@ -57,12 +57,12 @@ export function FilterSelect({ value, onChange, disabled, label, children, class
 
 export function DateRangeFilter({ from, to, onFromChange, onToChange, onClear }) {
   return (
-    <div className="flex gap-2 items-center">
+    <div className="flex gap-2 items-center w-full sm:w-auto">
       <DatePicker
         name="dateFrom"
         value={from}
         onChange={onFromChange}
-        className="flex-1 min-w-0"
+        className="flex-1 min-w-0 sm:w-36 sm:flex-none"
         compact
       />
       <span className="text-slate-300 text-xs select-none flex-shrink-0">—</span>
@@ -70,7 +70,7 @@ export function DateRangeFilter({ from, to, onFromChange, onToChange, onClear })
         name="dateTo"
         value={to}
         onChange={onToChange}
-        className="flex-1 min-w-0"
+        className="flex-1 min-w-0 sm:w-36 sm:flex-none"
         compact
       />
       {(from || to) && onClear && (
