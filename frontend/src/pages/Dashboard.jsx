@@ -209,8 +209,8 @@ const Dashboard = () => {
             </div>
             <div className="p-2 bg-slate-50 rounded-xl"><TrendingUp size={20} className="text-slate-400" /></div>
           </div>
-          <div className="h-[300px] w-full min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full">
+            <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={metrics.monthlyChartData} margin={{ top: 10, right: 10, left: 20, bottom: 0 }}>
                 <defs>
                   <linearGradient id="colorIngresos" x1="0" y1="0" x2="0" y2="1">
@@ -239,8 +239,8 @@ const Dashboard = () => {
             </div>
             <div className="p-2 bg-slate-50 rounded-xl"><Calendar size={20} className="text-slate-400" /></div>
           </div>
-          <div className="h-[300px] w-full min-h-0">
-            <ResponsiveContainer width="100%" height="100%">
+          <div className="w-full">
+            <ResponsiveContainer width="100%" height={300}>
               <BarChart data={metrics.monthlyChartData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fontSize: 12, fill: '#94a3b8', fontWeight: 700}} dy={10} />
