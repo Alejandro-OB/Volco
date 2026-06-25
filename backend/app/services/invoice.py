@@ -49,7 +49,7 @@ class InvoiceService:
             raise NotFoundException(detail="Invoice not found")
             
         services = invoice.service_account.services
-        services = sorted(services, key=lambda s: s.service_date or date.max)
+        services = sorted(services, key=lambda s: (0, s.service_date) if s.service_date is not None else (1, date.max))
         
         try:
             customization = invoice_customization_service.get_customization_for_provider_account(
@@ -83,7 +83,7 @@ class InvoiceService:
             raise NotFoundException(detail="Invoice not found")
             
         services = invoice.service_account.services
-        services = sorted(services, key=lambda s: s.service_date or date.max)
+        services = sorted(services, key=lambda s: (0, s.service_date) if s.service_date is not None else (1, date.max))
         
         try:
             customization = invoice_customization_service.get_customization_for_provider_account(
@@ -111,7 +111,7 @@ class InvoiceService:
             raise NotFoundException(detail="Invoice not found")
             
         services = invoice.service_account.services
-        services = sorted(services, key=lambda s: s.service_date or date.max)
+        services = sorted(services, key=lambda s: (0, s.service_date) if s.service_date is not None else (1, date.max))
         
         try:
             customization = invoice_customization_service.get_customization_for_provider_account(
