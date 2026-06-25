@@ -130,7 +130,7 @@ def render_excel_from_invoice(invoice, services, total, provider, customization=
     for i, s in enumerate(services):
         ws.row_dimensions[row].height = 20 # Increased row height
         
-        s_date = s.service_date.strftime('%d/%m/%Y') if hasattr(s.service_date, 'strftime') else str(s.service_date)
+        s_date = s.service_date.strftime('%d/%m/%Y') if s.service_date else ""
         
         prefix = "TRANSPORTE DE" if s.is_transport_only else "VIAJE DE"
         if s.custom_material:
@@ -142,7 +142,9 @@ def render_excel_from_invoice(invoice, services, total, provider, customization=
         if s.notes:
             s_name += f" ({s.notes})"
 
-        data = [s_date, s_name, s.quantity, s.price, s.total_amount]
+        price_val = s.price if s.price and s.price > 0 else ""
+        total_val = s.total_amount if s.total_amount and s.total_amount > 0 else ""
+        data = [s_date, s_name, s.quantity, price_val, total_val]
         for col_idx, val in enumerate(data, 1):
             cell = ws.cell(row=row, column=col_idx)
             cell.value = val

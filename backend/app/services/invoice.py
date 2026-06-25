@@ -1,3 +1,4 @@
+from datetime import date
 from typing import List
 from sqlmodel import Session
 from app.repositories.invoice import invoice_repository
@@ -48,7 +49,7 @@ class InvoiceService:
             raise NotFoundException(detail="Invoice not found")
             
         services = invoice.service_account.services
-        services = sorted(services, key=lambda s: s.service_date)
+        services = sorted(services, key=lambda s: s.service_date or date.min)
         
         try:
             customization = invoice_customization_service.get_customization_for_provider_account(
@@ -82,7 +83,7 @@ class InvoiceService:
             raise NotFoundException(detail="Invoice not found")
             
         services = invoice.service_account.services
-        services = sorted(services, key=lambda s: s.service_date)
+        services = sorted(services, key=lambda s: s.service_date or date.min)
         
         try:
             customization = invoice_customization_service.get_customization_for_provider_account(
@@ -110,7 +111,7 @@ class InvoiceService:
             raise NotFoundException(detail="Invoice not found")
             
         services = invoice.service_account.services
-        services = sorted(services, key=lambda s: s.service_date)
+        services = sorted(services, key=lambda s: s.service_date or date.min)
         
         try:
             customization = invoice_customization_service.get_customization_for_provider_account(

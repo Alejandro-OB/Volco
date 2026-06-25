@@ -42,6 +42,7 @@ const Dashboard = () => {
     }
 
     services.forEach(service => {
+      if (!service.service_date) return;
       const date = new Date(service.service_date);
       if (date >= sixMonthsAgo) {
         const monthKey = date.toLocaleString('es-ES', { month: 'short', year: 'numeric' });
@@ -69,7 +70,11 @@ const Dashboard = () => {
   const recentServices = useMemo(() => {
     if (!services?.length) return [];
     return [...services]
-      .sort((a, b) => new Date(b.service_date) - new Date(a.service_date))
+      .sort((a, b) => {
+        if (!a.service_date) return 1;
+        if (!b.service_date) return -1;
+        return new Date(b.service_date) - new Date(a.service_date);
+      })
       .slice(0, 8);
   }, [services]);
 
@@ -288,8 +293,10 @@ const Dashboard = () => {
                     </p>
                   </div>
                   <div className="text-right flex-shrink-0">
-                    <p className="text-[11px] md:text-xs font-semibold text-emerald-600">{formatCurrency(s.quantity * s.price)}</p>
-                    <p className="text-[10px] text-slate-400">{s.service_date}</p>
+                    <p className="text-[11px] md:text-xs font-semibold text-emerald-600">
+                      {s.price > 0 ? formatCurrency(s.quantity * s.price) : '—'}
+                    </p>
+                    <p className="text-[10px] text-slate-400">{s.service_date || '—'}</p>
                   </div>
                 </div>
               );

@@ -54,7 +54,10 @@ function Services() {
     new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(v);
 
   const formatShortDate = (dateStr) => {
-    const [, month, day] = dateStr.split('-');
+    if (!dateStr) return '—';
+    const parts = dateStr.split('-');
+    if (parts.length < 3) return '—';
+    const [, month, day] = parts;
     const months = ['ene','feb','mar','abr','may','jun','jul','ago','sep','oct','nov','dic'];
     return `${parseInt(day)} ${months[parseInt(month) - 1]}`;
   };
@@ -269,8 +272,9 @@ function Services() {
     const payload = {
       ...formData,
       service_account_id: Number(formData.service_account_id),
-      quantity: Number(formData.quantity),
-      price: parseFloat(formData.price),
+      quantity: Number(formData.quantity) || 1,
+      price: formData.price ? parseFloat(formData.price) : 0,
+      service_date: formData.service_date || null,
       material_id: showCustomMaterial ? null : Number(formData.material_id),
       custom_material: showCustomMaterial ? formData.custom_material?.trim().toUpperCase() || null : null,
       notes: formData.notes?.trim() || null,
@@ -334,9 +338,7 @@ function Services() {
 
     if (!quantity || Number(quantity) <= 0) return false;
 
-    if (!price || Number(price) <= 0) return false;
-
-    if (!service_date) return false;
+    if (price !== '' && Number(price) < 0) return false;
 
     return true;
   };
@@ -471,10 +473,10 @@ function Services() {
                       )}
                       <Td align="center">
                         <span className="text-sm text-slate-700">{s.quantity}</span>
-                        <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(s.price)} c/u</p>
+                        {s.price > 0 && <p className="text-xs text-slate-400 mt-0.5">{formatCurrency(s.price)} c/u</p>}
                       </Td>
                       <Td align="right">
-                        <span className="text-sm text-slate-700 tabular-nums">{formatCurrency(s.total_amount)}</span>
+                        <span className="text-sm text-slate-700 tabular-nums">{s.total_amount > 0 ? formatCurrency(s.total_amount) : '—'}</span>
                       </Td>
                       <Td>
                         <div className="flex items-center justify-end gap-1">
@@ -538,11 +540,11 @@ function Services() {
                           )}
                         </div>
                         <p className="text-[10px] text-slate-400 mt-0.5">
-                          {formatShortDate(s.service_date)} · {s.quantity} × {formatCurrency(s.price)}
+                          {formatShortDate(s.service_date)} · {s.quantity} {s.price > 0 ? `× ${formatCurrency(s.price)}` : ''}
                           {s.notes && <span className="italic ml-1">({s.notes})</span>}
                         </p>
                       </div>
-                      <span className="text-[12px] font-semibold text-slate-700 tabular-nums flex-shrink-0">{formatCurrency(s.total_amount)}</span>
+                      <span className="text-[12px] font-semibold text-slate-700 tabular-nums flex-shrink-0">{s.total_amount > 0 ? formatCurrency(s.total_amount) : '—'}</span>
                       <div className="flex items-center gap-0.5 flex-shrink-0">
                         <button onClick={() => handleOpenModal(s)} className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-all duration-150" aria-label="Editar">
                           <Edit2 size={13} />

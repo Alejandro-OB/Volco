@@ -265,8 +265,8 @@ const InvoiceTemplate = ({ invoice, custom, services, provider, invoicesTotal })
                                 <Text style={styles.tableCell}>{`${s.is_transport_only ? 'Transporte de' : 'Viaje de'} ${s.custom_material || (s.material ? s.material.name : 'material sin especificar')}${s.notes ? ` (${s.notes})` : ''}`}</Text>
                             </View>
                             <View style={styles.tableCol}><Text style={styles.tableCell}>{s.quantity}</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{formatCurrency(s.price)}</Text></View>
-                            <View style={styles.tableCol}><Text style={styles.tableCell}>{formatCurrency(s.total_amount)}</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}>{s.price > 0 ? formatCurrency(s.price) : ''}</Text></View>
+                            <View style={styles.tableCol}><Text style={styles.tableCell}>{s.total_amount > 0 ? formatCurrency(s.total_amount) : ''}</Text></View>
                         </View>
                     ))}
                 </View>

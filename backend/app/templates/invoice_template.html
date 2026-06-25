@@ -329,7 +329,7 @@
       <tbody>
         {% for s in services %}
         <tr>
-          <td>{{ s.service_date.strftime('%d/%m/%Y') }}</td>
+          <td>{{ s.service_date.strftime('%d/%m/%Y') if s.service_date else '' }}</td>
           <td>
             {% if s.custom_material %}
             {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJE DE' }} {{ s.custom_material | upper }}
@@ -344,8 +344,8 @@
           </td>
 
           <td>{{ s.quantity }}</td>
-          <td>${{ s.price|intcomma }}</td>
-          <td>${{ s.total_amount|intcomma }}</td>
+          <td>{% if s.price > 0 %}${{ s.price|intcomma }}{% endif %}</td>
+          <td>{% if s.total_amount > 0 %}${{ s.total_amount|intcomma }}{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>

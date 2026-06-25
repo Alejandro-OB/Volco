@@ -210,7 +210,7 @@ const ServiceFormModal = ({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 ml-1">Precio Unitario <Required /></label>
+              <label className="text-xs font-semibold text-slate-500 ml-1">Precio Unitario</label>
               <div className="relative">
                 <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-300" />
                 <input
@@ -257,7 +257,7 @@ const ServiceFormModal = ({
           {/* Fecha + Subtotal */}
           <div className="grid grid-cols-2 gap-4 items-end">
             <div className="space-y-1.5">
-              <label className="text-xs font-semibold text-slate-500 ml-1">Fecha <Required /></label>
+              <label className="text-xs font-semibold text-slate-500 ml-1">Fecha</label>
               <DatePicker
                 name="service_date"
                 value={formData.service_date}

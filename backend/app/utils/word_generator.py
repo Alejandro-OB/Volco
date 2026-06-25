@@ -171,7 +171,7 @@ def render_word_from_invoice(invoice, services, total, provider, customization=N
     # Data
     for i, s in enumerate(services):
         row_cells = services_table.add_row().cells
-        s_date = s.service_date.strftime('%d/%m/%Y') if hasattr(s.service_date, 'strftime') else str(s.service_date)
+        s_date = s.service_date.strftime('%d/%m/%Y') if s.service_date else ""
         
         prefix = "TRANSPORTE DE" if s.is_transport_only else "VIAJE DE"
         if s.custom_material:
@@ -186,8 +186,8 @@ def render_word_from_invoice(invoice, services, total, provider, customization=N
         row_cells[0].text = s_date
         row_cells[1].text = s_name
         row_cells[2].text = str(s.quantity)
-        row_cells[3].text = f"${s.price:,.0f}" if s.price else "$0"
-        row_cells[4].text = f"${s.total_amount:,.0f}" if s.total_amount else "$0"
+        row_cells[3].text = f"${s.price:,.0f}" if s.price and s.price > 0 else ""
+        row_cells[4].text = f"${s.total_amount:,.0f}" if s.total_amount and s.total_amount > 0 else ""
         
         # Zebra striping
         if i % 2 == 1:
