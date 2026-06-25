@@ -79,7 +79,7 @@ function Services() {
   const [formData, setFormData] = useState({
     id: null, service_account_id: '', material_id: '',
     custom_material: '', quantity: '', price: '',
-    service_date: new Date().toISOString().split('T')[0],
+    service_date: '',
     notes: '', is_transport_only: false,
   });
 
@@ -225,7 +225,7 @@ function Services() {
         id: null,
         service_account_id: preAccountId || accountId || '',
         material_id: '', custom_material: '', quantity: '', price: '',
-        service_date: new Date().toISOString().split('T')[0],
+        service_date: '',
         notes: '', is_transport_only: false,
       });
     }

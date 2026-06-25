@@ -212,53 +212,64 @@ const DatePicker = ({
         ${anyFocused || open ? 'border-[#f58d2f]/50' : 'border-slate-200 hover:border-slate-300'}
         ${disabled ? 'opacity-60 cursor-not-allowed' : ''}
       `}>
-        {/* Day */}
-        <input
-          ref={dayRef}
-          type="text"
-          inputMode="numeric"
-          value={seg.d}
-          placeholder="DD"
-          maxLength={2}
-          disabled={disabled}
-          onChange={handleDayChange}
-          onKeyDown={handleDayKeyDown}
-          onFocus={() => { setFocused('day'); setTimeout(() => dayRef.current?.select(), 0); }}
-          onBlur={handleDayBlur}
-          className={`w-7 text-center font-medium ${compact ? 'text-xs' : 'text-sm'} placeholder:text-slate-300 ${segClass('day')}`}
-        />
-        <span className="text-slate-300 font-medium select-none">/</span>
-        {/* Month */}
-        <input
-          ref={monthRef}
-          type="text"
-          inputMode="numeric"
-          value={seg.m}
-          placeholder="MM"
-          maxLength={2}
-          disabled={disabled}
-          onChange={handleMonthChange}
-          onKeyDown={handleMonthKeyDown}
-          onFocus={() => { setFocused('month'); setTimeout(() => monthRef.current?.select(), 0); }}
-          onBlur={handleMonthBlur}
-          className={`w-7 text-center font-medium ${compact ? 'text-xs' : 'text-sm'} placeholder:text-slate-300 ${segClass('month')}`}
-        />
-        <span className="text-slate-300 font-medium select-none">/</span>
-        {/* Year */}
-        <input
-          ref={yearRef}
-          type="text"
-          inputMode="numeric"
-          value={seg.y}
-          placeholder="AAAA"
-          maxLength={4}
-          disabled={disabled}
-          onChange={handleYearChange}
-          onKeyDown={handleYearKeyDown}
-          onFocus={() => { setFocused('year'); setTimeout(() => yearRef.current?.select(), 0); }}
-          onBlur={() => setFocused(null)}
-          className={`w-10 text-center font-medium ${compact ? 'text-xs' : 'text-sm'} placeholder:text-slate-300 ${segClass('year')}`}
-        />
+        {(!value && !anyFocused && !open) ? (
+          <span
+            onClick={() => { if (!disabled) { focusAndSelect(dayRef); setOpen(true); } }}
+            className={`flex-1 text-left font-medium ${compact ? 'text-xs' : 'text-sm'} text-slate-400 cursor-text select-none`}
+          >
+            {placeholder || 'Sin fecha'}
+          </span>
+        ) : (
+          <>
+            {/* Day */}
+            <input
+              ref={dayRef}
+              type="text"
+              inputMode="numeric"
+              value={seg.d}
+              placeholder="DD"
+              maxLength={2}
+              disabled={disabled}
+              onChange={handleDayChange}
+              onKeyDown={handleDayKeyDown}
+              onFocus={() => { setFocused('day'); setTimeout(() => dayRef.current?.select(), 0); }}
+              onBlur={handleDayBlur}
+              className={`w-7 text-center font-medium ${compact ? 'text-xs' : 'text-sm'} placeholder:text-slate-300 ${segClass('day')}`}
+            />
+            <span className="text-slate-300 font-medium select-none">/</span>
+            {/* Month */}
+            <input
+              ref={monthRef}
+              type="text"
+              inputMode="numeric"
+              value={seg.m}
+              placeholder="MM"
+              maxLength={2}
+              disabled={disabled}
+              onChange={handleMonthChange}
+              onKeyDown={handleMonthKeyDown}
+              onFocus={() => { setFocused('month'); setTimeout(() => monthRef.current?.select(), 0); }}
+              onBlur={handleMonthBlur}
+              className={`w-7 text-center font-medium ${compact ? 'text-xs' : 'text-sm'} placeholder:text-slate-300 ${segClass('month')}`}
+            />
+            <span className="text-slate-300 font-medium select-none">/</span>
+            {/* Year */}
+            <input
+              ref={yearRef}
+              type="text"
+              inputMode="numeric"
+              value={seg.y}
+              placeholder="AAAA"
+              maxLength={4}
+              disabled={disabled}
+              onChange={handleYearChange}
+              onKeyDown={handleYearKeyDown}
+              onFocus={() => { setFocused('year'); setTimeout(() => yearRef.current?.select(), 0); }}
+              onBlur={() => setFocused(null)}
+              className={`w-10 text-center font-medium ${compact ? 'text-xs' : 'text-sm'} placeholder:text-slate-300 ${segClass('year')}`}
+            />
+          </>
+        )}
 
         {/* Calendar icon */}
         <button

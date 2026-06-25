@@ -344,8 +344,8 @@
           </td>
 
           <td>{{ s.quantity }}</td>
-          <td>{% if s.price > 0 %}${{ s.price|intcomma }}{% endif %}</td>
-          <td>{% if s.total_amount > 0 %}${{ s.total_amount|intcomma }}{% endif %}</td>
+          <td>{% if s.price and s.price > 0 %}${{ s.price|intcomma }}{% endif %}</td>
+          <td>{% if s.total_amount and s.total_amount > 0 %}${{ s.total_amount|intcomma }}{% endif %}</td>
         </tr>
         {% endfor %}
       </tbody>
