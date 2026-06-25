@@ -332,11 +332,11 @@
           <td>{{ s.service_date.strftime('%d/%m/%Y') if s.service_date else '' }}</td>
           <td>
             {% if s.custom_material %}
-            {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJE DE' }} {{ s.custom_material | upper }}
+            {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJES DE' }} {{ s.custom_material | upper }}
             {% elif s.material %}
-            {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJE DE' }} {{ s.material.name | upper }}
+            {{ 'TRANSPORTE DE' if s.is_transport_only else 'VIAJES DE' }} {{ s.material.name | upper }}
             {% else %}
-            VIAJE SIN MATERIAL
+            VIAJES SIN MATERIAL
             {% endif %}
             {% if s.notes %}
             <br><span style="font-size: 13px; color: #555; font-weight: 500;">({{ s.notes }})</span>
